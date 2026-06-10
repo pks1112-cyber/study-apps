@@ -7,230 +7,235 @@
 <title>🌸 일본어 학습 🌸</title>
 <style>
   * { box-sizing: border-box; }
+  :root {
+    --primary: #d63384;
+    --primary-2: #b02a6e;
+    --ink: #3d2433;
+    --muted: #9b7d8c;
+    --line: #f3dde6;
+  }
   body {
     margin: 0;
-    background: linear-gradient(180deg, #fff5f8 0%, #ffe6ee 100%);
-    color: #4a2c3a;
-    font-family: 'Segoe UI', 'Noto Sans KR', sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 24px 16px;
+    background:
+      radial-gradient(900px 400px at 85% -50px, rgba(214, 51, 132, 0.07), transparent 60%),
+      radial-gradient(700px 350px at 10% -30px, rgba(255, 105, 180, 0.08), transparent 60%),
+      linear-gradient(180deg, #fff8fa 0%, #ffeef4 100%);
+    color: var(--ink);
+    font-family: 'Segoe UI Variable', 'Segoe UI', 'Noto Sans KR', sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 28px 16px 40px;
     min-height: 100vh;
   }
-  h1 {
-    margin: 0 0 18px;
-    font-size: 30px;
-    color: #d63384;
-    text-shadow: 2px 2px 0 #fff;
+
+  /* ===== hero ===== */
+  .hero {
+    width: 700px; max-width: 100%;
+    background: linear-gradient(120deg, #d63384 0%, #c2407e 55%, #a8326b 100%);
+    border-radius: 24px; color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 24px 30px; margin-bottom: 16px;
+    box-shadow: 0 16px 40px rgba(214, 51, 132, 0.28);
+    position: relative; overflow: hidden;
   }
+  .hero::after {
+    content: ''; position: absolute; right: -50px; top: -70px;
+    width: 220px; height: 220px; background: rgba(255,255,255,0.08); border-radius: 50%;
+  }
+  .hero::before {
+    content: ''; position: absolute; left: 30%; bottom: -90px;
+    width: 170px; height: 170px; background: rgba(255,255,255,0.05); border-radius: 50%;
+  }
+  .hero h1 { margin: 0 0 6px; font-size: 27px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+  .tagline { margin: 0 0 13px; font-size: 13px; opacity: 0.88; }
+  .hero-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+  .hstat {
+    background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.25);
+    padding: 6px 12px; border-radius: 999px; font-size: 12.5px;
+  }
+  .hstat b { font-weight: 800; }
+  .hero-art { flex-shrink: 0; margin-left: 14px; position: relative; z-index: 1; }
+
+  /* ===== segmented tabs ===== */
   .tabs {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 18px;
-    flex-wrap: wrap;
-    justify-content: center;
+    width: 700px; max-width: 100%;
+    display: flex; gap: 4px; background: #faeef3; border-radius: 14px; padding: 4px;
+    margin-bottom: 14px;
   }
   .tab {
-    padding: 10px 18px;
-    background: #fff;
-    border: 2px solid #ffc1cc;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: bold;
-    color: #6c4757;
-    transition: all 0.15s;
-    user-select: none;
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px;
+    padding: 7px 2px; border-radius: 11px; cursor: pointer; user-select: none;
+    color: #8a6276; transition: all 0.13s ease; min-width: 0;
   }
-  .tab:hover { background: #ffe6ee; }
+  .tab:hover { background: #fff; }
   .tab.active {
-    background: #d63384;
-    color: white;
-    border-color: #d63384;
+    background: linear-gradient(135deg, #d63384, #b02a6e); color: #fff;
+    box-shadow: 0 3px 10px rgba(214, 51, 132, 0.30);
   }
+  .tab .ti { font-size: 17px; line-height: 1.2; font-weight: 700; }
+  .tab .tl { font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .tab .tl span { color: #ffd6e0; }
+  .tab:not(.active) .tl span { color: #d63384; }
+
+  /* ===== cards ===== */
   .card {
-    background: white;
-    border-radius: 16px;
-    padding: 32px;
-    width: 540px;
-    max-width: 100%;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    background: #fff; border-radius: 20px; padding: 28px;
+    width: 700px; max-width: 100%;
+    border: 1px solid #f7e4ec;
+    box-shadow: 0 1px 2px rgba(120, 40, 80, .04), 0 16px 40px rgba(190, 60, 120, 0.10);
     text-align: center;
   }
-  .meaning {
-    color: #888;
-    font-size: 18px;
-    margin-bottom: 8px;
-    min-height: 26px;
+  .chart-card { width: 700px; }
+
+  #catSel {
+    width: 100%; padding: 10px 12px; margin-bottom: 14px;
+    border: 1px solid var(--line); border-radius: 12px;
+    font-family: inherit; font-size: 14px; font-weight: 600; color: var(--ink);
+    background: #fdf5f8; outline: none; cursor: pointer;
   }
+  #catSel:focus { border-color: #eda4c4; }
+
+  .meaning { color: var(--muted); font-size: 17px; margin-bottom: 8px; min-height: 25px; }
   .prompt {
-    font-size: 96px;
-    margin: 8px 0;
-    color: #2a1825;
-    font-weight: 500;
-    line-height: 1.1;
-    word-break: keep-all;
+    font-size: 92px; margin: 8px 0; color: #32202b; font-weight: 500;
+    line-height: 1.1; word-break: keep-all;
   }
-  .prompt.small { font-size: 40px; line-height: 1.35; }
-  .prompt.medium { font-size: 60px; }
-  .reading {
-    color: #b58aa0;
-    font-size: 18px;
-    margin: 4px 0 12px;
-    min-height: 24px;
-    letter-spacing: 1px;
-  }
+  .prompt.small { font-size: 38px; line-height: 1.4; }
+  .prompt.medium { font-size: 58px; }
+  .reading { color: #c193a9; font-size: 17px; margin: 4px 0 12px; min-height: 24px; letter-spacing: 1px; }
+
   input[type="text"] {
-    width: 100%;
-    padding: 14px;
-    font-size: 22px;
-    border: 2px solid #ffc1cc;
-    border-radius: 10px;
-    outline: none;
-    text-align: center;
-    font-family: inherit;
+    width: 100%; padding: 14px; font-size: 21px;
+    border: 1.5px solid var(--line); border-radius: 14px;
+    outline: none; text-align: center; font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
-  input[type="text"]:focus { border-color: #d63384; }
-  .actions {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    margin-top: 14px;
-    flex-wrap: wrap;
-  }
+  input[type="text"]:focus { border-color: #e87fb1; box-shadow: 0 0 0 4px rgba(214, 51, 132, 0.10); }
+
+  .actions { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
   button {
-    padding: 10px 22px;
-    background: #d63384;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: bold;
-    cursor: pointer;
-    font-family: inherit;
+    padding: 10px 20px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #d63384, #b02a6e); color: #fff;
+    font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+    box-shadow: 0 3px 10px rgba(214, 51, 132, 0.22);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
   }
-  button.secondary {
-    background: #f5e1e8;
-    color: #6c4757;
-  }
-  button:hover { opacity: 0.85; }
-  button:active { transform: translateY(1px); }
-  .feedback {
-    min-height: 32px;
-    margin-top: 14px;
-    font-weight: bold;
-    font-size: 18px;
-  }
-  .correct { color: #28a745; }
+  button:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(214, 51, 132, 0.28); }
+  button:active { transform: translateY(0); }
+  button.secondary { background: #f7e9ef; color: #6c4757; box-shadow: none; }
+  button.secondary:hover { background: #f3dde6; box-shadow: none; }
+
+  .feedback { min-height: 30px; margin-top: 14px; font-weight: 700; font-size: 17px; }
+  .correct { color: #0d9466; }
   .wrong { color: #d63384; }
-  .answer-display {
-    margin-top: 4px;
-    color: #888;
-    font-size: 15px;
-    min-height: 22px;
-  }
+  .answer-display { margin-top: 4px; color: var(--muted); font-size: 14px; min-height: 22px; }
   .footer {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 18px;
-    font-size: 14px;
-    color: #888;
+    display: flex; justify-content: space-between; margin-top: 18px;
+    font-size: 13.5px; color: var(--muted);
   }
-  .footer span { color: #d63384; font-weight: bold; }
+  .footer span { color: var(--primary); font-weight: 800; }
   .life-stats {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed #f0d4dd;
-    font-size: 12px;
-    color: #b58aa0;
-    text-align: center;
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed #f3dde6;
+    font-size: 12px; color: #c193a9;
   }
   .info {
-    margin-top: 18px;
-    font-size: 13px;
-    color: #999;
-    text-align: center;
-    line-height: 1.6;
-    max-width: 540px;
+    margin-top: 16px; font-size: 12.5px; color: #b99aa9; text-align: center;
+    line-height: 1.7; max-width: 700px;
   }
-  /* Chart (study) view */
-  .chart-card { width: 660px; }
-  .chart-toggle {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    margin-bottom: 18px;
-  }
-  .chart-toggle button {
-    background: #f5e1e8;
-    color: #6c4757;
-    padding: 8px 18px;
-  }
-  .chart-toggle button.active { background: #d63384; color: #fff; }
+
+  /* ===== chart (study) view ===== */
+  .chart-toggle { display: flex; gap: 8px; justify-content: center; margin-bottom: 18px; }
+  .chart-toggle button { background: #f7e9ef; color: #6c4757; padding: 9px 22px; box-shadow: none; }
+  .chart-toggle button.active { background: linear-gradient(135deg, #d63384, #b02a6e); color: #fff; }
   .chart-section-title {
-    text-align: left;
-    color: #d63384;
-    font-weight: bold;
-    font-size: 15px;
-    margin: 18px 0 8px;
+    text-align: left; color: var(--primary); font-weight: 700; font-size: 14.5px; margin: 18px 0 8px;
   }
-  .kana-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 7px;
-  }
+  .kana-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
   .kana-cell {
-    background: #fff;
-    border: 2px solid #ffd6e0;
-    border-radius: 10px;
-    padding: 8px 2px 6px;
-    cursor: pointer;
-    transition: all 0.12s;
-    user-select: none;
+    background: #fdf5f8; border: 1px solid var(--line); border-radius: 12px;
+    padding: 9px 2px 7px; cursor: pointer; transition: all 0.12s; user-select: none;
   }
-  .kana-cell:hover { background: #ffe6ee; border-color: #d63384; transform: translateY(-2px); }
+  .kana-cell:hover { background: #fff; border-color: #e87fb1; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(214,51,132,0.12); }
   .kana-cell:active { transform: translateY(0); }
-  .kana-cell.flash { background: #d63384; }
+  .kana-cell.flash { background: linear-gradient(135deg, #d63384, #b02a6e); border-color: transparent; }
   .kana-cell.flash .big, .kana-cell.flash .rom { color: #fff; }
-  .kana-cell .big { font-size: 30px; color: #2a1825; line-height: 1.1; }
-  .kana-cell .rom { font-size: 12px; color: #b58aa0; margin-top: 2px; }
+  .kana-cell .big { font-size: 29px; color: #32202b; line-height: 1.1; }
+  .kana-cell .rom { font-size: 11.5px; color: #c193a9; margin-top: 2px; }
   .kana-cell.empty { background: transparent; border: none; cursor: default; }
-  .kana-cell.empty:hover { transform: none; }
-  .chart-hint { margin-top: 16px; font-size: 13px; color: #999; }
+  .kana-cell.empty:hover { transform: none; box-shadow: none; }
+  .chart-hint { margin-top: 16px; font-size: 12.5px; color: #b99aa9; }
 
   /* ===== mobile ===== */
   @media (max-width: 600px) {
-    body { padding: 16px 10px 30px; }
-    h1 { font-size: 24px; margin-bottom: 12px; }
-    .tab { padding: 8px 12px; font-size: 13px; }
-    .card { padding: 20px 14px; }
-    .prompt { font-size: 64px; }
-    .prompt.medium { font-size: 42px; }
-    .prompt.small { font-size: 26px; }
+    body { padding: 14px 10px 30px; }
+    .hero { flex-direction: column; text-align: center; padding: 20px 16px; }
+    .hero-art { margin: 10px 0 0; }
+    .hero-art svg { width: 110px; height: 90px; }
+    .hero-stats { justify-content: center; }
+    .hero h1 { font-size: 22px; }
+    .tagline { font-size: 11.5px; }
+    .tab .ti { font-size: 15px; }
+    .tab .tl { font-size: 9.5px; }
+    .card { padding: 20px 13px; }
+    .prompt { font-size: 60px; }
+    .prompt.medium { font-size: 40px; }
+    .prompt.small { font-size: 25px; }
     .meaning { font-size: 15px; }
     .reading { font-size: 15px; }
     input[type="text"] { font-size: 18px; padding: 12px; }
-    button { padding: 9px 14px; font-size: 13.5px; }
+    button { padding: 9px 14px; font-size: 13px; }
     .feedback { font-size: 16px; }
     .kana-grid { gap: 5px; }
-    .kana-cell { padding: 6px 1px 5px; border-radius: 8px; }
+    .kana-cell { padding: 6px 1px 5px; border-radius: 9px; }
     .kana-cell .big { font-size: 22px; }
-    .kana-cell .rom { font-size: 10.5px; }
-    .chart-section-title { font-size: 13.5px; }
+    .kana-cell .rom { font-size: 10px; }
+    .chart-section-title { font-size: 13px; }
     .footer { flex-wrap: wrap; gap: 4px; justify-content: center; }
-    .info { font-size: 12px; }
+    .info { font-size: 11.5px; }
   }
 </style>
 </head>
 <body>
-<h1>🌸 일본어 학습 🌸</h1>
-<div class="tabs">
-  <div class="tab active" data-mode="chart">📖 표 외우기</div>
-  <div class="tab" data-mode="hiragana">히라가나</div>
-  <div class="tab" data-mode="katakana">가타카나</div>
-  <div class="tab" data-mode="words">단어</div>
-  <div class="tab" data-mode="sentences">문장</div>
-  <div class="tab" data-mode="review">❌ 복습 <span id="reviewCount">0</span></div>
+<div class="hero">
+  <div class="hero-text">
+    <h1>일본어 학습</h1>
+    <p class="tagline">히라가나 · 가타카나 · 단어 120 · 문장 50 — 한글 발음으로 입력</p>
+    <div class="hero-stats">
+      <span class="hstat">🎯 정답률 <b id="hAcc">0%</b></span>
+      <span class="hstat">🔥 최고 연속 <b id="hStreak">0</b></span>
+      <span class="hstat">📚 푼 문제 <b id="hAnswered">0</b></span>
+    </div>
+  </div>
+  <div class="hero-art">
+    <svg width="140" height="115" viewBox="0 0 140 115" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g transform="rotate(-8 32 30)">
+        <rect x="14" y="14" width="36" height="36" rx="9" fill="#ffffff"/>
+        <text x="32" y="41" text-anchor="middle" font-size="22" font-weight="700" fill="#d63384" font-family="sans-serif">あ</text>
+      </g>
+      <g transform="rotate(7 105 26)">
+        <rect x="87" y="8" width="36" height="36" rx="9" fill="#ffd6e0"/>
+        <text x="105" y="35" text-anchor="middle" font-size="22" font-weight="700" fill="#9d2c5e" font-family="sans-serif">ア</text>
+      </g>
+      <g fill="#ffc9d8">
+        <ellipse cx="70" cy="76" rx="8" ry="11" transform="rotate(0 70 76)"/>
+        <ellipse cx="83" cy="86" rx="8" ry="11" transform="rotate(72 83 86)"/>
+        <ellipse cx="78" cy="101" rx="8" ry="11" transform="rotate(144 78 101)"/>
+        <ellipse cx="62" cy="101" rx="8" ry="11" transform="rotate(216 62 101)"/>
+        <ellipse cx="57" cy="86" rx="8" ry="11" transform="rotate(288 57 86)"/>
+      </g>
+      <circle cx="70" cy="91" r="5" fill="#fff0f4"/>
+      <circle cx="22" cy="72" r="3" fill="#ffd6e0"/>
+      <circle cx="120" cy="60" r="4" fill="#ffd6e0"/>
+      <circle cx="128" cy="96" r="2.5" fill="#ffc9d8"/>
+    </svg>
+  </div>
+</div>
+<div class="tabs" id="modeTabs">
+  <div class="tab active" data-mode="chart"><span class="ti">📖</span><span class="tl">표</span></div>
+  <div class="tab" data-mode="hiragana"><span class="ti">あ</span><span class="tl">히라가나</span></div>
+  <div class="tab" data-mode="katakana"><span class="ti">ア</span><span class="tl">가타카나</span></div>
+  <div class="tab" data-mode="words"><span class="ti">📝</span><span class="tl">단어</span></div>
+  <div class="tab" data-mode="sentences"><span class="ti">💬</span><span class="tl">문장</span></div>
+  <div class="tab" data-mode="review"><span class="ti">🔄</span><span class="tl">복습 <span id="reviewCount">0</span></span></div>
 </div>
 
 <!-- Study chart view -->
@@ -245,6 +250,7 @@
 
 <!-- Quiz view -->
 <div class="card" id="quizCard" style="display:none;">
+  <select id="catSel" style="display:none"></select>
   <div class="meaning" id="meaning">&nbsp;</div>
   <div class="prompt" id="prompt">あ</div>
   <div class="reading" id="reading">&nbsp;</div>
@@ -311,52 +317,192 @@ const KATAKANA = [
 ];
 
 const WORDS = [
-  { jp: 'こんにちは', reading: 'こんにちは', kor: ['곤니치와', '곤니찌와'], meaning: '안녕하세요 (낮 인사)' },
-  { jp: 'おはよう', reading: 'おはよう', kor: ['오하요', '오하요우'], meaning: '안녕 (아침 인사)' },
-  { jp: 'こんばんは', reading: 'こんばんは', kor: ['곤방와'], meaning: '안녕하세요 (저녁 인사)' },
-  { jp: 'ありがとう', reading: 'ありがとう', kor: ['아리가또', '아리가토', '아리가또우', '아리가토우'], meaning: '고맙습니다' },
-  { jp: 'すみません', reading: 'すみません', kor: ['스미마셍', '스미마센'], meaning: '죄송합니다 / 실례합니다' },
-  { jp: 'はい', reading: 'はい', kor: ['하이'], meaning: '네' },
-  { jp: 'いいえ', reading: 'いいえ', kor: ['이이에'], meaning: '아니요' },
-  { jp: '私', reading: 'わたし', kor: ['와타시', '와따시'], meaning: '나, 저' },
-  { jp: '元気', reading: 'げんき', kor: ['겐키', '갱끼', '겡끼', '겡키'], meaning: '잘 지냄, 건강함' },
-  { jp: '猫', reading: 'ねこ', kor: ['네코', '네꼬'], meaning: '고양이' },
-  { jp: '犬', reading: 'いぬ', kor: ['이누'], meaning: '개' },
-  { jp: '水', reading: 'みず', kor: ['미즈'], meaning: '물' },
-  { jp: '食べる', reading: 'たべる', kor: ['타베루', '다베루'], meaning: '먹다' },
-  { jp: '飲む', reading: 'のむ', kor: ['노무'], meaning: '마시다' },
-  { jp: '行く', reading: 'いく', kor: ['이쿠', '이꾸'], meaning: '가다' },
-  { jp: '見る', reading: 'みる', kor: ['미루'], meaning: '보다' },
-  { jp: '学校', reading: 'がっこう', kor: ['갓코우', '갓꼬우', '각꼬오', '갓코오'], meaning: '학교' },
-  { jp: '友達', reading: 'ともだち', kor: ['토모다치', '도모다치', '토모다찌'], meaning: '친구' },
-  { jp: '日本', reading: 'にほん', kor: ['니혼', '니홍'], meaning: '일본' },
-  { jp: '韓国', reading: 'かんこく', kor: ['칸코쿠', '강꼬꾸', '간고쿠'], meaning: '한국' },
-  { jp: '先生', reading: 'せんせい', kor: ['센세이', '셍세이'], meaning: '선생님' },
-  { jp: '学生', reading: 'がくせい', kor: ['각세이', '가쿠세이'], meaning: '학생' },
-  { jp: '本', reading: 'ほん', kor: ['혼', '홍'], meaning: '책' },
-  { jp: '今日', reading: 'きょう', kor: ['쿄오', '교오', '쿄우'], meaning: '오늘' },
-  { jp: '明日', reading: 'あした', kor: ['아시타', '아시따'], meaning: '내일' },
-  { jp: '好き', reading: 'すき', kor: ['스키', '스끼'], meaning: '좋아함' },
-  { jp: '大丈夫', reading: 'だいじょうぶ', kor: ['다이조부', '다이조오부', '다이죠부'], meaning: '괜찮음' },
-  { jp: '美味しい', reading: 'おいしい', kor: ['오이시이'], meaning: '맛있다' }
+  // 인사와 표현
+  { jp: 'こんにちは', reading: 'こんにちは', kor: ['곤니치와', '곤니찌와'], meaning: '안녕하세요 (낮 인사)', cat: '인사와 표현' },
+  { jp: 'おはよう', reading: 'おはよう', kor: ['오하요', '오하요우'], meaning: '안녕 (아침 인사)', cat: '인사와 표현' },
+  { jp: 'こんばんは', reading: 'こんばんは', kor: ['곤방와'], meaning: '안녕하세요 (저녁 인사)', cat: '인사와 표현' },
+  { jp: 'ありがとう', reading: 'ありがとう', kor: ['아리가또', '아리가토', '아리가또우', '아리가토우'], meaning: '고맙습니다', cat: '인사와 표현' },
+  { jp: 'すみません', reading: 'すみません', kor: ['스미마셍', '스미마센'], meaning: '죄송합니다 / 실례합니다', cat: '인사와 표현' },
+  { jp: 'はい', reading: 'はい', kor: ['하이'], meaning: '네', cat: '인사와 표현' },
+  { jp: 'いいえ', reading: 'いいえ', kor: ['이이에'], meaning: '아니요', cat: '인사와 표현' },
+  { jp: '大丈夫', reading: 'だいじょうぶ', kor: ['다이조부', '다이조오부', '다이죠부'], meaning: '괜찮음', cat: '인사와 표현' },
+  { jp: '元気', reading: 'げんき', kor: ['겐키', '갱끼', '겡끼', '겡키'], meaning: '잘 지냄, 건강함', cat: '인사와 표현' },
+  { jp: 'さようなら', reading: 'さようなら', kor: ['사요나라', '사요오나라'], meaning: '안녕히 가세요', cat: '인사와 표현' },
+  { jp: 'ごめんなさい', reading: 'ごめんなさい', kor: ['고멘나사이'], meaning: '미안합니다', cat: '인사와 표현' },
+  { jp: 'おやすみ', reading: 'おやすみ', kor: ['오야스미'], meaning: '잘 자 (밤 인사)', cat: '인사와 표현' },
+  { jp: 'どうぞ', reading: 'どうぞ', kor: ['도조', '도오조', '도우조'], meaning: '자 어서, 여기요 (권할 때)', cat: '인사와 표현' },
+  { jp: 'ください', reading: 'ください', kor: ['쿠다사이', '구다사이'], meaning: '주세요', cat: '인사와 표현' },
+  { jp: 'おめでとう', reading: 'おめでとう', kor: ['오메데또', '오메데토', '오메데또우', '오메데토우'], meaning: '축하해요', cat: '인사와 표현' },
+  // 사람과 가족
+  { jp: '私', reading: 'わたし', kor: ['와타시', '와따시'], meaning: '나, 저', cat: '사람과 가족' },
+  { jp: '友達', reading: 'ともだち', kor: ['토모다치', '도모다치', '토모다찌'], meaning: '친구', cat: '사람과 가족' },
+  { jp: '先生', reading: 'せんせい', kor: ['센세이', '셍세이'], meaning: '선생님', cat: '사람과 가족' },
+  { jp: '学生', reading: 'がくせい', kor: ['각세이', '가쿠세이'], meaning: '학생', cat: '사람과 가족' },
+  { jp: 'あなた', reading: 'あなた', kor: ['아나타', '아나따'], meaning: '당신, 너', cat: '사람과 가족' },
+  { jp: 'お母さん', reading: 'おかあさん', kor: ['오카아상', '오까아상', '오카상'], meaning: '어머니', cat: '사람과 가족' },
+  { jp: 'お父さん', reading: 'おとうさん', kor: ['오토오상', '오또오상', '오토상'], meaning: '아버지', cat: '사람과 가족' },
+  { jp: '兄', reading: 'あに', kor: ['아니'], meaning: '형, 오빠', cat: '사람과 가족' },
+  { jp: '姉', reading: 'あね', kor: ['아네'], meaning: '누나, 언니', cat: '사람과 가족' },
+  { jp: '子供', reading: 'こども', kor: ['코도모', '고도모'], meaning: '아이, 어린이', cat: '사람과 가족' },
+  { jp: '名前', reading: 'なまえ', kor: ['나마에'], meaning: '이름', cat: '사람과 가족' },
+  { jp: '人', reading: 'ひと', kor: ['히토', '히또'], meaning: '사람', cat: '사람과 가족' },
+  { jp: '男', reading: 'おとこ', kor: ['오토코', '오또꼬', '오토꼬'], meaning: '남자', cat: '사람과 가족' },
+  { jp: '女', reading: 'おんな', kor: ['온나'], meaning: '여자', cat: '사람과 가족' },
+  { jp: 'みんな', reading: 'みんな', kor: ['민나'], meaning: '모두, 다 같이', cat: '사람과 가족' },
+  // 동물과 자연
+  { jp: '猫', reading: 'ねこ', kor: ['네코', '네꼬'], meaning: '고양이', cat: '동물과 자연' },
+  { jp: '犬', reading: 'いぬ', kor: ['이누'], meaning: '개', cat: '동물과 자연' },
+  { jp: '鳥', reading: 'とり', kor: ['토리', '도리'], meaning: '새', cat: '동물과 자연' },
+  { jp: '魚', reading: 'さかな', kor: ['사카나', '사까나'], meaning: '물고기, 생선', cat: '동물과 자연' },
+  { jp: 'うさぎ', reading: 'うさぎ', kor: ['우사기'], meaning: '토끼', cat: '동물과 자연' },
+  { jp: '馬', reading: 'うま', kor: ['우마'], meaning: '말', cat: '동물과 자연' },
+  { jp: '空', reading: 'そら', kor: ['소라'], meaning: '하늘', cat: '동물과 자연' },
+  { jp: '海', reading: 'うみ', kor: ['우미'], meaning: '바다', cat: '동물과 자연' },
+  { jp: '山', reading: 'やま', kor: ['야마'], meaning: '산', cat: '동물과 자연' },
+  { jp: '川', reading: 'かわ', kor: ['카와', '가와'], meaning: '강', cat: '동물과 자연' },
+  { jp: '花', reading: 'はな', kor: ['하나'], meaning: '꽃', cat: '동물과 자연' },
+  { jp: '木', reading: 'き', kor: ['키', '끼'], meaning: '나무', cat: '동물과 자연' },
+  { jp: '雨', reading: 'あめ', kor: ['아메'], meaning: '비', cat: '동물과 자연' },
+  { jp: '雪', reading: 'ゆき', kor: ['유키', '유끼'], meaning: '눈 (snow)', cat: '동물과 자연' },
+  { jp: '星', reading: 'ほし', kor: ['호시'], meaning: '별', cat: '동물과 자연' },
+  // 음식
+  { jp: '水', reading: 'みず', kor: ['미즈'], meaning: '물', cat: '음식' },
+  { jp: '美味しい', reading: 'おいしい', kor: ['오이시이'], meaning: '맛있다', cat: '음식' },
+  { jp: 'ご飯', reading: 'ごはん', kor: ['고항', '고한'], meaning: '밥, 식사', cat: '음식' },
+  { jp: 'パン', reading: 'パン', kor: ['팡', '판'], meaning: '빵', cat: '음식' },
+  { jp: '卵', reading: 'たまご', kor: ['타마고', '다마고'], meaning: '달걀', cat: '음식' },
+  { jp: '肉', reading: 'にく', kor: ['니쿠', '니꾸'], meaning: '고기', cat: '음식' },
+  { jp: '野菜', reading: 'やさい', kor: ['야사이'], meaning: '채소', cat: '음식' },
+  { jp: '果物', reading: 'くだもの', kor: ['쿠다모노', '구다모노'], meaning: '과일', cat: '음식' },
+  { jp: 'お茶', reading: 'おちゃ', kor: ['오차', '오챠'], meaning: '차 (tea)', cat: '음식' },
+  { jp: '牛乳', reading: 'ぎゅうにゅう', kor: ['규뉴', '규우뉴우', '규우뉴'], meaning: '우유', cat: '음식' },
+  { jp: '寿司', reading: 'すし', kor: ['스시'], meaning: '초밥', cat: '음식' },
+  { jp: 'ラーメン', reading: 'ラーメン', kor: ['라멘', '라아멘'], meaning: '라면, 라멘', cat: '음식' },
+  { jp: 'りんご', reading: 'りんご', kor: ['링고'], meaning: '사과', cat: '음식' },
+  { jp: 'お菓子', reading: 'おかし', kor: ['오카시', '오까시'], meaning: '과자', cat: '음식' },
+  { jp: '朝ご飯', reading: 'あさごはん', kor: ['아사고항', '아사고한'], meaning: '아침밥', cat: '음식' },
+  // 동사
+  { jp: '食べる', reading: 'たべる', kor: ['타베루', '다베루'], meaning: '먹다', cat: '동사' },
+  { jp: '飲む', reading: 'のむ', kor: ['노무'], meaning: '마시다', cat: '동사' },
+  { jp: '行く', reading: 'いく', kor: ['이쿠', '이꾸'], meaning: '가다', cat: '동사' },
+  { jp: '見る', reading: 'みる', kor: ['미루'], meaning: '보다', cat: '동사' },
+  { jp: '来る', reading: 'くる', kor: ['쿠루', '구루'], meaning: '오다', cat: '동사' },
+  { jp: '聞く', reading: 'きく', kor: ['키쿠', '키꾸', '기쿠'], meaning: '듣다, 묻다', cat: '동사' },
+  { jp: '話す', reading: 'はなす', kor: ['하나스'], meaning: '말하다', cat: '동사' },
+  { jp: '読む', reading: 'よむ', kor: ['요무'], meaning: '읽다', cat: '동사' },
+  { jp: '書く', reading: 'かく', kor: ['카쿠', '가쿠', '카꾸'], meaning: '쓰다', cat: '동사' },
+  { jp: '買う', reading: 'かう', kor: ['카우', '가우'], meaning: '사다', cat: '동사' },
+  { jp: '寝る', reading: 'ねる', kor: ['네루'], meaning: '자다', cat: '동사' },
+  { jp: '起きる', reading: 'おきる', kor: ['오키루', '오끼루'], meaning: '일어나다', cat: '동사' },
+  { jp: '会う', reading: 'あう', kor: ['아우'], meaning: '만나다', cat: '동사' },
+  { jp: '作る', reading: 'つくる', kor: ['츠쿠루', '쓰쿠루', '츠꾸루'], meaning: '만들다', cat: '동사' },
+  { jp: '帰る', reading: 'かえる', kor: ['카에루', '가에루'], meaning: '돌아가다, 돌아오다', cat: '동사' },
+  // 형용사
+  { jp: '好き', reading: 'すき', kor: ['스키', '스끼'], meaning: '좋아함', cat: '형용사' },
+  { jp: '大きい', reading: 'おおきい', kor: ['오오키이', '오키이', '오오끼이'], meaning: '크다', cat: '형용사' },
+  { jp: '小さい', reading: 'ちいさい', kor: ['치이사이', '찌이사이'], meaning: '작다', cat: '형용사' },
+  { jp: '高い', reading: 'たかい', kor: ['타카이', '다카이', '타까이'], meaning: '높다, 비싸다', cat: '형용사' },
+  { jp: '安い', reading: 'やすい', kor: ['야스이'], meaning: '싸다', cat: '형용사' },
+  { jp: '新しい', reading: 'あたらしい', kor: ['아타라시이', '아따라시이'], meaning: '새롭다', cat: '형용사' },
+  { jp: '古い', reading: 'ふるい', kor: ['후루이'], meaning: '오래되다, 낡다', cat: '형용사' },
+  { jp: '楽しい', reading: 'たのしい', kor: ['타노시이', '다노시이'], meaning: '즐겁다', cat: '형용사' },
+  { jp: '可愛い', reading: 'かわいい', kor: ['카와이이', '가와이이', '카와이'], meaning: '귀엽다', cat: '형용사' },
+  { jp: '暑い', reading: 'あつい', kor: ['아츠이', '아쯔이'], meaning: '덥다', cat: '형용사' },
+  { jp: '寒い', reading: 'さむい', kor: ['사무이'], meaning: '춥다', cat: '형용사' },
+  { jp: '早い', reading: 'はやい', kor: ['하야이'], meaning: '빠르다, 이르다', cat: '형용사' },
+  { jp: '多い', reading: 'おおい', kor: ['오오이'], meaning: '많다', cat: '형용사' },
+  { jp: '少ない', reading: 'すくない', kor: ['스쿠나이', '스꾸나이'], meaning: '적다', cat: '형용사' },
+  { jp: 'きれい', reading: 'きれい', kor: ['키레이', '기레이'], meaning: '예쁘다, 깨끗하다', cat: '형용사' },
+  // 장소와 생활
+  { jp: '学校', reading: 'がっこう', kor: ['갓코우', '갓꼬우', '각꼬오', '갓코오'], meaning: '학교', cat: '장소와 생활' },
+  { jp: '本', reading: 'ほん', kor: ['혼', '홍'], meaning: '책', cat: '장소와 생활' },
+  { jp: '日本', reading: 'にほん', kor: ['니혼', '니홍'], meaning: '일본', cat: '장소와 생활' },
+  { jp: '韓国', reading: 'かんこく', kor: ['칸코쿠', '캉코쿠', '강꼬꾸', '간고쿠'], meaning: '한국', cat: '장소와 생활' },
+  { jp: '家', reading: 'いえ', kor: ['이에'], meaning: '집', cat: '장소와 생활' },
+  { jp: '部屋', reading: 'へや', kor: ['헤야'], meaning: '방', cat: '장소와 생활' },
+  { jp: '駅', reading: 'えき', kor: ['에키', '에끼'], meaning: '역', cat: '장소와 생활' },
+  { jp: '店', reading: 'みせ', kor: ['미세'], meaning: '가게', cat: '장소와 생활' },
+  { jp: '病院', reading: 'びょういん', kor: ['뵤인', '뵤오인'], meaning: '병원', cat: '장소와 생활' },
+  { jp: '会社', reading: 'かいしゃ', kor: ['카이샤', '가이샤'], meaning: '회사', cat: '장소와 생활' },
+  { jp: 'お金', reading: 'おかね', kor: ['오카네', '오까네'], meaning: '돈', cat: '장소와 생활' },
+  { jp: '電話', reading: 'でんわ', kor: ['덴와'], meaning: '전화', cat: '장소와 생활' },
+  { jp: '車', reading: 'くるま', kor: ['쿠루마', '구루마'], meaning: '자동차', cat: '장소와 생활' },
+  { jp: '電車', reading: 'でんしゃ', kor: ['덴샤'], meaning: '전철', cat: '장소와 생활' },
+  { jp: 'かばん', reading: 'かばん', kor: ['카방', '가방'], meaning: '가방', cat: '장소와 생활' },
+  // 시간 표현
+  { jp: '今日', reading: 'きょう', kor: ['쿄오', '교오', '쿄우'], meaning: '오늘', cat: '시간 표현' },
+  { jp: '明日', reading: 'あした', kor: ['아시타', '아시따'], meaning: '내일', cat: '시간 표현' },
+  { jp: '昨日', reading: 'きのう', kor: ['키노우', '키노오', '기노우'], meaning: '어제', cat: '시간 표현' },
+  { jp: '今', reading: 'いま', kor: ['이마'], meaning: '지금', cat: '시간 표현' },
+  { jp: '朝', reading: 'あさ', kor: ['아사'], meaning: '아침', cat: '시간 표현' },
+  { jp: '昼', reading: 'ひる', kor: ['히루'], meaning: '낮, 점심때', cat: '시간 표현' },
+  { jp: '夜', reading: 'よる', kor: ['요루'], meaning: '밤', cat: '시간 표현' },
+  { jp: '時間', reading: 'じかん', kor: ['지캉', '지칸'], meaning: '시간', cat: '시간 표현' },
+  { jp: '春', reading: 'はる', kor: ['하루'], meaning: '봄', cat: '시간 표현' },
+  { jp: '夏', reading: 'なつ', kor: ['나츠', '나쯔'], meaning: '여름', cat: '시간 표현' },
+  { jp: '秋', reading: 'あき', kor: ['아키', '아끼'], meaning: '가을', cat: '시간 표현' },
+  { jp: '冬', reading: 'ふゆ', kor: ['후유'], meaning: '겨울', cat: '시간 표현' },
+  { jp: '毎日', reading: 'まいにち', kor: ['마이니치', '마이니찌'], meaning: '매일', cat: '시간 표현' },
+  { jp: '週末', reading: 'しゅうまつ', kor: ['슈마츠', '슈우마츠', '슈마쯔'], meaning: '주말', cat: '시간 표현' },
+  { jp: '誕生日', reading: 'たんじょうび', kor: ['탄조비', '탄죠비', '탄조오비', '탄죠오비'], meaning: '생일', cat: '시간 표현' }
 ];
 
 const SENTENCES = [
-  { jp: 'わたしはがくせいです。', reading: 'わたしはがくせいです。', kor: ['와따시와 각세이데쓰', '와타시와 가쿠세이데스'], meaning: '저는 학생입니다.' },
-  { jp: 'おなまえはなんですか。', reading: 'おなまえはなんですか。', kor: ['오나마에와 난데스카', '오나마에와 난데쓰까'], meaning: '이름이 무엇입니까?' },
-  { jp: 'いただきます。', reading: 'いただきます。', kor: ['이따다끼마쓰', '이타다키마스'], meaning: '잘 먹겠습니다.' },
-  { jp: 'ごちそうさまでした。', reading: 'ごちそうさまでした。', kor: ['고치소사마데시따', '고치소사마데시타'], meaning: '잘 먹었습니다.' },
-  { jp: 'おやすみなさい。', reading: 'おやすみなさい。', kor: ['오야스미나사이'], meaning: '안녕히 주무세요.' },
-  { jp: 'はじめまして。', reading: 'はじめまして。', kor: ['하지메마시테', '하지메마시떼'], meaning: '처음 뵙겠습니다.' },
-  { jp: 'よろしくおねがいします。', reading: 'よろしくおねがいします。', kor: ['요로시쿠 오네가이시마스', '요로시꾸 오네가이시마쓰'], meaning: '잘 부탁드립니다.' },
-  { jp: 'にほんごをべんきょうします。', reading: 'にほんごをべんきょうします。', kor: ['니혼고오 벵쿄시마스', '니혼고오 벵쿄오시마쓰'], meaning: '일본어를 공부합니다.' },
-  { jp: 'おいしいです。', reading: 'おいしいです。', kor: ['오이시이데쓰', '오이시이데스'], meaning: '맛있습니다.' },
-  { jp: 'ありがとうございます。', reading: 'ありがとうございます。', kor: ['아리가또 고자이마쓰', '아리가토 고자이마스'], meaning: '대단히 감사합니다.' },
-  { jp: 'わたしはげんきです。', reading: 'わたしはげんきです。', kor: ['와따시와 갱끼데쓰', '와타시와 겐키데스'], meaning: '저는 잘 지냅니다.' },
-  { jp: 'すきです。', reading: 'すきです。', kor: ['스키데스', '스끼데쓰'], meaning: '좋아합니다.' },
-  { jp: 'だいじょうぶです。', reading: 'だいじょうぶです。', kor: ['다이조부데쓰', '다이죠부데스'], meaning: '괜찮습니다.' },
-  { jp: 'にほんがすきです。', reading: 'にほんがすきです。', kor: ['니혼가 스키데스', '니홍가 스끼데쓰'], meaning: '일본을 좋아합니다.' },
-  { jp: 'みずをのみます。', reading: 'みずをのみます。', kor: ['미즈오 노미마스', '미즈오 노미마쓰'], meaning: '물을 마십니다.' }
+  // 인사와 소개
+  { jp: 'はじめまして。', reading: 'はじめまして。', kor: ['하지메마시테', '하지메마시떼'], meaning: '처음 뵙겠습니다.', cat: '인사와 소개' },
+  { jp: 'よろしくおねがいします。', reading: 'よろしくおねがいします。', kor: ['요로시쿠 오네가이시마스', '요로시꾸 오네가이시마쓰'], meaning: '잘 부탁드립니다.', cat: '인사와 소개' },
+  { jp: 'おなまえはなんですか。', reading: 'おなまえはなんですか。', kor: ['오나마에와 난데스카', '오나마에와 난데쓰까'], meaning: '이름이 무엇입니까?', cat: '인사와 소개' },
+  { jp: 'わたしはがくせいです。', reading: 'わたしはがくせいです。', kor: ['와따시와 각세이데쓰', '와타시와 가쿠세이데스'], meaning: '저는 학생입니다.', cat: '인사와 소개' },
+  { jp: 'おげんきですか。', reading: 'おげんきですか。', kor: ['오겐키데스카', '오겡키데스카', '오겡끼데스까'], meaning: '잘 지내세요?', cat: '인사와 소개' },
+  { jp: 'どこからきましたか。', reading: 'どこからきましたか。', kor: ['도코카라 키마시타카', '도꼬까라 키마시따까'], meaning: '어디에서 왔어요?', cat: '인사와 소개' },
+  { jp: 'かんこくからきました。', reading: 'かんこくからきました。', kor: ['캉코쿠카라 키마시타', '칸코쿠카라 키마시타'], meaning: '한국에서 왔습니다.', cat: '인사와 소개' },
+  { jp: 'じゅうごさいです。', reading: 'じゅうごさいです。', kor: ['쥬우고사이데스', '쥬고사이데스', '쥬고사이데쓰'], meaning: '열다섯 살입니다.', cat: '인사와 소개' },
+  { jp: 'またあした。', reading: 'またあした。', kor: ['마타 아시타', '마따 아시따'], meaning: '내일 또 봐요.', cat: '인사와 소개' },
+  { jp: 'おひさしぶりです。', reading: 'おひさしぶりです。', kor: ['오히사시부리데스', '오히사시부리데쓰'], meaning: '오랜만이에요.', cat: '인사와 소개' },
+  // 식사
+  { jp: 'いただきます。', reading: 'いただきます。', kor: ['이따다끼마쓰', '이타다키마스'], meaning: '잘 먹겠습니다.', cat: '식사' },
+  { jp: 'ごちそうさまでした。', reading: 'ごちそうさまでした。', kor: ['고치소사마데시따', '고치소사마데시타', '고치소오사마데시타'], meaning: '잘 먹었습니다.', cat: '식사' },
+  { jp: 'おいしいです。', reading: 'おいしいです。', kor: ['오이시이데쓰', '오이시이데스'], meaning: '맛있습니다.', cat: '식사' },
+  { jp: 'みずをのみます。', reading: 'みずをのみます。', kor: ['미즈오 노미마스', '미즈오 노미마쓰'], meaning: '물을 마십니다.', cat: '식사' },
+  { jp: 'おなかがすきました。', reading: 'おなかがすきました。', kor: ['오나카가 스키마시타', '오나까가 스끼마시따'], meaning: '배가 고파요.', cat: '식사' },
+  { jp: 'のどがかわきました。', reading: 'のどがかわきました。', kor: ['노도가 카와키마시타', '노도가 가와키마시따'], meaning: '목이 말라요.', cat: '식사' },
+  { jp: 'すしがたべたいです。', reading: 'すしがたべたいです。', kor: ['스시가 타베타이데스', '스시가 다베따이데스'], meaning: '초밥이 먹고 싶어요.', cat: '식사' },
+  { jp: 'とてもおいしかったです。', reading: 'とてもおいしかったです。', kor: ['토테모 오이시캇타데스', '도테모 오이시깟따데스'], meaning: '정말 맛있었어요.', cat: '식사' },
+  { jp: 'あさごはんをたべます。', reading: 'あさごはんをたべます。', kor: ['아사고항오 타베마스', '아사고한오 다베마스'], meaning: '아침밥을 먹습니다.', cat: '식사' },
+  { jp: 'おちゃをください。', reading: 'おちゃをください。', kor: ['오차오 쿠다사이', '오챠오 구다사이'], meaning: '차를 주세요.', cat: '식사' },
+  // 일상
+  { jp: 'にほんごをべんきょうします。', reading: 'にほんごをべんきょうします。', kor: ['니혼고오 벵쿄시마스', '니혼고오 벵쿄오시마쓰', '니홍고오 벵쿄시마스'], meaning: '일본어를 공부합니다.', cat: '일상' },
+  { jp: 'おやすみなさい。', reading: 'おやすみなさい。', kor: ['오야스미나사이'], meaning: '안녕히 주무세요.', cat: '일상' },
+  { jp: 'いまなんじですか。', reading: 'いまなんじですか。', kor: ['이마 난지데스카', '이마 난지데스까'], meaning: '지금 몇 시예요?', cat: '일상' },
+  { jp: 'きょうはあついですね。', reading: 'きょうはあついですね。', kor: ['쿄와 아츠이데스네', '쿄오와 아쯔이데스네'], meaning: '오늘은 덥네요.', cat: '일상' },
+  { jp: 'あめがふっています。', reading: 'あめがふっています。', kor: ['아메가 훗테이마스', '아메가 후떼이마스', '아메가 훗떼이마스'], meaning: '비가 오고 있어요.', cat: '일상' },
+  { jp: 'がっこうにいきます。', reading: 'がっこうにいきます。', kor: ['갓코니 이키마스', '갓꼬오니 이끼마스', '갓코오니 이키마스'], meaning: '학교에 갑니다.', cat: '일상' },
+  { jp: 'ほんをよみます。', reading: 'ほんをよみます。', kor: ['홍오 요미마스', '혼오 요미마스'], meaning: '책을 읽습니다.', cat: '일상' },
+  { jp: 'おんがくをききます。', reading: 'おんがくをききます。', kor: ['옹가쿠오 키키마스', '온가쿠오 키키마스'], meaning: '음악을 듣습니다.', cat: '일상' },
+  { jp: 'はやくねます。', reading: 'はやくねます。', kor: ['하야쿠 네마스', '하야꾸 네마스'], meaning: '일찍 잡니다.', cat: '일상' },
+  { jp: 'テレビをみます。', reading: 'テレビをみます。', kor: ['테레비오 미마스', '테레비오 미마쓰'], meaning: '텔레비전을 봅니다.', cat: '일상' },
+  // 쇼핑과 여행
+  { jp: 'これをください。', reading: 'これをください。', kor: ['코레오 쿠다사이', '고레오 구다사이'], meaning: '이것을 주세요.', cat: '쇼핑과 여행' },
+  { jp: 'いくらですか。', reading: 'いくらですか。', kor: ['이쿠라데스카', '이꾸라데스까'], meaning: '얼마예요?', cat: '쇼핑과 여행' },
+  { jp: 'たかいですね。', reading: 'たかいですね。', kor: ['타카이데스네', '다카이데스네'], meaning: '비싸네요.', cat: '쇼핑과 여행' },
+  { jp: 'えきはどこですか。', reading: 'えきはどこですか。', kor: ['에키와 도코데스카', '에끼와 도꼬데스까'], meaning: '역은 어디예요?', cat: '쇼핑과 여행' },
+  { jp: 'トイレはどこですか。', reading: 'トイレはどこですか。', kor: ['토이레와 도코데스카', '토이레와 도꼬데스까'], meaning: '화장실은 어디예요?', cat: '쇼핑과 여행' },
+  { jp: 'みちにまよいました。', reading: 'みちにまよいました。', kor: ['미치니 마요이마시타', '미찌니 마요이마시따'], meaning: '길을 잃었어요.', cat: '쇼핑과 여행' },
+  { jp: 'しゃしんをとってください。', reading: 'しゃしんをとってください。', kor: ['샤신오 톳테쿠다사이', '샤싱오 톳떼쿠다사이'], meaning: '사진을 찍어 주세요.', cat: '쇼핑과 여행' },
+  { jp: 'にほんへいきたいです。', reading: 'にほんへいきたいです。', kor: ['니혼에 이키타이데스', '니홍에 이끼따이데스'], meaning: '일본에 가고 싶어요.', cat: '쇼핑과 여행' },
+  { jp: 'たすけてください。', reading: 'たすけてください。', kor: ['타스케테 쿠다사이', '다스케테 구다사이', '타스케떼 쿠다사이'], meaning: '도와주세요.', cat: '쇼핑과 여행' },
+  { jp: 'これはなんですか。', reading: 'これはなんですか。', kor: ['코레와 난데스카', '고레와 난데스까'], meaning: '이것은 무엇입니까?', cat: '쇼핑과 여행' },
+  // 감정과 대화
+  { jp: 'ありがとうございます。', reading: 'ありがとうございます。', kor: ['아리가또 고자이마쓰', '아리가토 고자이마스', '아리가또우 고자이마스'], meaning: '대단히 감사합니다.', cat: '감정과 대화' },
+  { jp: 'わたしはげんきです。', reading: 'わたしはげんきです。', kor: ['와따시와 갱끼데쓰', '와타시와 겐키데스'], meaning: '저는 잘 지냅니다.', cat: '감정과 대화' },
+  { jp: 'すきです。', reading: 'すきです。', kor: ['스키데스', '스끼데쓰'], meaning: '좋아합니다.', cat: '감정과 대화' },
+  { jp: 'だいじょうぶです。', reading: 'だいじょうぶです。', kor: ['다이조부데쓰', '다이죠부데스', '다이조부데스'], meaning: '괜찮습니다.', cat: '감정과 대화' },
+  { jp: 'にほんがすきです。', reading: 'にほんがすきです。', kor: ['니혼가 스키데스', '니홍가 스끼데쓰'], meaning: '일본을 좋아합니다.', cat: '감정과 대화' },
+  { jp: 'たのしいです。', reading: 'たのしいです。', kor: ['타노시이데스', '다노시이데스'], meaning: '즐겁습니다.', cat: '감정과 대화' },
+  { jp: 'うれしいです。', reading: 'うれしいです。', kor: ['우레시이데스', '우레시이데쓰'], meaning: '기쁩니다.', cat: '감정과 대화' },
+  { jp: 'つかれました。', reading: 'つかれました。', kor: ['츠카레마시타', '쓰카레마시따', '츠까레마시타'], meaning: '피곤해요.', cat: '감정과 대화' },
+  { jp: 'がんばってください。', reading: 'がんばってください。', kor: ['간밧테 쿠다사이', '감밧떼 쿠다사이', '간밧떼 구다사이'], meaning: '힘내세요.', cat: '감정과 대화' },
+  { jp: 'ゆっくりはなしてください。', reading: 'ゆっくりはなしてください。', kor: ['육쿠리 하나시테쿠다사이', '윳쿠리 하나시테 쿠다사이'], meaning: '천천히 말해 주세요.', cat: '감정과 대화' }
 ];
 
 // Gojūon chart: each cell = [hiragana, katakana, korean reading]
@@ -445,14 +591,30 @@ function wrongKeyOf(item) { return itemMode(item) + ' ' + keyOf(item); }
 function isKana(m) { return m === 'hiragana' || m === 'katakana'; }
 function answersFor(item) { return isKana(itemMode(item)) ? item.r : item.kor; }
 
+let wordCat = 'all';
+let sentCat = 'all';
 function getData() {
   switch (mode) {
     case 'hiragana': return HIRAGANA;
     case 'katakana': return KATAKANA;
-    case 'words': return WORDS;
-    case 'sentences': return SENTENCES;
+    case 'words': return wordCat === 'all' ? WORDS : WORDS.filter(w => w.cat === wordCat);
+    case 'sentences': return sentCat === 'all' ? SENTENCES : SENTENCES.filter(s => s.cat === sentCat);
     case 'review': return store.wrongKeys.map(k => ITEM_INDEX[k]).filter(Boolean);
   }
+}
+function refreshCatSel() {
+  const sel = document.getElementById('catSel');
+  if (mode !== 'words' && mode !== 'sentences') {
+    sel.style.display = 'none';
+    return;
+  }
+  const src = mode === 'words' ? WORDS : SENTENCES;
+  const cur = mode === 'words' ? wordCat : sentCat;
+  const cats = [...new Set(src.map(x => x.cat))];
+  sel.innerHTML = `<option value="all">전체 (${src.length}개)</option>` +
+    cats.map(c => `<option value="${c}">${c} (${src.filter(x => x.cat === c).length}개)</option>`).join('');
+  sel.value = cur;
+  sel.style.display = 'block';
 }
 
 function shuffleDeck() {
@@ -593,6 +755,9 @@ function updateStatsUI() {
     `누적 정답률 ${acc}%  ·  최고 연속 ${store.bestStreak}  ·  푼 문제 ${store.answered}`;
   const rc = document.getElementById('reviewCount');
   if (rc) rc.textContent = store.wrongKeys.length;
+  document.getElementById('hAcc').textContent = acc + '%';
+  document.getElementById('hStreak').textContent = store.bestStreak;
+  document.getElementById('hAnswered').textContent = store.answered;
 }
 
 // === 일본어 발음 시스템 ===
@@ -720,6 +885,7 @@ function applyMode(newMode) {
   streak = 0;
   document.getElementById('score').textContent = 0;
   updateStatsUI();
+  refreshCatSel();
   if (mode === 'review' && store.wrongKeys.length === 0) {
     deck = [];
     idx = 0;
@@ -729,6 +895,14 @@ function applyMode(newMode) {
   shuffleDeck();
   render();
 }
+document.getElementById('catSel').addEventListener('change', e => {
+  if (mode === 'words') wordCat = e.target.value;
+  else if (mode === 'sentences') sentCat = e.target.value;
+  score = 0;
+  document.getElementById('score').textContent = 0;
+  shuffleDeck();
+  render();
+});
 
 // === Events ===
 document.querySelectorAll('.tab').forEach(t => {
