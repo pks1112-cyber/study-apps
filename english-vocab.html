@@ -239,6 +239,11 @@
     background: #f1f5f9; color: #94a3b8; white-space: nowrap;
   }
   .best-badge.has { background: #ccfbf1; color: #0f766e; }
+  .level-desc {
+    font-size: 12.5px; color: #64748b; line-height: 1.5;
+    background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 10px;
+    padding: 8px 13px; margin: -6px 0 14px;
+  }
 
   /* ===== example sentences ===== */
   tr.wrow.has-ex td { border-bottom: none; padding-bottom: 4px; }
@@ -434,6 +439,7 @@
     <button class="secondary nav-btn" id="unitNext">▶</button>
     <span class="best-badge" id="unitBestBadge"></span>
   </div>
+  <div class="level-desc" id="levelDesc"></div>
   <div id="content"></div>
 </div>
 
@@ -762,6 +768,16 @@ document.getElementById('levelSel').addEventListener('change', e => {
   resetModeStates();
   renderAll();
 });
+const LEVEL_DESC = {
+  '초5': '🌱 생활 기초 어휘 — 하루·가족·학교·동네 등 일상에서 매일 쓰는 단어들',
+  '초6': '🌿 초등 마무리 어휘 — 여행·취미·감각 표현까지, 교육부 초등 권장 수준 완성',
+  '중1': '📗 중학 필수 시작 — 동작·마음 동사와 학교생활 어휘로 교과서 기초 다지기',
+  '중2': '📘 교과 핵심 어휘 — 환경·사회·과학 주제와 심화 동사로 서술형 대비',
+  '중3': '📙 고입·수능 기초 — 경제·기술·법 주제 + 시험 빈출 다의어 (matter, term...)',
+  '고1': '🎯 수능 기초~중핵 어휘 — 학술 동사·연결 부사 등 모의고사 독해 필수',
+  '고2': '🔥 수능 중상위 티어 어휘 — 학술·사회·과학 심화, 등급을 가르는 구간',
+  '고3': '👑 수능 최상위 마무리 — 고난도 어휘·도표 묘사 동사·최종 다의어 함정 정리'
+};
 function renderUnitBar() {
   const sel = document.getElementById('unitSel');
   sel.innerHTML = RAW[curLevel].map(([title], u) => {
@@ -774,8 +790,11 @@ function renderUnitBar() {
   badge.textContent = best !== undefined ? '최고 ' + best + '점' : '기록 없음';
   badge.className = 'best-badge' + (best !== undefined ? ' has' : '');
   // unit picker only matters for unit-scoped modes
-  document.getElementById('unitPicker').style.display =
-    (mode === 'review' || mode === 'stats' || mode === 'search') ? 'none' : 'flex';
+  const unitScoped = !(mode === 'review' || mode === 'stats' || mode === 'search');
+  document.getElementById('unitPicker').style.display = unitScoped ? 'flex' : 'none';
+  const desc = document.getElementById('levelDesc');
+  desc.textContent = LEVEL_DESC[curLevel] || '';
+  desc.style.display = unitScoped ? 'block' : 'none';
 }
 function gotoUnit(u) {
   stopSpeakAll();
