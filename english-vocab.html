@@ -240,6 +240,33 @@
   }
   .best-badge.has { background: #ccfbf1; color: #0f766e; }
 
+  /* ===== attendance calendar & time attack ===== */
+  .cal-head {
+    font-size: 15px; font-weight: 700; color: #4338ca; margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+  }
+  .goal-wrap { font-size: 12.5px; color: #64748b; font-weight: 400; }
+  .goal-wrap select {
+    padding: 4px 8px; border: 1px solid var(--line); border-radius: 8px;
+    font-family: inherit; font-size: 12.5px; outline: none; background: #fff;
+  }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 12px; }
+  .cal-dow { text-align: center; font-size: 11px; color: #94a3b8; padding: 4px 0; }
+  .cal-day {
+    text-align: center; padding: 8px 0; border-radius: 10px; font-size: 13px;
+    color: #94a3b8; background: #f8fafc;
+  }
+  .cal-day.some { background: #e0e9ff; color: #3b5bdb; font-weight: 700; }
+  .cal-day.done { background: #fef3c7; }
+  .cal-day.today { outline: 2px solid #818cf8; }
+  .goal-line { font-size: 13px; color: #475569; margin-bottom: 22px; }
+  .goal-line b { color: #4f46e5; }
+  .goal-bar { height: 8px; background: #eef1f8; border-radius: 999px; margin-top: 6px; overflow: hidden; }
+  .goal-fill { height: 100%; background: linear-gradient(90deg, #4f46e5, #7c3aed); border-radius: 999px; transition: width 0.3s; }
+  .ta-bar { display: flex; justify-content: space-between; align-items: center; font-size: 15px; color: #475569; }
+  .ta-time b { color: #d97706; font-size: 22px; }
+  .ta-score b { color: #4f46e5; font-size: 22px; }
+
   /* ===== search ===== */
   .search-box {
     width: 100%; padding: 13px 16px; font-size: 16px;
@@ -303,6 +330,7 @@
       <span class="hstat">⭐ 외운 단어 <b id="hMastered">0</b></span>
       <span class="hstat">🎯 정답률 <b id="hAcc">0%</b></span>
       <span class="hstat">🔥 최고 연속 <b id="hStreak">0</b></span>
+      <span class="hstat">📅 오늘 <b id="hToday">0/20</b></span>
     </div>
   </div>
   <div class="hero-art">
@@ -339,6 +367,7 @@
     <div class="tab active" data-mode="table">📖 단어표</div>
     <div class="tab" data-mode="cards">🃏 카드</div>
     <div class="tab" data-mode="test">✏️ 테스트</div>
+    <div class="tab" data-mode="srs">📅 오늘 <span class="cnt" id="srsCnt">0</span></div>
     <div class="tab" data-mode="wrong">❌ 오답 <span class="cnt" id="wrongCnt">0</span></div>
     <div class="tab" data-mode="search">🔍 검색</div>
     <div class="tab" data-mode="stats">📊 기록</div>
@@ -388,10 +417,30 @@ const store = {
   answered: sv.answered || 0,
   correct: sv.correct || 0,
   streak: sv.streak || 0,
-  bestStreak: sv.bestStreak || 0
+  bestStreak: sv.bestStreak || 0,
+  srs: sv.srs || {},          // key -> { step, due: 'YYYY-MM-DD' }
+  daily: sv.daily || {},      // 'YYYY-MM-DD' -> answered count
+  goal: sv.goal || 20,        // daily goal (problems per day)
+  taBest: sv.taBest || {}     // level -> time attack best score
 };
 function saveStore() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {}
+}
+
+// ===== Date helpers & spaced repetition =====
+const SRS_STEPS = [1, 3, 7, 14, 30];   // days until next review
+function dateStr(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function todayStr() { return dateStr(new Date()); }
+function addDaysStr(n) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return dateStr(d);
+}
+function dueKeys() {
+  const td = todayStr();
+  return Object.keys(store.srs).filter(k => store.srs[k].due <= td && findByKey(k));
 }
 
 // ===== State =====
@@ -442,6 +491,19 @@ function bumpStat(key, ok) {
     store.streak = 0;
     if (!store.wrongKeys.includes(key)) store.wrongKeys.push(key);
   }
+  // daily activity for the attendance calendar
+  const td = todayStr();
+  store.daily[td] = (store.daily[td] || 0) + 1;
+  // spaced repetition: correct pushes the word out (1→3→7→14→30d), wrong resets to today
+  const cur = store.srs[key] || { step: -1, due: td };
+  if (ok) {
+    cur.step = Math.min(cur.step + 1, SRS_STEPS.length - 1);
+    cur.due = addDaysStr(SRS_STEPS[cur.step]);
+  } else {
+    cur.step = -1;
+    cur.due = td;
+  }
+  store.srs[key] = cur;
   saveStore();
   updateWrongCnt();
 }
@@ -464,6 +526,7 @@ function posClass(p) {
 function posTag(p) { return `<span class="pos ${posClass(p)}">${p}</span>`; }
 function updateWrongCnt() {
   document.getElementById('wrongCnt').textContent = store.wrongKeys.length;
+  document.getElementById('srsCnt').textContent = dueKeys().length;
   updateHeroStats();
 }
 function updateHeroStats() {
@@ -473,6 +536,7 @@ function updateHeroStats() {
   document.getElementById('hMastered').textContent = mastered;
   document.getElementById('hAcc').textContent = acc + '%';
   document.getElementById('hStreak').textContent = store.bestStreak;
+  document.getElementById('hToday').textContent = (store.daily[todayStr()] || 0) + '/' + store.goal;
 }
 
 // ===== Pronunciation system =====
@@ -653,7 +717,7 @@ function renderUnitBar() {
   badge.className = 'best-badge' + (best !== undefined ? ' has' : '');
   // unit picker only matters for unit-scoped modes
   document.getElementById('unitPicker').style.display =
-    (mode === 'wrong' || mode === 'stats' || mode === 'search') ? 'none' : 'flex';
+    (mode === 'wrong' || mode === 'stats' || mode === 'search' || mode === 'srs') ? 'none' : 'flex';
 }
 function gotoUnit(u) {
   stopSpeakAll();
@@ -665,8 +729,9 @@ document.getElementById('unitSel').addEventListener('change', e => gotoUnit(pars
 document.getElementById('unitPrev').addEventListener('click', () => gotoUnit(curUnit - 1));
 document.getElementById('unitNext').addEventListener('click', () => gotoUnit(curUnit + 1));
 function resetModeStates() {
+  stopTimeAttack();
   testType = null; testQs = []; testOver = false;
-  cardQueue = []; cardTotal = 0; wrongQuizOn = false;
+  cardQueue = []; cardTotal = 0; wrongQuizOn = false; srsQuizOn = false;
   if (mode === 'cards') startCards();
 }
 
@@ -801,15 +866,24 @@ function mcOptions(correct) {
 function renderTest() {
   const el = document.getElementById('content');
   if (testType === null) {
+    const taBest = store.taBest[curLevel];
     el.innerHTML = `<div class="center" style="padding:26px 0">
       <div class="unit-title" style="text-align:center">${curLevel} · ${curUnit + 1}단원 테스트 (10문제)</div>
       <p style="color:#64748b">유형을 골라주세요</p>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
         <button id="mcBtn">영어 → 뜻 (4지선다)</button>
         <button id="typeBtn" class="green">뜻 → 영어 (직접 입력)</button>
+        <button id="dictBtn" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)">🎧 듣고 쓰기</button>
+      </div>
+      <div style="margin-top:22px;padding-top:18px;border-top:1px solid #f1f5f9">
+        <p style="color:#64748b;font-size:13px;margin:0 0 10px">레벨 전체 도전</p>
+        <button id="taBtn" style="background:linear-gradient(135deg,#f59e0b,#d97706)">⚡ 타임어택 60초 — ${curLevel} 전체</button>
+        <div style="font-size:12px;color:#94a3b8;margin-top:8px">최고 기록: ${taBest !== undefined ? taBest + '점' : '아직 없음'}</div>
       </div></div>`;
     el.querySelector('#mcBtn').addEventListener('click', () => startTest('mc'));
     el.querySelector('#typeBtn').addEventListener('click', () => startTest('type'));
+    el.querySelector('#dictBtn').addEventListener('click', () => startTest('dict'));
+    el.querySelector('#taBtn').addEventListener('click', startTimeAttack);
     return;
   }
   if (testOver) {
@@ -860,6 +934,33 @@ function renderTest() {
       }, ok ? 800 : 1500);
     }));
     speak(q.w);
+  } else if (testType === 'dict') {
+    el.innerHTML = head + `<div class="center" style="margin:20px 0 8px">
+      <button id="replay" style="font-size:22px;padding:16px 28px;background:linear-gradient(135deg,#0ea5e9,#0284c7)">🔊 다시 듣기</button>
+      <div class="q-ipa" style="margin:12px 0 0">발음을 잘 듣고 영어 철자를 입력하세요</div></div>
+      <input class="answer" id="ans" placeholder="들은 단어를 입력하고 Enter" autocomplete="off" spellcheck="false">
+      <div class="feedback" id="fb">&nbsp;</div>`;
+    const inp = el.querySelector('#ans');
+    inp.focus();
+    el.querySelector('#replay').addEventListener('click', () => speak(q.w));
+    speak(q.w);
+    inp.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' || testLocked) return;
+      const v = inp.value.trim().toLowerCase();
+      if (!v) return;
+      testLocked = true;
+      const ok = v === q.w.toLowerCase();
+      const fb = el.querySelector('#fb');
+      fb.textContent = (ok ? '✓ 정답! ' : '✗ 정답: ') + q.w + ' — ' + q.m;
+      fb.className = 'feedback ' + (ok ? 'ok' : 'no');
+      if (ok) testScore++;
+      bumpStat(q.key, ok);
+      setTimeout(() => {
+        testIdx++; testLocked = false;
+        if (testIdx >= testQs.length) testOver = true;
+        renderTest();
+      }, ok ? 1000 : 2000);
+    });
   } else {
     el.innerHTML = head + `<div class="q-meaning">${esc(q.m)} ${posTag(q.p)}</div>
       <input class="answer" id="ans" placeholder="영어 단어를 입력하고 Enter" autocomplete="off" spellcheck="false">
@@ -885,6 +986,65 @@ function renderTest() {
       }, ok ? 800 : 1600);
     });
   }
+}
+
+// ===== Time attack (60s, whole level) =====
+let taOn = false, taScore = 0, taTimeLeft = 0, taTimer = null, taLocked = false;
+function stopTimeAttack() {
+  if (taTimer) { clearInterval(taTimer); taTimer = null; }
+  taOn = false;
+}
+function startTimeAttack() {
+  stopTimeAttack();
+  taOn = true; taScore = 0; taTimeLeft = 60; taLocked = false;
+  taTimer = setInterval(() => {
+    taTimeLeft--;
+    const t = document.getElementById('taTimer');
+    if (t) t.textContent = taTimeLeft;
+    if (taTimeLeft <= 0) endTimeAttack();
+  }, 1000);
+  renderTaQuestion();
+}
+function endTimeAttack() {
+  stopTimeAttack();
+  const prev = store.taBest[curLevel];
+  const isNew = prev === undefined || taScore > prev;
+  if (isNew) { store.taBest[curLevel] = taScore; saveStore(); }
+  const el = document.getElementById('content');
+  el.innerHTML = `<div class="center" style="padding:30px 0">
+    <div style="font-size:56px">⚡</div>
+    <div style="font-size:28px;font-weight:bold;margin:10px 0">${taScore}점</div>
+    <div style="color:#64748b">${curLevel} 타임어택 ${isNew ? '· 🏆 최고 기록 갱신!' : '· 최고 기록 ' + store.taBest[curLevel] + '점'}</div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap">
+      <button id="taRetry" style="background:linear-gradient(135deg,#f59e0b,#d97706)">⚡ 다시 도전</button>
+      <button class="secondary" id="taExit">테스트 메뉴로</button>
+    </div></div>`;
+  el.querySelector('#taRetry').addEventListener('click', startTimeAttack);
+  el.querySelector('#taExit').addEventListener('click', () => { testType = null; renderTest(); });
+}
+function renderTaQuestion() {
+  if (!taOn) return;
+  const pool = levelWords(curLevel);
+  const q = pool[Math.floor(Math.random() * pool.length)];
+  const opts = mcOptions(q);
+  const el = document.getElementById('content');
+  let html = `<div class="ta-bar"><span class="ta-time">⏱ <b id="taTimer">${taTimeLeft}</b>초</span><span class="ta-score">점수 <b>${taScore}</b></span></div>
+    <div class="q-word" style="margin-top:6px">${esc(q.w)}</div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
+  opts.forEach(o => { html += `<div class="opt" data-m="${esc(o)}">${esc(o)}</div>`; });
+  html += '</div><div class="center"><button class="secondary" id="taStop">그만하기</button></div>';
+  el.innerHTML = html;
+  el.querySelector('#taStop').addEventListener('click', endTimeAttack);
+  taLocked = false;
+  el.querySelectorAll('.opt').forEach(op => op.addEventListener('click', () => {
+    if (taLocked || !taOn) return;
+    taLocked = true;
+    const ok = op.dataset.m === q.m;
+    op.classList.add(ok ? 'right' : 'wrong');
+    if (!ok) el.querySelectorAll('.opt').forEach(o2 => { if (o2.dataset.m === q.m) o2.classList.add('right'); });
+    if (ok) taScore++;
+    bumpStat(q.key, ok);
+    setTimeout(() => { if (taOn) renderTaQuestion(); }, ok ? 250 : 750);
+  }));
 }
 
 // ===== Mode: wrong review =====
@@ -936,6 +1096,68 @@ function renderWrong() {
       if (store.wrongKeys.length === 0) wrongQuizOn = false;
       renderWrong();
     }, ok ? 800 : 1500);
+  }));
+  speak(q.w);
+}
+
+// ===== Mode: SRS (오늘의 복습) =====
+let srsQuizOn = false, srsLocked = false;
+function renderSrs() {
+  const el = document.getElementById('content');
+  const due = dueKeys();
+  if (due.length === 0) {
+    el.innerHTML = `<div class="center" style="padding:40px 0">
+      <div style="font-size:60px">🌞</div>
+      <div style="font-size:20px;font-weight:bold;margin:12px 0">오늘 복습할 단어가 없어요!</div>
+      <div style="color:#64748b;line-height:1.8;font-size:14px">테스트·받아쓰기에서 푼 단어가 자동으로 복습 일정에 등록돼요.<br>
+      맞힐 때마다 1일 → 3일 → 7일 → 14일 → 30일 간격으로 다시 나와요.<br>
+      틀리면 다시 처음(내일)부터!</div></div>`;
+    return;
+  }
+  if (!srsQuizOn) {
+    const preview = due.slice(0, 30).map(findByKey).filter(Boolean);
+    let html = `<div class="unit-title">📅 오늘 복습할 단어 ${due.length}개</div>
+      <div style="color:#64748b;font-size:13px;margin-bottom:10px">잊어버릴 때가 된 단어들이에요. 맞히면 더 긴 간격(1→3→7→14→30일)으로 미뤄지고, 틀리면 내일 다시 나와요.</div>
+      <div class="wrong-list">`;
+    for (const it of preview) {
+      html += `<div class="wrong-item"><span><span class="lv-tag">${it.level}</span><b class="say-w" data-w="${esc(it.w)}">${esc(it.w)}</b> <span class="ipa">${esc(it.ipa)}</span></span><span>${esc(it.m)}</span></div>`;
+    }
+    if (due.length > 30) html += `<div class="search-count" style="padding:8px 10px">…외 ${due.length - 30}개</div>`;
+    html += `</div><div class="center" style="margin-top:12px"><button id="startSrs">복습 시작</button></div>`;
+    el.innerHTML = html;
+    el.querySelectorAll('.say-w').forEach(b => b.addEventListener('click', () => speak(b.dataset.w)));
+    el.querySelector('#startSrs').addEventListener('click', () => { srsQuizOn = true; renderSrs(); });
+    return;
+  }
+  // quiz one random due word (4-choice)
+  const key = due[Math.floor(Math.random() * due.length)];
+  const q = findByKey(key);
+  if (!q) { srsQuizOn = false; renderSrs(); return; }
+  const pool = allWords().filter(x => x.w !== q.w && x.m !== q.m);
+  const opts = shuffle([q.m, ...shuffle(pool.slice()).slice(0, 3).map(x => x.m)]);
+  let html = `<div class="progress-line">남은 복습 ${due.length}개</div>
+    <div class="q-word">${esc(q.w)} <button class="secondary" style="font-size:13px;padding:6px 10px;vertical-align:middle" id="sayQ">🔊</button></div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
+  opts.forEach(o => { html += `<div class="opt" data-m="${esc(o)}">${esc(o)}</div>`; });
+  html += '</div><div class="feedback" id="fb">&nbsp;</div><div class="center"><button class="secondary" id="stopSrs">그만하기</button></div>';
+  el.innerHTML = html;
+  el.querySelector('#sayQ').addEventListener('click', () => speak(q.w));
+  el.querySelector('#stopSrs').addEventListener('click', () => { srsQuizOn = false; renderSrs(); });
+  srsLocked = false;
+  el.querySelectorAll('.opt').forEach(op => op.addEventListener('click', () => {
+    if (srsLocked) return;
+    srsLocked = true;
+    const ok = op.dataset.m === q.m;
+    op.classList.add(ok ? 'right' : 'wrong');
+    if (!ok) el.querySelectorAll('.opt').forEach(o2 => { if (o2.dataset.m === q.m) o2.classList.add('right'); });
+    const fb = el.querySelector('#fb');
+    fb.textContent = ok ? '✓ 정답! 다음 복습 간격으로 미뤄져요' : '✗ 정답: ' + q.m + ' — 내일 다시 나와요';
+    fb.className = 'feedback ' + (ok ? 'ok' : 'no');
+    bumpStat(q.key, ok);
+    speak(q.w);
+    setTimeout(() => {
+      if (dueKeys().length === 0) srsQuizOn = false;
+      renderSrs();
+    }, ok ? 850 : 1600);
   }));
   speak(q.w);
 }
@@ -1017,10 +1239,38 @@ function renderSearchResults() {
 }
 
 // ===== Mode: stats =====
+function buildCalendar() {
+  const now = new Date();
+  const y = now.getFullYear(), mo = now.getMonth();
+  const firstDow = new Date(y, mo, 1).getDay();
+  const daysIn = new Date(y, mo + 1, 0).getDate();
+  const td = todayStr();
+  let html = `<div class="cal-head">📅 ${y}년 ${mo + 1}월 출석 달력
+      <span class="goal-wrap">일일 목표
+        <select id="goalSel">${[10, 20, 30, 50, 100].map(g => `<option value="${g}" ${store.goal === g ? 'selected' : ''}>${g}문제</option>`).join('')}</select>
+      </span></div>
+    <div class="cal-grid">`;
+  for (const d of ['일', '월', '화', '수', '목', '금', '토']) html += `<div class="cal-dow">${d}</div>`;
+  for (let i = 0; i < firstDow; i++) html += '<div></div>';
+  for (let day = 1; day <= daysIn; day++) {
+    const ds = y + '-' + String(mo + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    const cnt = store.daily[ds] || 0;
+    const cls = (cnt >= store.goal ? 'done' : cnt > 0 ? 'some' : '') + (ds === td ? ' today' : '');
+    html += `<div class="cal-day ${cls}" title="${cnt}문제">${cnt >= store.goal ? '🔥' : day}</div>`;
+  }
+  html += '</div>';
+  const tCnt = store.daily[td] || 0;
+  const pct = Math.min(100, Math.round(tCnt / store.goal * 100));
+  html += `<div class="goal-line">오늘 <b>${tCnt} / ${store.goal}</b>문제 ${tCnt >= store.goal ? '— 목표 달성! 🔥' : ''}
+    <div class="goal-bar"><div class="goal-fill" style="width:${pct}%"></div></div></div>`;
+  return html;
+}
+
 function renderStats() {
   const el = document.getElementById('content');
   const maxUnits = Math.max(...LEVEL_NAMES.map(lv => RAW[lv].length));
-  let html = `<div class="unit-title">학습 기록</div><div class="stats-wrap">
+  let html = buildCalendar();
+  html += `<div class="unit-title">학습 기록</div><div class="stats-wrap">
     <table class="stats"><tr><th>레벨</th>`;
   for (let u = 0; u < maxUnits; u++) html += `<th>${u + 1}단원</th>`;
   html += '<th>⭐ 외운 단어</th></tr>';
@@ -1043,11 +1293,18 @@ function renderStats() {
     </div>
     <div class="center" style="margin-top:14px"><button class="red" id="resetBtn">기록 전체 초기화</button></div>`;
   el.innerHTML = html;
+  el.querySelector('#goalSel').addEventListener('change', e => {
+    store.goal = parseInt(e.target.value);
+    saveStore();
+    updateHeroStats();
+    renderStats();
+  });
   el.querySelector('#resetBtn').addEventListener('click', () => {
     if (!confirm('정말 모든 학습 기록을 지울까요?')) return;
     localStorage.removeItem(STORE_KEY);
     store.wordStats = {}; store.unitBest = {}; store.wrongKeys = [];
     store.answered = 0; store.correct = 0; store.streak = 0; store.bestStreak = 0;
+    store.srs = {}; store.daily = {}; store.taBest = {};
     updateWrongCnt();
     renderAll();
   });
@@ -1058,6 +1315,7 @@ function renderContent() {
   if (mode === 'table') renderTable();
   else if (mode === 'cards') renderCards();
   else if (mode === 'test') renderTest();
+  else if (mode === 'srs') renderSrs();
   else if (mode === 'wrong') renderWrong();
   else if (mode === 'search') renderSearch();
   else renderStats();
@@ -1073,10 +1331,12 @@ document.querySelectorAll('#modeTabs .tab').forEach(t => {
     stopSpeakAll();
     document.querySelectorAll('#modeTabs .tab').forEach(x => x.classList.remove('active'));
     t.classList.add('active');
+    stopTimeAttack();
     mode = t.dataset.mode;
     if (mode === 'cards') startCards();
     if (mode === 'test') { testType = null; testOver = false; }
     if (mode === 'wrong') wrongQuizOn = false;
+    if (mode === 'srs') srsQuizOn = false;
     renderUnitBar();
     renderContent();
   });
