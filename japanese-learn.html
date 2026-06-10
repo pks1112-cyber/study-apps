@@ -86,13 +86,13 @@
   }
   .chart-card { width: 700px; }
 
-  #catSel {
+  #catSel, #studyCatSel, #cardCatSel {
     width: 100%; padding: 10px 12px; margin-bottom: 14px;
     border: 1px solid var(--line); border-radius: 12px;
     font-family: inherit; font-size: 14px; font-weight: 600; color: var(--ink);
     background: #fdf5f8; outline: none; cursor: pointer;
   }
-  #catSel:focus { border-color: #eda4c4; }
+  #catSel:focus, #studyCatSel:focus, #cardCatSel:focus { border-color: #eda4c4; }
   .sub-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
   .subseg {
     flex: 1; background: #f7e9ef; color: #6c4757; box-shadow: none;
@@ -172,6 +172,49 @@
   .kana-cell.empty:hover { transform: none; box-shadow: none; }
   .chart-hint { margin-top: 16px; font-size: 12.5px; color: #b99aa9; }
 
+  /* ===== study list (단어·문장 외우기) ===== */
+  .hide-toggles { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; }
+  .chip {
+    background: #f7e9ef; color: #6c4757; box-shadow: none;
+    padding: 8px 16px; border-radius: 999px; font-size: 12.5px;
+  }
+  .chip:hover { box-shadow: none; transform: none; background: #f3dde6; }
+  .chip.on { background: linear-gradient(135deg, #d63384, #b02a6e); color: #fff; }
+  .chip.on:hover { background: linear-gradient(135deg, #d63384, #b02a6e); }
+  .study-list { display: flex; flex-direction: column; gap: 8px; max-height: 540px; overflow-y: auto; padding-right: 4px; }
+  .sl-row {
+    display: flex; align-items: center; gap: 12px; text-align: left;
+    background: #fdf5f8; border: 1px solid var(--line); border-radius: 12px;
+    padding: 10px 14px; cursor: pointer; transition: background 0.12s;
+  }
+  .sl-row:hover { background: #fbeaf2; }
+  .sl-main { flex: 1; min-width: 0; }
+  .sl-jp { font-size: 18px; font-weight: 700; color: #32202b; line-height: 1.35; word-break: keep-all; }
+  .sl-read { font-size: 13px; color: var(--primary); font-weight: 600; margin-top: 2px; }
+  .sl-read .kana { color: #c193a9; font-weight: 500; }
+  .sl-mean { font-size: 13px; color: var(--muted); margin-top: 1px; }
+  .hidden-cell { filter: blur(5px); cursor: pointer; }
+  .sl-speak { background: none; border: none; box-shadow: none; font-size: 18px; padding: 6px 8px; flex-shrink: 0; }
+  .sl-speak:hover { box-shadow: none; transform: none; background: #f3dde6; border-radius: 10px; }
+
+  /* ===== flip cards (카드) ===== */
+  .flip-card {
+    background: linear-gradient(135deg, #fdf0f6, #fde7f0);
+    border: 2px solid #f3cfdf; border-radius: 18px;
+    min-height: 210px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 10px;
+    padding: 26px 20px; cursor: pointer; user-select: none; margin-bottom: 14px;
+    transition: background 0.15s;
+  }
+  .flip-card.back { background: linear-gradient(135deg, #d63384, #a8326b); border-color: transparent; }
+  .fc-cat { font-size: 12px; font-weight: 700; color: #c193a9; }
+  .flip-card.back .fc-cat { color: #ffd6e0; }
+  .fc-main { font-size: 36px; font-weight: 800; color: #32202b; line-height: 1.35; word-break: keep-all; }
+  .fc-main.small { font-size: 23px; }
+  .flip-card.back .fc-main { color: #fff; }
+  .fc-sub { font-size: 14px; color: #b99aa9; line-height: 1.6; }
+  .flip-card.back .fc-sub { color: #ffe3ec; font-size: 15px; }
+
   /* ===== mobile ===== */
   @media (max-width: 600px) {
     body { padding: 14px 10px 30px; }
@@ -197,6 +240,10 @@
     .kana-cell .big { font-size: 22px; }
     .kana-cell .rom { font-size: 10px; }
     .chart-section-title { font-size: 13px; }
+    .sl-jp { font-size: 16px; }
+    .flip-card { min-height: 180px; }
+    .fc-main { font-size: 27px; }
+    .fc-main.small { font-size: 19px; }
     .footer { flex-wrap: wrap; gap: 4px; justify-content: center; }
     .info { font-size: 11.5px; }
   }
@@ -238,25 +285,61 @@
   </div>
 </div>
 <div class="tabs" id="modeTabs">
-  <div class="tab active" data-mode="chart"><span class="ti">📖</span><span class="tl">표 외우기</span></div>
-  <div class="tab" data-mode="kana"><span class="ti">✏️</span><span class="tl">가나 테스트</span></div>
-  <div class="tab" data-mode="words"><span class="ti">📝</span><span class="tl">단어</span></div>
-  <div class="tab" data-mode="sentences"><span class="ti">💬</span><span class="tl">문장</span></div>
+  <div class="tab active" data-mode="study"><span class="ti">📖</span><span class="tl">외우기</span></div>
+  <div class="tab" data-mode="cards"><span class="ti">🃏</span><span class="tl">카드</span></div>
+  <div class="tab" data-mode="test"><span class="ti">✏️</span><span class="tl">테스트</span></div>
   <div class="tab" data-mode="review"><span class="ti">🔄</span><span class="tl">복습 <span id="reviewCount">0</span></span></div>
 </div>
 
-<!-- Study chart view -->
-<div class="card chart-card" id="chartView">
-  <div class="chart-toggle">
+<!-- Study view: 가나표 / 단어 목록 / 문장 목록 -->
+<div class="card chart-card" id="studyView">
+  <div class="sub-toggle" id="studyToggle">
+    <button class="subseg on" data-c="kana">あ 가나표</button>
+    <button class="subseg" data-c="words">📝 단어</button>
+    <button class="subseg" data-c="sentences">💬 문장</button>
+  </div>
+  <div class="chart-toggle" id="chartScriptToggle">
     <button id="chartHira" class="active">히라가나</button>
     <button id="chartKata">가타카나</button>
+  </div>
+  <select id="studyCatSel" style="display:none"></select>
+  <div class="hide-toggles" id="hideToggles" style="display:none">
+    <button class="chip" id="hideReadBtn">🙈 발음 가리기</button>
+    <button class="chip" id="hideMeanBtn">🙈 뜻 가리기</button>
   </div>
   <div id="chartBody"></div>
   <div class="chart-hint" id="voiceStatus">🔊 글자를 클릭하면 일본어 발음이 들려요</div>
 </div>
 
+<!-- Flash cards view -->
+<div class="card" id="cardsView" style="display:none;">
+  <div class="sub-toggle" id="cardToggle">
+    <button class="subseg on" data-c="words">📝 단어</button>
+    <button class="subseg" data-c="sentences">💬 문장</button>
+  </div>
+  <select id="cardCatSel"></select>
+  <div class="flip-card" id="flipCard">
+    <div class="fc-cat" id="fcCat">&nbsp;</div>
+    <div class="fc-main" id="fcMain">&nbsp;</div>
+    <div class="fc-sub" id="fcSub">&nbsp;</div>
+  </div>
+  <div class="actions">
+    <button id="cardPrev" class="secondary">◀ 이전</button>
+    <button id="cardFlipBtn">뒤집기</button>
+    <button id="cardSpeak" class="secondary">🔊 듣기</button>
+    <button id="cardNext" class="secondary">다음 ▶</button>
+    <button id="cardShuffle" class="secondary">🔀 섞기</button>
+  </div>
+  <div class="footer" style="justify-content:center;">진행:&nbsp;<span id="cardProgress">1 / —</span></div>
+</div>
+
 <!-- Quiz view -->
 <div class="card" id="quizCard" style="display:none;">
+  <div class="sub-toggle" id="testToggle">
+    <button class="subseg on" data-c="kana">あ 가나</button>
+    <button class="subseg" data-c="words">📝 단어</button>
+    <button class="subseg" data-c="sentences">💬 문장</button>
+  </div>
   <div class="sub-toggle" id="kanaToggle" style="display:none">
     <button class="subseg on" data-k="hiragana">あ 히라가나</button>
     <button class="subseg" data-k="katakana">ア 가타카나</button>
@@ -578,8 +661,17 @@ const store = {
 };
 
 // === State ===
-let mode = 'chart';
+let mode = 'study';            // study | cards | test | review
 let chartScript = 'hira';
+let studyContent = 'kana';     // 외우기 탭: kana | words | sentences
+let cardContent = 'words';     // 카드 탭: words | sentences
+let cardCat = 'all';
+let cardDeck = [];
+let cardIdx = 0;
+let cardFlipped = false;
+let hideRead = false;
+let hideMean = false;
+let testContent = 'kana';      // 테스트 탭: kana | words | sentences
 let streak = 0;
 let deck = [];
 let idx = 0;
@@ -596,7 +688,7 @@ indexItems(KATAKANA, 'katakana');
 indexItems(WORDS, 'words');
 indexItems(SENTENCES, 'sentences');
 
-function itemMode(item) { return item.__mode || (mode === 'kana' ? kanaSub : mode); }
+function itemMode(item) { return item.__mode || (testContent === 'kana' ? kanaSub : testContent); }
 function keyOf(item) { return item.k || item.jp; }
 function wrongKeyOf(item) { return itemMode(item) + ' ' + keyOf(item); }
 function isKana(m) { return m === 'hiragana' || m === 'katakana'; }
@@ -606,28 +698,38 @@ let wordCat = 'all';
 let sentCat = 'all';
 let kanaSub = 'hiragana';   // 가나 테스트 탭 안의 히라/가타 선택
 function getData() {
-  switch (mode) {
+  if (mode === 'review') return store.wrongKeys.map(k => ITEM_INDEX[k]).filter(Boolean);
+  switch (testContent) {
     case 'kana': return kanaSub === 'hiragana' ? HIRAGANA : KATAKANA;
     case 'words': return wordCat === 'all' ? WORDS : WORDS.filter(w => w.cat === wordCat);
     case 'sentences': return sentCat === 'all' ? SENTENCES : SENTENCES.filter(s => s.cat === sentCat);
-    case 'review': return store.wrongKeys.map(k => ITEM_INDEX[k]).filter(Boolean);
   }
 }
+function catOptions(src) {
+  const cats = [...new Set(src.map(x => x.cat))];
+  return `<option value="all">전체 (${src.length}개)</option>` +
+    cats.map(c => `<option value="${c}">${c} (${src.filter(x => x.cat === c).length}개)</option>`).join('');
+}
 function refreshCatSel() {
+  const tt = document.getElementById('testToggle');
   const kt = document.getElementById('kanaToggle');
-  kt.style.display = mode === 'kana' ? 'flex' : 'none';
-  kt.querySelectorAll('.subseg').forEach(b => b.classList.toggle('on', b.dataset.k === kanaSub));
   const sel = document.getElementById('catSel');
-  if (mode !== 'words' && mode !== 'sentences') {
+  if (mode === 'review') {
+    tt.style.display = 'none';
+    kt.style.display = 'none';
     sel.style.display = 'none';
     return;
   }
-  const src = mode === 'words' ? WORDS : SENTENCES;
-  const cur = mode === 'words' ? wordCat : sentCat;
-  const cats = [...new Set(src.map(x => x.cat))];
-  sel.innerHTML = `<option value="all">전체 (${src.length}개)</option>` +
-    cats.map(c => `<option value="${c}">${c} (${src.filter(x => x.cat === c).length}개)</option>`).join('');
-  sel.value = cur;
+  tt.style.display = 'flex';
+  tt.querySelectorAll('.subseg').forEach(b => b.classList.toggle('on', b.dataset.c === testContent));
+  kt.style.display = testContent === 'kana' ? 'flex' : 'none';
+  kt.querySelectorAll('.subseg').forEach(b => b.classList.toggle('on', b.dataset.k === kanaSub));
+  if (testContent === 'kana') {
+    sel.style.display = 'none';
+    return;
+  }
+  sel.innerHTML = catOptions(testContent === 'words' ? WORDS : SENTENCES);
+  sel.value = testContent === 'words' ? wordCat : sentCat;
   sel.style.display = 'block';
 }
 
@@ -884,15 +986,119 @@ function renderChart() {
   document.getElementById('chartKata').classList.toggle('active', chartScript === 'kata');
 }
 
+// === Study view (외우기): 가나표 / 단어 목록 / 문장 목록 ===
+function studyItems() {
+  const src = studyContent === 'words' ? WORDS : SENTENCES;
+  const cur = studyContent === 'words' ? wordCat : sentCat;
+  return cur === 'all' ? src : src.filter(x => x.cat === cur);
+}
+function renderStudy() {
+  document.querySelectorAll('#studyToggle .subseg').forEach(b => b.classList.toggle('on', b.dataset.c === studyContent));
+  const isKanaTab = studyContent === 'kana';
+  document.getElementById('chartScriptToggle').style.display = isKanaTab ? 'flex' : 'none';
+  document.getElementById('hideToggles').style.display = isKanaTab ? 'none' : 'flex';
+  const sel = document.getElementById('studyCatSel');
+  if (isKanaTab) {
+    sel.style.display = 'none';
+    document.getElementById('voiceStatus').textContent = '🔊 글자를 클릭하면 일본어 발음이 들려요';
+    renderChart();
+    return;
+  }
+  sel.innerHTML = catOptions(studyContent === 'words' ? WORDS : SENTENCES);
+  sel.value = studyContent === 'words' ? wordCat : sentCat;
+  sel.style.display = 'block';
+  document.getElementById('voiceStatus').textContent = '🔊 줄을 누르면 발음이 들려요 · 가린 부분은 눌러서 확인';
+  renderStudyList();
+}
+function renderStudyList() {
+  const items = studyItems();
+  const body = document.getElementById('chartBody');
+  body.innerHTML = '<div class="study-list">' + items.map((it, i) => {
+    const kana = it.reading && it.reading !== it.jp ? `<span class="kana">${it.reading}</span> · ` : '';
+    return `<div class="sl-row" data-i="${i}">` +
+      `<div class="sl-main">` +
+      `<div class="sl-jp">${it.jp}</div>` +
+      `<div class="sl-read${hideRead ? ' hidden-cell' : ''}">${kana}${it.kor[0]}</div>` +
+      `<div class="sl-mean${hideMean ? ' hidden-cell' : ''}">${it.meaning}</div>` +
+      `</div><button class="sl-speak">🔊</button></div>`;
+  }).join('') + '</div>';
+  body.querySelectorAll('.sl-row').forEach(row => {
+    const it = items[+row.dataset.i];
+    row.addEventListener('click', () => speak(it.reading || it.jp));
+    row.querySelectorAll('.hidden-cell').forEach(cell => cell.addEventListener('click', e => {
+      e.stopPropagation();   // 가린 칸을 살짝 볼 때는 발음 없이 보이기만
+      cell.classList.remove('hidden-cell');
+    }));
+  });
+}
+
+// === Flash cards (카드) ===
+function shuffleCards() {
+  const src = cardContent === 'words' ? WORDS : SENTENCES;
+  cardDeck = (cardCat === 'all' ? src : src.filter(x => x.cat === cardCat)).slice();
+  for (let i = cardDeck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cardDeck[i], cardDeck[j]] = [cardDeck[j], cardDeck[i]];
+  }
+  cardIdx = 0;
+  cardFlipped = false;
+}
+function renderCardsView() {
+  document.querySelectorAll('#cardToggle .subseg').forEach(b => b.classList.toggle('on', b.dataset.c === cardContent));
+  const sel = document.getElementById('cardCatSel');
+  sel.innerHTML = catOptions(cardContent === 'words' ? WORDS : SENTENCES);
+  sel.value = cardCat;
+  renderCard();
+}
+function renderCard() {
+  const it = cardDeck[cardIdx];
+  if (!it) return;
+  const card = document.getElementById('flipCard');
+  const main = document.getElementById('fcMain');
+  document.getElementById('fcCat').textContent = it.cat;
+  main.className = 'fc-main' + (cardContent === 'sentences' ? ' small' : '');
+  if (cardFlipped) {
+    card.classList.add('back');
+    main.textContent = it.kor[0];
+    const kana = it.reading && it.reading !== it.jp ? `【${it.reading}】 ` : '';
+    document.getElementById('fcSub').textContent = kana + it.meaning;
+  } else {
+    card.classList.remove('back');
+    main.textContent = it.jp;
+    document.getElementById('fcSub').textContent = '카드를 누르면 발음과 뜻이 보여요 👆';
+  }
+  document.getElementById('cardProgress').textContent = `${cardIdx + 1} / ${cardDeck.length}`;
+}
+function toggleFlip() {
+  cardFlipped = !cardFlipped;
+  renderCard();
+  if (cardFlipped) {
+    const it = cardDeck[cardIdx];
+    if (it) speak(it.reading || it.jp);
+  }
+}
+function moveCard(d) {
+  if (!cardDeck.length) return;
+  cardIdx = (cardIdx + d + cardDeck.length) % cardDeck.length;
+  cardFlipped = false;
+  renderCard();
+}
+
 // === View switching ===
 function applyMode(newMode) {
   mode = newMode;
-  const isChart = mode === 'chart';
-  document.getElementById('chartView').style.display = isChart ? 'block' : 'none';
-  document.getElementById('quizCard').style.display = isChart ? 'none' : 'block';
-  document.querySelector('.info').style.display = isChart ? 'none' : 'block';
-  if (isChart) {
-    renderChart();
+  const isQuiz = mode === 'test' || mode === 'review';
+  document.getElementById('studyView').style.display = mode === 'study' ? 'block' : 'none';
+  document.getElementById('cardsView').style.display = mode === 'cards' ? 'block' : 'none';
+  document.getElementById('quizCard').style.display = isQuiz ? 'block' : 'none';
+  document.querySelector('.info').style.display = isQuiz ? 'block' : 'none';
+  if (mode === 'study') {
+    renderStudy();
+    return;
+  }
+  if (mode === 'cards') {
+    shuffleCards();
+    renderCardsView();
     return;
   }
   score = 0;
@@ -910,13 +1116,22 @@ function applyMode(newMode) {
   render();
 }
 document.getElementById('catSel').addEventListener('change', e => {
-  if (mode === 'words') wordCat = e.target.value;
-  else if (mode === 'sentences') sentCat = e.target.value;
+  if (testContent === 'words') wordCat = e.target.value;
+  else if (testContent === 'sentences') sentCat = e.target.value;
   score = 0;
   document.getElementById('score').textContent = 0;
   shuffleDeck();
   render();
 });
+document.querySelectorAll('#testToggle .subseg').forEach(b => b.addEventListener('click', () => {
+  if (testContent === b.dataset.c) return;
+  testContent = b.dataset.c;
+  refreshCatSel();
+  score = 0;
+  document.getElementById('score').textContent = 0;
+  shuffleDeck();
+  render();
+}));
 document.querySelectorAll('#kanaToggle .subseg').forEach(b => b.addEventListener('click', () => {
   if (kanaSub === b.dataset.k) return;
   kanaSub = b.dataset.k;
@@ -926,6 +1141,52 @@ document.querySelectorAll('#kanaToggle .subseg').forEach(b => b.addEventListener
   shuffleDeck();
   render();
 }));
+
+// 외우기 탭
+document.querySelectorAll('#studyToggle .subseg').forEach(b => b.addEventListener('click', () => {
+  if (studyContent === b.dataset.c) return;
+  studyContent = b.dataset.c;
+  renderStudy();
+}));
+document.getElementById('studyCatSel').addEventListener('change', e => {
+  if (studyContent === 'words') wordCat = e.target.value;
+  else sentCat = e.target.value;
+  renderStudyList();
+});
+document.getElementById('hideReadBtn').addEventListener('click', () => {
+  hideRead = !hideRead;
+  document.getElementById('hideReadBtn').classList.toggle('on', hideRead);
+  renderStudyList();
+});
+document.getElementById('hideMeanBtn').addEventListener('click', () => {
+  hideMean = !hideMean;
+  document.getElementById('hideMeanBtn').classList.toggle('on', hideMean);
+  renderStudyList();
+});
+
+// 카드 탭
+document.querySelectorAll('#cardToggle .subseg').forEach(b => b.addEventListener('click', () => {
+  if (cardContent === b.dataset.c) return;
+  cardContent = b.dataset.c;
+  cardCat = 'all';
+  shuffleCards();
+  renderCardsView();
+}));
+document.getElementById('cardCatSel').addEventListener('change', e => {
+  cardCat = e.target.value;
+  shuffleCards();
+  renderCard();
+});
+document.getElementById('flipCard').addEventListener('click', toggleFlip);
+document.getElementById('cardFlipBtn').addEventListener('click', toggleFlip);
+document.getElementById('cardPrev').addEventListener('click', () => moveCard(-1));
+document.getElementById('cardNext').addEventListener('click', () => moveCard(1));
+document.getElementById('cardShuffle').addEventListener('click', () => { shuffleCards(); renderCard(); });
+document.getElementById('cardSpeak').addEventListener('click', e => {
+  e.stopPropagation();
+  const it = cardDeck[cardIdx];
+  if (it) speak(it.reading || it.jp);
+});
 
 // === Events ===
 document.querySelectorAll('.tab').forEach(t => {
@@ -950,7 +1211,7 @@ document.getElementById('answer').addEventListener('keydown', e => {
 
 // === Init ===
 updateStatsUI();
-applyMode('chart');
+applyMode('study');
 </script>
 </body>
 </html>
