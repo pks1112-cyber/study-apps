@@ -93,6 +93,14 @@
     background: #fdf5f8; outline: none; cursor: pointer;
   }
   #catSel:focus { border-color: #eda4c4; }
+  .sub-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+  .subseg {
+    flex: 1; background: #f7e9ef; color: #6c4757; box-shadow: none;
+    padding: 11px; border-radius: 12px; font-size: 14px;
+  }
+  .subseg:hover { box-shadow: none; transform: none; background: #f3dde6; }
+  .subseg.on { background: linear-gradient(135deg, #d63384, #b02a6e); color: #fff; }
+  .subseg.on:hover { background: linear-gradient(135deg, #d63384, #b02a6e); }
 
   .meaning { color: var(--muted); font-size: 17px; margin-bottom: 8px; min-height: 25px; }
   .prompt {
@@ -230,9 +238,8 @@
   </div>
 </div>
 <div class="tabs" id="modeTabs">
-  <div class="tab active" data-mode="chart"><span class="ti">📖</span><span class="tl">표</span></div>
-  <div class="tab" data-mode="hiragana"><span class="ti">あ</span><span class="tl">히라가나</span></div>
-  <div class="tab" data-mode="katakana"><span class="ti">ア</span><span class="tl">가타카나</span></div>
+  <div class="tab active" data-mode="chart"><span class="ti">📖</span><span class="tl">표 외우기</span></div>
+  <div class="tab" data-mode="kana"><span class="ti">✏️</span><span class="tl">가나 테스트</span></div>
   <div class="tab" data-mode="words"><span class="ti">📝</span><span class="tl">단어</span></div>
   <div class="tab" data-mode="sentences"><span class="ti">💬</span><span class="tl">문장</span></div>
   <div class="tab" data-mode="review"><span class="ti">🔄</span><span class="tl">복습 <span id="reviewCount">0</span></span></div>
@@ -250,6 +257,10 @@
 
 <!-- Quiz view -->
 <div class="card" id="quizCard" style="display:none;">
+  <div class="sub-toggle" id="kanaToggle" style="display:none">
+    <button class="subseg on" data-k="hiragana">あ 히라가나</button>
+    <button class="subseg" data-k="katakana">ア 가타카나</button>
+  </div>
   <select id="catSel" style="display:none"></select>
   <div class="meaning" id="meaning">&nbsp;</div>
   <div class="prompt" id="prompt">あ</div>
@@ -585,7 +596,7 @@ indexItems(KATAKANA, 'katakana');
 indexItems(WORDS, 'words');
 indexItems(SENTENCES, 'sentences');
 
-function itemMode(item) { return item.__mode || mode; }
+function itemMode(item) { return item.__mode || (mode === 'kana' ? kanaSub : mode); }
 function keyOf(item) { return item.k || item.jp; }
 function wrongKeyOf(item) { return itemMode(item) + ' ' + keyOf(item); }
 function isKana(m) { return m === 'hiragana' || m === 'katakana'; }
@@ -593,16 +604,19 @@ function answersFor(item) { return isKana(itemMode(item)) ? item.r : item.kor; }
 
 let wordCat = 'all';
 let sentCat = 'all';
+let kanaSub = 'hiragana';   // 가나 테스트 탭 안의 히라/가타 선택
 function getData() {
   switch (mode) {
-    case 'hiragana': return HIRAGANA;
-    case 'katakana': return KATAKANA;
+    case 'kana': return kanaSub === 'hiragana' ? HIRAGANA : KATAKANA;
     case 'words': return wordCat === 'all' ? WORDS : WORDS.filter(w => w.cat === wordCat);
     case 'sentences': return sentCat === 'all' ? SENTENCES : SENTENCES.filter(s => s.cat === sentCat);
     case 'review': return store.wrongKeys.map(k => ITEM_INDEX[k]).filter(Boolean);
   }
 }
 function refreshCatSel() {
+  const kt = document.getElementById('kanaToggle');
+  kt.style.display = mode === 'kana' ? 'flex' : 'none';
+  kt.querySelectorAll('.subseg').forEach(b => b.classList.toggle('on', b.dataset.k === kanaSub));
   const sel = document.getElementById('catSel');
   if (mode !== 'words' && mode !== 'sentences') {
     sel.style.display = 'none';
@@ -903,6 +917,15 @@ document.getElementById('catSel').addEventListener('change', e => {
   shuffleDeck();
   render();
 });
+document.querySelectorAll('#kanaToggle .subseg').forEach(b => b.addEventListener('click', () => {
+  if (kanaSub === b.dataset.k) return;
+  kanaSub = b.dataset.k;
+  refreshCatSel();
+  score = 0;
+  document.getElementById('score').textContent = 0;
+  shuffleDeck();
+  render();
+}));
 
 // === Events ===
 document.querySelectorAll('.tab').forEach(t => {
