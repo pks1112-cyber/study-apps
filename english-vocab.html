@@ -240,6 +240,50 @@
   }
   .best-badge.has { background: #ccfbf1; color: #0f766e; }
 
+  /* ===== compact redesign: segmented tabs, level select, review toggle, test cards ===== */
+  .main-card .tabs {
+    display: flex; gap: 4px; background: #f1f5f9; border-radius: 14px; padding: 4px;
+    margin: 0 0 16px; border-bottom: none; max-width: none; flex-wrap: nowrap;
+  }
+  .main-card .tabs .tab {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px;
+    padding: 7px 2px; border: none; border-radius: 11px; background: transparent;
+    box-shadow: none; min-width: 0;
+  }
+  .main-card .tabs .tab:hover { background: #fff; transform: none; }
+  .main-card .tabs .tab.active {
+    background: linear-gradient(135deg, #4f46e5, #6d28d9);
+    box-shadow: 0 3px 10px rgba(79, 70, 229, 0.30);
+  }
+  .main-card .tabs .tab .ti { font-size: 17px; line-height: 1.2; }
+  .main-card .tabs .tab .tl { font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+  #levelSel {
+    padding: 10px 8px; border: 1px solid #c7d2fe; border-radius: 12px;
+    font-family: inherit; font-size: 14px; font-weight: 800; color: #4338ca;
+    background: #eef2ff; outline: none; cursor: pointer;
+  }
+  .sub-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+  .subseg {
+    flex: 1; background: #f1f5f9; color: #475569; box-shadow: none;
+    padding: 11px; border-radius: 12px; font-size: 13.5px;
+  }
+  .subseg:hover { box-shadow: none; transform: none; background: #e2e8f0; }
+  .subseg.on { background: linear-gradient(135deg, #4f46e5, #6d28d9); color: #fff; }
+  .subseg.on:hover { background: linear-gradient(135deg, #4f46e5, #6d28d9); }
+  .subseg b { font-weight: 800; }
+  .test-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .test-opt {
+    background: #f8fafc; border: 1.5px solid var(--line); border-radius: 16px;
+    padding: 20px 12px; text-align: center; cursor: pointer; user-select: none;
+    transition: all 0.13s ease;
+  }
+  .test-opt:hover { border-color: #a5b4fc; background: #f5f7ff; transform: translateY(-2px); }
+  .test-opt .to-icon { font-size: 27px; }
+  .test-opt b { display: block; margin: 8px 0 3px; font-size: 15px; }
+  .test-opt span { font-size: 12px; color: #64748b; }
+  .test-opt.ta { background: #fffbeb; border-color: #fde68a; }
+  .test-opt.ta:hover { border-color: #f59e0b; background: #fef9e7; }
+
   /* ===== attendance calendar & time attack ===== */
   .cal-head {
     font-size: 15px; font-weight: 700; color: #4338ca; margin-bottom: 10px;
@@ -305,6 +349,11 @@
     .tagline { font-size: 12px; }
     .card { padding: 18px 13px; }
     .tab { padding: 8px 10px; font-size: 12.5px; }
+    .main-card .tabs .tab { padding: 6px 1px; }
+    .main-card .tabs .tab .ti { font-size: 15px; }
+    .main-card .tabs .tab .tl { font-size: 9.5px; }
+    #levelSel { padding: 9px 5px; font-size: 13px; }
+    .test-opt { padding: 14px 8px; }
     .chip { padding: 7px 12px; font-size: 13px; }
     .q-word { font-size: 33px; }
     .q-meaning { font-size: 20px; }
@@ -360,19 +409,17 @@
   </div>
 </div>
 
-<div class="level-bar" id="levelBar"></div>
-
 <div class="card main-card">
   <div class="tabs" id="modeTabs">
-    <div class="tab active" data-mode="table">📖 단어표</div>
-    <div class="tab" data-mode="cards">🃏 카드</div>
-    <div class="tab" data-mode="test">✏️ 테스트</div>
-    <div class="tab" data-mode="srs">📅 오늘 <span class="cnt" id="srsCnt">0</span></div>
-    <div class="tab" data-mode="wrong">❌ 오답 <span class="cnt" id="wrongCnt">0</span></div>
-    <div class="tab" data-mode="search">🔍 검색</div>
-    <div class="tab" data-mode="stats">📊 기록</div>
+    <div class="tab active" data-mode="table"><span class="ti">📖</span><span class="tl">단어표</span></div>
+    <div class="tab" data-mode="cards"><span class="ti">🃏</span><span class="tl">카드</span></div>
+    <div class="tab" data-mode="test"><span class="ti">✏️</span><span class="tl">테스트</span></div>
+    <div class="tab" data-mode="review"><span class="ti">🔄</span><span class="tl">복습 <span class="cnt" id="reviewCnt">0</span></span></div>
+    <div class="tab" data-mode="search"><span class="ti">🔍</span><span class="tl">검색</span></div>
+    <div class="tab" data-mode="stats"><span class="ti">📊</span><span class="tl">기록</span></div>
   </div>
   <div class="unit-picker" id="unitPicker">
+    <select id="levelSel"></select>
     <button class="secondary nav-btn" id="unitPrev">◀</button>
     <select id="unitSel"></select>
     <button class="secondary nav-btn" id="unitNext">▶</button>
@@ -525,8 +572,7 @@ function posClass(p) {
 }
 function posTag(p) { return `<span class="pos ${posClass(p)}">${p}</span>`; }
 function updateWrongCnt() {
-  document.getElementById('wrongCnt').textContent = store.wrongKeys.length;
-  document.getElementById('srsCnt').textContent = dueKeys().length;
+  document.getElementById('reviewCnt').textContent = store.wrongKeys.length + dueKeys().length;
   updateHeroStats();
 }
 function updateHeroStats() {
@@ -693,17 +739,19 @@ function stopSpeakAll() {
 
 // ===== Top bars =====
 function renderLevelBar() {
-  const bar = document.getElementById('levelBar');
-  bar.innerHTML = LEVEL_NAMES.map(lv =>
-    `<div class="chip ${lv === curLevel ? 'active' : ''}" data-lv="${lv}">${lv}</div>`).join('');
-  bar.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
-    stopSpeakAll();
-    curLevel = c.dataset.lv;
-    curUnit = 0;
-    resetModeStates();
-    renderAll();
-  }));
+  const sel = document.getElementById('levelSel');
+  if (!sel.options.length) {
+    sel.innerHTML = LEVEL_NAMES.map(lv => `<option value="${lv}">${lv}</option>`).join('');
+  }
+  sel.value = curLevel;
 }
+document.getElementById('levelSel').addEventListener('change', e => {
+  stopSpeakAll();
+  curLevel = e.target.value;
+  curUnit = 0;
+  resetModeStates();
+  renderAll();
+});
 function renderUnitBar() {
   const sel = document.getElementById('unitSel');
   sel.innerHTML = RAW[curLevel].map(([title], u) => {
@@ -717,7 +765,7 @@ function renderUnitBar() {
   badge.className = 'best-badge' + (best !== undefined ? ' has' : '');
   // unit picker only matters for unit-scoped modes
   document.getElementById('unitPicker').style.display =
-    (mode === 'wrong' || mode === 'stats' || mode === 'search' || mode === 'srs') ? 'none' : 'flex';
+    (mode === 'review' || mode === 'stats' || mode === 'search') ? 'none' : 'flex';
 }
 function gotoUnit(u) {
   stopSpeakAll();
@@ -867,19 +915,14 @@ function renderTest() {
   const el = document.getElementById('content');
   if (testType === null) {
     const taBest = store.taBest[curLevel];
-    el.innerHTML = `<div class="center" style="padding:26px 0">
-      <div class="unit-title" style="text-align:center">${curLevel} · ${curUnit + 1}단원 테스트 (10문제)</div>
-      <p style="color:#64748b">유형을 골라주세요</p>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-        <button id="mcBtn">영어 → 뜻 (4지선다)</button>
-        <button id="typeBtn" class="green">뜻 → 영어 (직접 입력)</button>
-        <button id="dictBtn" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)">🎧 듣고 쓰기</button>
-      </div>
-      <div style="margin-top:22px;padding-top:18px;border-top:1px solid #f1f5f9">
-        <p style="color:#64748b;font-size:13px;margin:0 0 10px">레벨 전체 도전</p>
-        <button id="taBtn" style="background:linear-gradient(135deg,#f59e0b,#d97706)">⚡ 타임어택 60초 — ${curLevel} 전체</button>
-        <div style="font-size:12px;color:#94a3b8;margin-top:8px">최고 기록: ${taBest !== undefined ? taBest + '점' : '아직 없음'}</div>
-      </div></div>`;
+    el.innerHTML = `
+      <div class="unit-title">✏️ ${curLevel} · ${curUnit + 1}단원 테스트</div>
+      <div class="test-grid">
+        <div class="test-opt" id="mcBtn"><div class="to-icon">🅰️</div><b>4지선다</b><span>영어 보고 뜻 고르기 · 10문제</span></div>
+        <div class="test-opt" id="typeBtn"><div class="to-icon">⌨️</div><b>직접 입력</b><span>뜻 보고 영어 쓰기 · 10문제</span></div>
+        <div class="test-opt" id="dictBtn"><div class="to-icon">🎧</div><b>듣고 쓰기</b><span>발음 듣고 철자 입력 · 10문제</span></div>
+        <div class="test-opt ta" id="taBtn"><div class="to-icon">⚡</div><b>타임어택 60초</b><span>${curLevel} 전체 · 최고 ${taBest !== undefined ? taBest + '점' : '기록 없음'}</span></div>
+      </div>`;
     el.querySelector('#mcBtn').addEventListener('click', () => startTest('mc'));
     el.querySelector('#typeBtn').addEventListener('click', () => startTest('type'));
     el.querySelector('#dictBtn').addEventListener('click', () => startTest('dict'));
@@ -1049,7 +1092,8 @@ function renderTaQuestion() {
 
 // ===== Mode: wrong review =====
 function renderWrong() {
-  const el = document.getElementById('content');
+  const el = document.getElementById('reviewBody');
+  if (!el) return;
   if (store.wrongKeys.length === 0) {
     el.innerHTML = `<div class="center" style="padding:40px 0">
       <div style="font-size:60px">🎉</div>
@@ -1066,12 +1110,12 @@ function renderWrong() {
     html += `</div><div class="center"><button id="startWrong">오답 퀴즈 시작 (맞히면 목록에서 빠져요)</button></div>`;
     el.innerHTML = html;
     el.querySelectorAll('.say-w').forEach(b => b.addEventListener('click', () => speak(b.dataset.w)));
-    el.querySelector('#startWrong').addEventListener('click', () => { wrongQuizOn = true; renderWrong(); });
+    el.querySelector('#startWrong').addEventListener('click', () => { wrongQuizOn = true; renderReview(); });
     return;
   }
   const key = store.wrongKeys[Math.floor(Math.random() * store.wrongKeys.length)];
   const q = findByKey(key);
-  if (!q) { store.wrongKeys = store.wrongKeys.filter(k => k !== key); saveStore(); updateWrongCnt(); renderWrong(); return; }
+  if (!q) { store.wrongKeys = store.wrongKeys.filter(k => k !== key); saveStore(); updateWrongCnt(); renderReview(); return; }
   const pool = allWords().filter(x => x.w !== q.w && x.m !== q.m);
   const opts = shuffle([q.m, ...shuffle(pool.slice()).slice(0, 3).map(x => x.m)]);
   let html = `<div class="progress-line">남은 오답 ${store.wrongKeys.length}개</div>
@@ -1080,7 +1124,7 @@ function renderWrong() {
   html += '</div><div class="feedback" id="fb">&nbsp;</div><div class="center"><button class="secondary" id="stopWrong">그만하기</button></div>';
   el.innerHTML = html;
   el.querySelector('#sayQ').addEventListener('click', () => speak(q.w));
-  el.querySelector('#stopWrong').addEventListener('click', () => { wrongQuizOn = false; renderWrong(); });
+  el.querySelector('#stopWrong').addEventListener('click', () => { wrongQuizOn = false; renderReview(); });
   wrongLocked = false;
   el.querySelectorAll('.opt').forEach(op => op.addEventListener('click', () => {
     if (wrongLocked) return;
@@ -1094,16 +1138,36 @@ function renderWrong() {
     bumpStat(q.key, ok);
     setTimeout(() => {
       if (store.wrongKeys.length === 0) wrongQuizOn = false;
-      renderWrong();
+      renderReview();
     }, ok ? 800 : 1500);
   }));
   speak(q.w);
 }
 
+// ===== Mode: review (오늘의 복습 + 오답 통합) =====
+let reviewSub = 'srs';
+function renderReview() {
+  const el = document.getElementById('content');
+  const due = dueKeys().length;
+  const wrong = store.wrongKeys.length;
+  el.innerHTML = `<div class="sub-toggle">
+      <button class="subseg ${reviewSub === 'srs' ? 'on' : ''}" data-s="srs">📅 오늘 복습 <b>${due}</b></button>
+      <button class="subseg ${reviewSub === 'wrong' ? 'on' : ''}" data-s="wrong">❌ 오답 <b>${wrong}</b></button>
+    </div><div id="reviewBody"></div>`;
+  el.querySelectorAll('.subseg').forEach(b => b.addEventListener('click', () => {
+    if (reviewSub === b.dataset.s) return;
+    reviewSub = b.dataset.s;
+    srsQuizOn = false; wrongQuizOn = false;
+    renderReview();
+  }));
+  if (reviewSub === 'srs') renderSrs(); else renderWrong();
+}
+
 // ===== Mode: SRS (오늘의 복습) =====
 let srsQuizOn = false, srsLocked = false;
 function renderSrs() {
-  const el = document.getElementById('content');
+  const el = document.getElementById('reviewBody');
+  if (!el) return;
   const due = dueKeys();
   if (due.length === 0) {
     el.innerHTML = `<div class="center" style="padding:40px 0">
@@ -1126,13 +1190,13 @@ function renderSrs() {
     html += `</div><div class="center" style="margin-top:12px"><button id="startSrs">복습 시작</button></div>`;
     el.innerHTML = html;
     el.querySelectorAll('.say-w').forEach(b => b.addEventListener('click', () => speak(b.dataset.w)));
-    el.querySelector('#startSrs').addEventListener('click', () => { srsQuizOn = true; renderSrs(); });
+    el.querySelector('#startSrs').addEventListener('click', () => { srsQuizOn = true; renderReview(); });
     return;
   }
   // quiz one random due word (4-choice)
   const key = due[Math.floor(Math.random() * due.length)];
   const q = findByKey(key);
-  if (!q) { srsQuizOn = false; renderSrs(); return; }
+  if (!q) { srsQuizOn = false; renderReview(); return; }
   const pool = allWords().filter(x => x.w !== q.w && x.m !== q.m);
   const opts = shuffle([q.m, ...shuffle(pool.slice()).slice(0, 3).map(x => x.m)]);
   let html = `<div class="progress-line">남은 복습 ${due.length}개</div>
@@ -1141,7 +1205,7 @@ function renderSrs() {
   html += '</div><div class="feedback" id="fb">&nbsp;</div><div class="center"><button class="secondary" id="stopSrs">그만하기</button></div>';
   el.innerHTML = html;
   el.querySelector('#sayQ').addEventListener('click', () => speak(q.w));
-  el.querySelector('#stopSrs').addEventListener('click', () => { srsQuizOn = false; renderSrs(); });
+  el.querySelector('#stopSrs').addEventListener('click', () => { srsQuizOn = false; renderReview(); });
   srsLocked = false;
   el.querySelectorAll('.opt').forEach(op => op.addEventListener('click', () => {
     if (srsLocked) return;
@@ -1156,7 +1220,7 @@ function renderSrs() {
     speak(q.w);
     setTimeout(() => {
       if (dueKeys().length === 0) srsQuizOn = false;
-      renderSrs();
+      renderReview();
     }, ok ? 850 : 1600);
   }));
   speak(q.w);
@@ -1315,8 +1379,7 @@ function renderContent() {
   if (mode === 'table') renderTable();
   else if (mode === 'cards') renderCards();
   else if (mode === 'test') renderTest();
-  else if (mode === 'srs') renderSrs();
-  else if (mode === 'wrong') renderWrong();
+  else if (mode === 'review') renderReview();
   else if (mode === 'search') renderSearch();
   else renderStats();
 }
@@ -1335,8 +1398,7 @@ document.querySelectorAll('#modeTabs .tab').forEach(t => {
     mode = t.dataset.mode;
     if (mode === 'cards') startCards();
     if (mode === 'test') { testType = null; testOver = false; }
-    if (mode === 'wrong') wrongQuizOn = false;
-    if (mode === 'srs') srsQuizOn = false;
+    if (mode === 'review') { wrongQuizOn = false; srsQuizOn = false; }
     renderUnitBar();
     renderContent();
   });
