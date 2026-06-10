@@ -383,7 +383,7 @@
 <div class="hero">
   <div class="hero-text">
     <h1>영단어 마스터</h1>
-    <p class="tagline">초5 ~ 고3 필수 영단어 1,200 · 발음기호 · 원어민 발음</p>
+    <p class="tagline">초5 ~ 고3 필수 영단어 2,000 · 발음기호 · 원어민 발음 · 예문</p>
     <div class="hero-stats">
       <span class="hstat">⭐ 외운 단어 <b id="hMastered">0</b></span>
       <span class="hstat">🎯 정답률 <b id="hAcc">0%</b></span>
@@ -454,7 +454,7 @@
   © 2026 Mina &amp; Juho. All rights reserved. 무단 복제·배포 금지
 </div>
 
-<script src="english-vocab-data.js?v=7"></script>
+<script src="english-vocab-data.js?v=8"></script>
 <script>
 // ===== Word data: english-vocab-data.js 에서 로드 (const RAW) =====
 
@@ -1328,7 +1328,7 @@ function renderSearchResults() {
   const wrap = document.getElementById('searchResults');
   const q = searchQuery.trim();
   if (!q) {
-    wrap.innerHTML = '<div class="search-empty">1,200개 단어를 영어 철자나 한글 뜻으로 검색할 수 있어요</div>';
+    wrap.innerHTML = '<div class="search-empty">2,000개 단어를 영어 철자나 한글 뜻으로 검색할 수 있어요</div>';
     return;
   }
   const rs = searchWords(q);
