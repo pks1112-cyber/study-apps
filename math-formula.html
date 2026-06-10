@@ -140,13 +140,13 @@
     border: 2px solid #c9ece6; border-radius: 18px;
     min-height: 220px; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 12px;
-    padding: 26px 20px; cursor: pointer; user-select: none; margin-bottom: 14px;
-    transition: background 0.15s; overflow-x: auto;
+    padding: 24px 12px; cursor: pointer; user-select: none; margin-bottom: 14px;
+    transition: background 0.15s; overflow: hidden;
   }
   .flip-card.back { background: linear-gradient(135deg, #0d9488, #115e59); border-color: transparent; }
   .fc-cat { font-size: 12px; font-weight: 700; color: #79a8a1; }
   .flip-card.back .fc-cat { color: #99f6e4; }
-  .fc-main { font-size: 26px; font-weight: 800; color: #173531; line-height: 1.4; word-break: keep-all; max-width: 100%; overflow-x: auto; }
+  .fc-main { font-size: 26px; font-weight: 800; color: #173531; line-height: 1.4; word-break: keep-all; width: 100%; overflow: hidden; }
   .flip-card.back .fc-main { color: #fff; font-weight: 500; }
   .flip-card.back .fc-main .katex { color: #fff; }
   .fc-sub { font-size: 14px; color: #79a8a1; line-height: 1.6; word-break: keep-all; }
@@ -157,7 +157,8 @@
   .q-prompt {
     min-height: 64px; display: flex; align-items: center; justify-content: center;
     font-size: 25px; font-weight: 800; color: #173531; line-height: 1.4;
-    word-break: keep-all; margin-bottom: 6px; overflow-x: auto; padding: 4px 0;
+    word-break: keep-all; margin-bottom: 6px; overflow: hidden; padding: 4px 0;
+    width: 100%;
   }
   .q-desc { min-height: 22px; font-size: 13.5px; color: var(--muted); margin-bottom: 12px; }
   .opts { display: flex; flex-direction: column; gap: 9px; }
@@ -383,6 +384,15 @@ function tex(el, t) {
   }
   el.textContent = t;
 }
+// 수식이 영역보다 길면 글자 크기를 줄여서 스크롤 없이 다 보이게
+function fitFormula(el) {
+  el.style.fontSize = '';
+  let size = 100;
+  while (el.scrollWidth > el.clientWidth + 1 && size > 45) {
+    size -= 5;
+    el.style.fontSize = size + '%';
+  }
+}
 
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -444,9 +454,11 @@ function renderCard() {
   if (cardFlipped) {
     card.classList.add('back');
     tex(main, it.tex);
+    fitFormula(main);
     document.getElementById('fcSub').textContent = it.desc || it.name;
   } else {
     card.classList.remove('back');
+    main.style.fontSize = '';
     main.textContent = it.name;
     document.getElementById('fcSub').textContent = '카드를 누르면 공식이 보여요 👆';
   }
@@ -494,10 +506,12 @@ function renderQuiz() {
   const prompt = document.getElementById('qPrompt');
   if (curDir === 'n2f') {
     document.getElementById('qLabel').textContent = '알맞은 공식을 고르세요';
+    prompt.style.fontSize = '';
     prompt.textContent = item.name;
   } else {
     document.getElementById('qLabel').textContent = '이 공식의 이름을 고르세요';
     tex(prompt, item.tex);
+    fitFormula(prompt);
   }
   document.getElementById('qDesc').innerHTML = '&nbsp;';
   document.getElementById('feedback').innerHTML = '&nbsp;';
