@@ -454,7 +454,7 @@
   © 2026 Mina &amp; Juho. All rights reserved. 무단 복제·배포 금지
 </div>
 
-<script src="english-vocab-data.js"></script>
+<script src="english-vocab-data.js?v=3"></script>
 <script>
 // ===== Word data: english-vocab-data.js 에서 로드 (const RAW) =====
 
@@ -1005,7 +1005,10 @@ function renderTest() {
     speak(q.w);
   } else if (testType === 'cloze') {
     const safe = q.w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const blanked = q.ex.replace(new RegExp('\\b' + safe + '\\b', 'i'), '_____');
+    // match the word plus simple plural forms (cat/cats, bus/buses, berry/berries)
+    let pat = '\\b' + safe + '(s|es)?\\b';
+    if (/y$/i.test(q.w)) pat = '\\b' + safe.slice(0, -1) + '(y|ies)\\b';
+    const blanked = q.ex.replace(new RegExp(pat, 'i'), '_____');
     el.innerHTML = head + `
       <div class="q-meaning" style="font-size:21px;line-height:1.65;margin:22px 0 8px">${esc(blanked)}</div>
       <div class="q-ipa" style="margin:0 0 14px">${esc(q.exk)} · 힌트: ${esc(q.m)} ${posTag(q.p)}</div>
