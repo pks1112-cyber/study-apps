@@ -188,11 +188,11 @@
     padding: 10px 14px; cursor: pointer; transition: background 0.12s;
   }
   .sl-row:hover { background: #fbeaf2; }
-  .sl-main { flex: 1; min-width: 0; }
+  .sl-left { flex: 1.1; min-width: 0; }
   .sl-jp { font-size: 18px; font-weight: 700; color: #32202b; line-height: 1.35; word-break: keep-all; }
   .sl-read { font-size: 13px; color: var(--primary); font-weight: 600; margin-top: 2px; }
   .sl-read .kana { color: #c193a9; font-weight: 500; }
-  .sl-mean { font-size: 13px; color: var(--muted); margin-top: 1px; }
+  .sl-mean { flex: 1; min-width: 0; font-size: 13.5px; color: var(--muted); line-height: 1.45; word-break: keep-all; }
   .hidden-cell { filter: blur(5px); cursor: pointer; }
   .sl-speak { background: none; border: none; box-shadow: none; font-size: 18px; padding: 6px 8px; flex-shrink: 0; }
   .sl-speak:hover { box-shadow: none; transform: none; background: #f3dde6; border-radius: 10px; }
@@ -241,6 +241,8 @@
     .kana-cell .rom { font-size: 10px; }
     .chart-section-title { font-size: 13px; }
     .sl-jp { font-size: 16px; }
+    .sl-row { gap: 8px; padding: 9px 10px; }
+    .sl-mean { font-size: 12px; }
     .flip-card { min-height: 180px; }
     .fc-main { font-size: 27px; }
     .fc-main.small { font-size: 19px; }
@@ -1016,11 +1018,12 @@ function renderStudyList() {
   body.innerHTML = '<div class="study-list">' + items.map((it, i) => {
     const kana = it.reading && it.reading !== it.jp ? `<span class="kana">${it.reading}</span> · ` : '';
     return `<div class="sl-row" data-i="${i}">` +
-      `<div class="sl-main">` +
+      `<div class="sl-left">` +
       `<div class="sl-jp">${it.jp}</div>` +
       `<div class="sl-read${hideRead ? ' hidden-cell' : ''}">${kana}${it.kor[0]}</div>` +
+      `</div>` +
       `<div class="sl-mean${hideMean ? ' hidden-cell' : ''}">${it.meaning}</div>` +
-      `</div><button class="sl-speak">🔊</button></div>`;
+      `<button class="sl-speak">🔊</button></div>`;
   }).join('') + '</div>';
   body.querySelectorAll('.sl-row').forEach(row => {
     const it = items[+row.dataset.i];
