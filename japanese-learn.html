@@ -192,7 +192,9 @@
   .sl-jp { font-size: 18px; font-weight: 700; color: #32202b; line-height: 1.35; word-break: keep-all; }
   .sl-read { font-size: 13px; color: var(--primary); font-weight: 600; margin-top: 2px; }
   .sl-read .kana { color: #c193a9; font-weight: 500; }
-  .sl-mean { flex: 1; min-width: 0; font-size: 13.5px; color: var(--muted); line-height: 1.45; word-break: keep-all; }
+  .sl-mean { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; color: #4a3142; line-height: 1.45; word-break: keep-all; }
+  .sl-cat { text-align: left; color: var(--primary); font-weight: 700; font-size: 14px; margin: 12px 0 2px; }
+  .sl-cat:first-child { margin-top: 0; }
   .hidden-cell { filter: blur(5px); cursor: pointer; }
   .sl-speak { background: none; border: none; box-shadow: none; font-size: 18px; padding: 6px 8px; flex-shrink: 0; }
   .sl-speak:hover { box-shadow: none; transform: none; background: #f3dde6; border-radius: 10px; }
@@ -242,7 +244,7 @@
     .chart-section-title { font-size: 13px; }
     .sl-jp { font-size: 16px; }
     .sl-row { gap: 8px; padding: 9px 10px; }
-    .sl-mean { font-size: 12px; }
+    .sl-mean { font-size: 13.5px; }
     .flip-card { min-height: 180px; }
     .fc-main { font-size: 27px; }
     .fc-main.small { font-size: 19px; }
@@ -1014,17 +1016,25 @@ function renderStudy() {
 }
 function renderStudyList() {
   const items = studyItems();
+  const showHeaders = (studyContent === 'words' ? wordCat : sentCat) === 'all';
   const body = document.getElementById('chartBody');
-  body.innerHTML = '<div class="study-list">' + items.map((it, i) => {
+  let html = '<div class="study-list">';
+  let lastCat = null;
+  items.forEach((it, i) => {
+    if (showHeaders && it.cat !== lastCat) {
+      lastCat = it.cat;
+      html += `<div class="sl-cat">${it.cat}</div>`;
+    }
     const kana = it.reading && it.reading !== it.jp ? `<span class="kana">${it.reading}</span> · ` : '';
-    return `<div class="sl-row" data-i="${i}">` +
+    html += `<div class="sl-row" data-i="${i}">` +
       `<div class="sl-left">` +
       `<div class="sl-jp">${it.jp}</div>` +
       `<div class="sl-read${hideRead ? ' hidden-cell' : ''}">${kana}${it.kor[0]}</div>` +
       `</div>` +
       `<div class="sl-mean${hideMean ? ' hidden-cell' : ''}">${it.meaning}</div>` +
       `<button class="sl-speak">🔊</button></div>`;
-  }).join('') + '</div>';
+  });
+  body.innerHTML = html + '</div>';
   body.querySelectorAll('.sl-row').forEach(row => {
     const it = items[+row.dataset.i];
     row.addEventListener('click', () => speak(it.reading || it.jp));
