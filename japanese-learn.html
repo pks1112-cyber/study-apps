@@ -391,7 +391,7 @@ const store = {
   answered: saved.answered || 0,
   correct: saved.correct || 0,
   bestStreak: saved.bestStreak || 0,
-  wrongKeys: Array.isArray(saved.wrongKeys) ? saved.wrongKeys : []  // ["mode key", ...]
+  wrongKeys: Array.isArray(saved.wrongKeys) ? saved.wrongKeys : []  // ["mode key", ...]
 };
 
 // === State ===
@@ -569,83 +569,69 @@ function updateStatsUI() {
   if (rc) rc.textContent = store.wrongKeys.length;
 }
 
-// === Text-to-speech (Japanese) ===
+// === 일본어 발음 시스템 ===
+// 1순위: 구글 번역 발음(오디오 재생, 인터넷 필요) — PC·안드로이드·아이폰 모두 작동
+// 2순위: 기기 내장 일본어 음성(speechSynthesis) — 오프라인 대비
 const ttsOK = 'speechSynthesis' in window;
 let jaVoice = null;
+const player = new Audio();
 
+function stopAudio() {
+  try { player.onended = null; player.onerror = null; player.pause(); } catch (e) {}
+  if (ttsOK) { try { speechSynthesis.cancel(); } catch (e) {} }
+}
+function playUrl(url) {
+  return new Promise(res => {
+    let done = false;
+    const finish = ok => { if (!done) { done = true; res(ok); } };
+    player.onended = () => finish(true);
+    player.onerror = () => finish(false);
+    player.src = url;
+    player.play().then(() => setTimeout(() => finish(true), 12000))
+                 .catch(() => finish(false));
+  });
+}
+function googleTtsUrl(text) {
+  return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=ja&q=' + encodeURIComponent(text);
+}
 function findJaVoice() {
   const voices = speechSynthesis.getVoices();
   const ja = voices.filter(v => /^ja([-_]|$)/i.test(v.lang) || /japanese|日本/i.test(v.name));
-  // Prefer a local (offline) voice — Chrome's remote "Google" voices often play silently
   return ja.find(v => v.localService) || ja[0] || null;
 }
-
-function refreshVoice() {
-  if (!ttsOK) return;
-  jaVoice = findJaVoice();
-  const status = document.getElementById('voiceStatus');
-  if (!status) return;
-  const total = speechSynthesis.getVoices().length;
-  if (jaVoice) {
-    if (jaVoice.localService === false) {
-      status.innerHTML = '🔊 음성: ' + jaVoice.name + ' <span style="color:#d63384">(원격 음성 — Comet·Chrome 등 일부 브라우저에선 무음일 수 있어요. 무음이면 Edge로 열거나, Windows에 일본어 음성을 설치하면 모든 브라우저에서 됩니다)</span>';
-    } else {
-      status.textContent = '🔊 글자를 클릭하면 발음이 들려요 (음성: ' + jaVoice.name + ')';
-    }
-    status.style.color = '#b58aa0';
-  } else if (total === 0) {
-    status.textContent = '⏳ 음성 목록을 불러오는 중…';
-    status.style.color = '#b58aa0';
-  } else {
-    status.innerHTML = '⚠ 일본어 음성이 없어 소리가 안 나요. <b>Windows 설정 → 시간 및 언어 → 언어 → 일본어 추가(음성 포함)</b> 후 브라우저 재시작, 또는 Edge 브라우저에서 열어보세요.';
-    status.style.color = '#d63384';
-  }
-}
-
-if (ttsOK) {
-  refreshVoice();
-  speechSynthesis.onvoiceschanged = refreshVoice;
-  // Some browsers populate voices a beat late
-  setTimeout(refreshVoice, 300);
-  setTimeout(refreshVoice, 1200);
-  // Keep-alive: Chrome silently pauses the synth engine after a while
-  setInterval(() => { if (speechSynthesis.speaking) speechSynthesis.resume(); }, 6000);
-  // Warm up the engine on the very first user interaction (helps Google/remote voices)
-  const warm = () => {
-    try {
-      const u = new SpeechSynthesisUtterance(' ');
-      u.volume = 0;
-      speechSynthesis.speak(u);
-    } catch (e) {}
-    window.removeEventListener('pointerdown', warm);
-  };
-  window.addEventListener('pointerdown', warm);
-}
-
-function speak(text) {
-  if (!ttsOK) return;
-  if (!jaVoice) jaVoice = findJaVoice();
-  const fire = () => {
+function speakTTS(text) {
+  return new Promise(res => {
+    if (!ttsOK) return res(false);
+    if (!jaVoice) jaVoice = findJaVoice();
+    if (!jaVoice) return res(false);
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'ja-JP';
     u.rate = 0.85;
-    if (jaVoice) u.voice = jaVoice;
-    u.onerror = () => refreshVoice();
-    speechSynthesis.speak(u);
-    speechSynthesis.resume();
-  };
-  try {
-    if (speechSynthesis.speaking || speechSynthesis.pending) {
-      // Cancel any current utterance, then fire on the next tick.
-      // Calling speak() synchronously right after cancel() drops audio in Chrome.
+    u.voice = jaVoice;
+    u.onend = () => res(true);
+    u.onerror = () => res(true);
+    try {
       speechSynthesis.cancel();
-      setTimeout(fire, 60);
-    } else {
-      fire();
-    }
-  } catch (e) { /* ignore */ }
-  if (!jaVoice) refreshVoice();
+      setTimeout(() => { speechSynthesis.speak(u); speechSynthesis.resume(); }, 50);
+    } catch (e) { res(false); }
+  });
 }
+async function pronounce(text) {
+  stopAudio();
+  if (await playUrl(googleTtsUrl(text))) return;
+  await speakTTS(text);
+}
+function speak(text) { pronounce(text); }
+
+if (ttsOK) {
+  jaVoice = findJaVoice();
+  speechSynthesis.onvoiceschanged = () => { jaVoice = findJaVoice(); };
+  setInterval(() => { if (speechSynthesis.speaking) speechSynthesis.resume(); }, 6000);
+}
+(function initVoiceStatus() {
+  const status = document.getElementById('voiceStatus');
+  if (status) status.textContent = '🔊 글자를 클릭하면 일본어 발음이 들려요 (인터넷 연결 시 구글 발음, 오프라인 시 기기 음성)';
+})();
 
 // === Chart rendering ===
 function buildGrid(rows, scriptIdx, cols) {
