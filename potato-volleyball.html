@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>감자배구</title>
+<style>
+  body {
+    margin: 0;
+    background: linear-gradient(180deg, #ffe8d6 0%, #fef3e2 100%);
+    color: #3a2a1a;
+    font-family: 'Segoe UI', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    user-select: none;
+    min-height: 100vh;
+  }
+  h1 { margin: 0 0 8px; font-size: 28px; color: #c2410c; text-shadow: 2px 2px 0 #fff; }
+  canvas {
+    background:
+      radial-gradient(circle at 80% 18%, rgba(255,236,180,0.9) 0%, rgba(255,236,180,0) 30%),
+      linear-gradient(180deg, #aee3f4 0%, #d6f0fb 55%, #ffe2a8 72%, #f3c47a 100%);
+    border: 4px solid #fff;
+    border-radius: 8px;
+    display: block;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    max-width: 100%;
+    height: auto;
+  }
+  .score { font-size: 32px; margin: 8px 0; font-weight: bold; letter-spacing: 4px; }
+  .info { margin-top: 12px; text-align: center; font-size: 14px; line-height: 1.8; color: #6b4423; }
+  .p1 { color: #e74c3c; }
+  .p2 { color: #3498db; }
+</style>
+</head>
+<body>
+<h1>🥔 감자배구 🥔</h1>
+<div class="score"><span class="p1" id="p1Score">0</span> : <span class="p2" id="p2Score">0</span></div>
+<canvas id="game" width="1100" height="620"></canvas>
+<div class="info">
+  <span class="p1">P1: A(좌) · D(우) · W(점프/서브)</span> &nbsp;|&nbsp;
+  <span class="p2">P2: ← · → · ↑(점프/서브)</span><br>
+  R: 점수 리셋
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+const GROUND_Y = H - 40;
+const NET_W = 6, NET_H = 160;
+const NET_LEFT = W / 2 - NET_W / 2;
+const NET_RIGHT = W / 2 + NET_W / 2;
+const NET_TOP = GROUND_Y - NET_H;
+
+const GRAVITY_P = 0.45;
+const GRAVITY_B = 0.04;
+const PLAYER_R = 50;
+const BALL_R = 50;
+const MOVE_SPEED = 3.6;
+const JUMP_V = -10;
+const MAX_BALL_SPEED = 5;
+const HIT_UP_BOOST = 2.0;
+const HIT_SIDE_BIAS = 3.0;
+
+const CHARACTERS = [
+  { name: '빨감자',    color: '#e74c3c', topper: 'none'  },
+  { name: '파감자',    color: '#3498db', topper: 'none'  },
+  { name: '왕감자',    color: '#9b59b6', topper: 'crown' },
+  { name: '풀감자',    color: '#27ae60', topper: 'leaf'  },
+  { name: '별감자',    color: '#f1c40f', topper: 'star'  },
+  { name: '리본감자',  color: '#ec407a', topper: 'bow'   }
+];
+
+const state = {
+  p1: { x: W * 0.25, y: GROUND_Y, vx: 0, vy: 0, color: '#e74c3c', topper: 'none', facing: 1, hitCooldown: 0 },
+  p2: { x: W * 0.75, y: GROUND_Y, vx: 0, vy: 0, color: '#3498db', topper: 'none', facing: -1, hitCooldown: 0 },
+  ball: { x: W * 0.25, y: 100, vx: 0, vy: 0 },
+  score: { p1: 0, p2: 0 },
+  paused: true,
+  pendingServer: 'p1',
+  message: '',
+  celebrating: false,
+  celebrationTimer: 0,
+  lastWinner: null,
+  particles: [],
+  phase: 'menu',
+  targetScore: 11,
+  matchWinner: null,
+  rallyHits: 0,
+  lastHitter: null,
+  rallyPopTimer: 0,
+  rallyPopText: '',
+  rallyPopLevel: 0,
+  netCooldown: 0,
+  p1CharIdx: 0,
+  p2CharIdx: 1,
+  spikePopTimer: 0,
+  spikePopX: 0,
+  spikePopY: 0
+};
+
+const keys = {};
+window.addEventListener('keydown', e => {
+  // Block browser scroll on arrow keys and space
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+    e.preventDefault();
+  }
+  keys[e.key.toLowerCase()] = true;
+  ensureAudio();
+
+  if (state.phase === 'menu') {
+    const lk = e.key.toLowerCase();
+    if (e.key === '1') startMatch(5);
+    else if (e.key === '2') startMatch(11);
+    else if (e.key === '3') startMatch(21);
+    else if (lk === 'a') cycleChar('p1', -1);
+    else if (lk === 'd') cycleChar('p1', 1);
+    else if (e.key === 'ArrowLeft') cycleChar('p2', -1);
+    else if (e.key === 'ArrowRight') cycleChar('p2', 1);
+    return;
+  }
+  if (state.phase === 'matchEnd') {
+    if (e.key === ' ' || e.key.toLowerCase() === 'r') {
+      e.preventDefault();
+      returnToMenu();
+    }
+    return;
+  }
+
+  if (state.paused) {
+    const k = e.key.toLowerCase();
+    const serveKey = state.pendingServer === 'p1' ? 'w' : 'arrowup';
+    if (k === serveKey) {
+      state.paused = false;
+      state.message = '';
+    }
+  }
+  if (e.key.toLowerCase() === 'r') {
+    state.score.p1 = 0;
+    state.score.p2 = 0;
+    state.celebrating = false;
+    state.particles = [];
+    updateScore();
+    resetPositions('p1');
+  }
+});
+window.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+canvas.addEventListener('click', e => {
+  ensureAudio();
+  const rect = canvas.getBoundingClientRect();
+  const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+  const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+  if (state.phase === 'menu') {
+    for (const cb of getCharButtons()) {
+      if (x >= cb.x && x <= cb.x + cb.w && y >= cb.y && y <= cb.y + cb.h) {
+        const playerKey = cb.kind.startsWith('p1') ? 'p1' : 'p2';
+        const dir = cb.kind.endsWith('Next') ? 1 : -1;
+        cycleChar(playerKey, dir);
+        return;
+      }
+    }
+    for (const btn of getMenuButtons()) {
+      if (x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+        startMatch(btn.score);
+        return;
+      }
+    }
+  } else if (state.phase === 'matchEnd') {
+    returnToMenu();
+  }
+});
+
+function updateScore() {
+  document.getElementById('p1Score').textContent = state.score.p1;
+  document.getElementById('p2Score').textContent = state.score.p2;
+}
+
+// --- Audio (procedural, no external files) ---
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+function playTone({ freq, freqEnd, duration, type = 'sine', volume = 0.3, delay = 0 }) {
+  const ctx = ensureAudio();
+  const t0 = ctx.currentTime + delay;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, t0);
+  if (freqEnd !== undefined) osc.frequency.exponentialRampToValueAtTime(Math.max(1, freqEnd), t0 + duration);
+  gain.gain.setValueAtTime(0, t0);
+  gain.gain.linearRampToValueAtTime(volume, t0 + 0.005);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(t0);
+  osc.stop(t0 + duration + 0.05);
+}
+function playNoise({ duration, volume = 0.3, filterStart = 4000, filterEnd = 200 }) {
+  const ctx = ensureAudio();
+  const t0 = ctx.currentTime;
+  const len = Math.max(1, Math.floor(ctx.sampleRate * duration));
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(filterStart, t0);
+  filter.frequency.exponentialRampToValueAtTime(Math.max(20, filterEnd), t0 + duration);
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(volume, t0);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+  src.connect(filter).connect(gain).connect(ctx.destination);
+  src.start(t0);
+  src.stop(t0 + duration + 0.05);
+}
+function sfxHit() {
+  playTone({ freq: 360, freqEnd: 90, duration: 0.09, type: 'sine', volume: 0.4 });
+  playNoise({ duration: 0.04, volume: 0.12, filterStart: 3000, filterEnd: 800 });
+}
+function sfxNet() {
+  playTone({ freq: 240, freqEnd: 170, duration: 0.14, type: 'triangle', volume: 0.28 });
+}
+function sfxSand() {
+  playNoise({ duration: 0.25, volume: 0.45, filterStart: 1600, filterEnd: 120 });
+}
+function sfxScore() {
+  const notes = [392, 523.25, 659.25, 783.99]; // G4 C5 E5 G5
+  notes.forEach((f, i) => playTone({ freq: f, duration: 0.16, type: 'square', volume: 0.16, delay: i * 0.08 }));
+}
+function sfxRally(n) {
+  const base = 600 + Math.min(n, 30) * 22;
+  playTone({ freq: base, duration: 0.1, type: 'triangle', volume: 0.22 });
+  playTone({ freq: base * 1.5, duration: 0.1, type: 'triangle', volume: 0.2, delay: 0.06 });
+  playTone({ freq: base * 2, duration: 0.14, type: 'triangle', volume: 0.18, delay: 0.12 });
+}
+function sfxCombo() {
+  playTone({ freq: 900, freqEnd: 1500, duration: 0.16, type: 'sawtooth', volume: 0.22 });
+}
+
+// --- Rally counter ---
+const RALLY_MILESTONES = [5, 10, 15, 20, 30, 50];
+function rallyLabel(n) {
+  if (n >= 30) return '💫 LEGENDARY × ' + n + '! 💫';
+  if (n >= 20) return '🌟 ULTRA × ' + n + '! 🌟';
+  if (n >= 15) return '⚡ MEGA × ' + n + '! ⚡';
+  if (n >= 10) return '🔥 SUPER × ' + n + '! 🔥';
+  return 'RALLY × ' + n + '!';
+}
+function rallyColor(n) {
+  if (n >= 30) return '#ffd700';
+  if (n >= 20) return '#ff5a8c';
+  if (n >= 15) return '#c45fff';
+  if (n >= 10) return '#ff6b35';
+  return '#ffcc00';
+}
+function recordRallyHit(playerKey) {
+  if (state.lastHitter !== playerKey) {
+    state.rallyHits++;
+    if (RALLY_MILESTONES.includes(state.rallyHits)) {
+      state.rallyPopLevel = state.rallyHits;
+      state.rallyPopText = rallyLabel(state.rallyHits);
+      state.rallyPopTimer = 90;
+      sfxRally(state.rallyHits);
+    }
+  }
+  state.lastHitter = playerKey;
+}
+
+function spawnSparkBurst(cx, cy) {
+  const palette = ['#fff700', '#ff6b35', '#ffc107', '#ff5722', '#ffffff'];
+  for (let i = 0; i < 24; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 3 + Math.random() * 5;
+    state.particles.push({
+      x: cx, y: cy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 1.5,
+      life: 1.0,
+      decay: 0.05 + Math.random() * 0.025,
+      size: 2.5 + Math.random() * 2.5,
+      color: palette[Math.floor(Math.random() * palette.length)]
+    });
+  }
+}
+
+function spawnSandSplash(cx, cy) {
+  for (let i = 0; i < 38; i++) {
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.1;
+    const speed = 2.5 + Math.random() * 6.5;
+    const palette = ['#d4a574', '#b88652', '#e8c290', '#9a6f3e'];
+    state.particles.push({
+      x: cx + (Math.random() - 0.5) * 22,
+      y: cy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1.0,
+      decay: 0.012 + Math.random() * 0.012,
+      size: 1.5 + Math.random() * 2.8,
+      color: palette[Math.floor(Math.random() * palette.length)]
+    });
+  }
+}
+
+function updateParticles() {
+  for (let i = state.particles.length - 1; i >= 0; i--) {
+    const p = state.particles[i];
+    p.vy += 0.28;
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.y > GROUND_Y && p.vy > 0) {
+      p.y = GROUND_Y;
+      p.vy *= -0.3;
+      p.vx *= 0.7;
+    }
+    p.life -= p.decay;
+    if (p.life <= 0) state.particles.splice(i, 1);
+  }
+}
+
+function drawParticles() {
+  for (const p of state.particles) {
+    ctx.globalAlpha = Math.min(1, p.life * 1.3);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function startCelebration(winner) {
+  state.celebrating = true;
+  state.celebrationTimer = 300;
+  state.lastWinner = winner;
+  spawnSandSplash(state.ball.x, GROUND_Y);
+  sfxSand();
+  setTimeout(sfxScore, 180);
+  state.message = winner === 'p1' ? '🥔 P1 득점! 🥔' : '🥔 P2 득점! 🥔';
+  state.ball.vx = 0;
+  state.ball.vy = 0;
+  state.ball.y = GROUND_Y - BALL_R;
+  state.rallyHits = 0;
+  state.lastHitter = null;
+}
+
+function resetRally() {
+  state.rallyHits = 0;
+  state.lastHitter = null;
+  state.rallyPopTimer = 0;
+  state.rallyPopText = '';
+  state.rallyPopLevel = 0;
+}
+
+function drawTopper(cx, topY, type) {
+  if (type === 'crown') {
+    ctx.fillStyle = '#f1c40f';
+    ctx.beginPath();
+    ctx.moveTo(cx - 14, topY + 2);
+    ctx.lineTo(cx - 14, topY - 10);
+    ctx.lineTo(cx - 7, topY - 5);
+    ctx.lineTo(cx, topY - 13);
+    ctx.lineTo(cx + 7, topY - 5);
+    ctx.lineTo(cx + 14, topY - 10);
+    ctx.lineTo(cx + 14, topY + 2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(122, 79, 0, 0.85)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.fillStyle = '#e74c3c';
+    ctx.beginPath();
+    ctx.arc(cx, topY - 5, 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (type === 'leaf') {
+    ctx.fillStyle = '#27ae60';
+    ctx.beginPath();
+    ctx.ellipse(cx - 4, topY - 4, 4, 8, -0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx + 4, topY - 4, 4, 8, 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0, 60, 0, 0.6)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#7a4f00';
+    ctx.fillRect(cx - 1.5, topY - 4, 3, 6);
+  } else if (type === 'star') {
+    ctx.fillStyle = '#f1c40f';
+    ctx.beginPath();
+    const outerR = 9;
+    for (let i = 0; i < 10; i++) {
+      const r = i % 2 === 0 ? outerR : outerR * 0.4;
+      const a = -Math.PI / 2 + i * Math.PI / 5;
+      const x = cx + Math.cos(a) * r;
+      const y = (topY - 6) + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(122, 79, 0, 0.85)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  } else if (type === 'bow') {
+    ctx.fillStyle = '#ec407a';
+    ctx.beginPath();
+    ctx.ellipse(cx - 7, topY - 2, 6, 5, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx + 7, topY - 2, 6, 5, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(120, 20, 60, 0.7)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = '#c2185b';
+    ctx.beginPath();
+    ctx.arc(cx, topY - 2, 2.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function applyChar(key) {
+  const idx = key === 'p1' ? state.p1CharIdx : state.p2CharIdx;
+  const c = CHARACTERS[idx];
+  state[key].color = c.color;
+  state[key].topper = c.topper;
+}
+
+function cycleChar(playerKey, dir) {
+  const idxKey = playerKey === 'p1' ? 'p1CharIdx' : 'p2CharIdx';
+  state[idxKey] = (state[idxKey] + dir + CHARACTERS.length) % CHARACTERS.length;
+  applyChar(playerKey);
+  playTone({ freq: 600, duration: 0.07, type: 'triangle', volume: 0.18 });
+}
+
+function drawCharPreview(cx, cy, charIdx) {
+  const c = CHARACTERS[charIdx];
+  const R = 26;
+  const bodyRx = R * 0.95;
+  const bodyRy = R * 0.7;
+  ctx.fillStyle = c.color;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, bodyRx, bodyRy, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.2)';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, bodyRx, bodyRy, 0, 0, Math.PI, false);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, bodyRx, bodyRy, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  if (c.topper !== 'none') drawTopper(cx, cy - bodyRy, c.topper);
+  const eyeY = cy - bodyRy * 0.25;
+  for (const ex of [-7, 7]) {
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(cx + ex, eyeY, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(cx + ex, eyeY, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.arc(cx, cy + bodyRy * 0.05, 4, 0.3, Math.PI - 0.3);
+  ctx.stroke();
+}
+
+function startMatch(target) {
+  state.targetScore = target;
+  state.score.p1 = 0;
+  state.score.p2 = 0;
+  updateScore();
+  state.phase = 'play';
+  state.matchWinner = null;
+  state.lastWinner = null;
+  state.celebrating = false;
+  state.particles = [];
+  applyChar('p1');
+  applyChar('p2');
+  resetRally();
+  resetPositions('p1');
+}
+
+function returnToMenu() {
+  state.phase = 'menu';
+  state.matchWinner = null;
+  state.lastWinner = null;
+  state.score.p1 = 0;
+  state.score.p2 = 0;
+  updateScore();
+  state.celebrating = false;
+  state.particles = [];
+  resetRally();
+  state.message = '';
+  state.paused = true;
+  state.p1.x = W * 0.25; state.p1.y = GROUND_Y; state.p1.vx = 0; state.p1.vy = 0;
+  state.p2.x = W * 0.75; state.p2.y = GROUND_Y; state.p2.vx = 0; state.p2.vy = 0;
+  state.ball.x = W * 0.5; state.ball.y = 120;
+  state.ball.vx = 0; state.ball.vy = 0;
+}
+
+function resetPositions(server) {
+  state.p1.x = W * 0.25; state.p1.y = GROUND_Y; state.p1.vx = 0; state.p1.vy = 0;
+  state.p2.x = W * 0.75; state.p2.y = GROUND_Y; state.p2.vx = 0; state.p2.vy = 0;
+  state.ball.x = server === 'p1' ? W * 0.25 : W * 0.75;
+  state.ball.y = 120;
+  state.ball.vx = 0; state.ball.vy = 0;
+  state.pendingServer = server;
+  state.paused = true;
+  state.message = server === 'p1' ? 'P1 서브 — W 키' : 'P2 서브 — ↑ 키';
+}
+
+function update() {
+  if (state.phase !== 'play') return;
+  if (state.rallyPopTimer > 0) state.rallyPopTimer--;
+  if (state.spikePopTimer > 0) state.spikePopTimer--;
+  const p1 = state.p1, p2 = state.p2, ball = state.ball;
+
+  // Celebration phase — winner bounces, loser stays tipped over, sand particles fly
+  if (state.celebrating) {
+    updateParticles();
+    const winner = state[state.lastWinner];
+    const loser = state[state.lastWinner === 'p1' ? 'p2' : 'p1'];
+    const elapsed = 300 - state.celebrationTimer;
+    if (winner.y >= GROUND_Y && elapsed > 0 && elapsed % 30 === 0) {
+      winner.vy = -9;
+    }
+    winner.vy += GRAVITY_P;
+    winner.y += winner.vy;
+    if (winner.y > GROUND_Y) { winner.y = GROUND_Y; winner.vy = 0; }
+    loser.vx = 0; loser.vy = 0;
+    state.celebrationTimer--;
+    if (state.celebrationTimer <= 0) {
+      state.celebrating = false;
+      state.particles = [];
+      if (state.score[state.lastWinner] >= state.targetScore) {
+        state.phase = 'matchEnd';
+        state.matchWinner = state.lastWinner;
+        state.message = '';
+      } else {
+        // Alternate server — whoever served the last rally hands serve to the other side
+        const nextServer = state.pendingServer === 'p1' ? 'p2' : 'p1';
+        resetPositions(nextServer);
+      }
+    }
+    return;
+  }
+
+  // Player input
+  p1.vx = 0;
+  if (keys['a']) p1.vx = -MOVE_SPEED;
+  if (keys['d']) p1.vx = MOVE_SPEED;
+  if (keys['w'] && p1.y >= GROUND_Y) p1.vy = JUMP_V;
+
+  p2.vx = 0;
+  if (keys['arrowleft']) p2.vx = -MOVE_SPEED;
+  if (keys['arrowright']) p2.vx = MOVE_SPEED;
+  if (keys['arrowup'] && p2.y >= GROUND_Y) p2.vy = JUMP_V;
+
+  // Player physics
+  for (const p of [p1, p2]) {
+    p.vy += GRAVITY_P;
+    p.x += p.vx;
+    p.y += p.vy;
+    // Cooldown only ticks once the ball is clearly away — prevents re-hits when player chases
+    if (p.hitCooldown > 0) {
+      const ddx = ball.x - p.x;
+      const ddy = ball.y - p.y;
+      if (Math.hypot(ddx, ddy) > BALL_R + PLAYER_R + 8) p.hitCooldown--;
+    }
+  }
+
+  // Confine players to their side
+  if (p1.x < PLAYER_R) p1.x = PLAYER_R;
+  if (p1.x > NET_LEFT - PLAYER_R) p1.x = NET_LEFT - PLAYER_R;
+  if (p2.x < NET_RIGHT + PLAYER_R) p2.x = NET_RIGHT + PLAYER_R;
+  if (p2.x > W - PLAYER_R) p2.x = W - PLAYER_R;
+  if (p1.y > GROUND_Y) { p1.y = GROUND_Y; p1.vy = 0; }
+  if (p2.y > GROUND_Y) { p2.y = GROUND_Y; p2.vy = 0; }
+
+  if (state.paused) {
+    // Ball follows server's position while waiting
+    return;
+  }
+
+  // Ball physics — original slime-volleyball style: gravity + sticky paddle
+  ball.vy += GRAVITY_B;
+  ball.x += ball.vx;
+  ball.y += ball.vy;
+
+  // Rapidly decay any boosted speed back toward normal cap (~0.4 sec from spike speed to normal)
+  const ballSp = Math.hypot(ball.vx, ball.vy);
+  if (ballSp > MAX_BALL_SPEED + 0.5) {
+    ball.vx *= 0.97;
+    ball.vy *= 0.97;
+  }
+
+  // Wall bounces (left, right, top)
+  if (ball.x - BALL_R < 0) { ball.x = BALL_R; ball.vx = -ball.vx; }
+  if (ball.x + BALL_R > W) { ball.x = W - BALL_R; ball.vx = -ball.vx; }
+  if (ball.y - BALL_R < 0) { ball.y = BALL_R; ball.vy = -ball.vy; }
+
+  // Ball-player collisions (dome top) — sticky: player velocity adds to ball
+  for (const p of [p1, p2]) {
+    const dx = ball.x - p.x;
+    const dy = ball.y - p.y;
+    const dist = Math.hypot(dx, dy);
+    const minDist = BALL_R + PLAYER_R;
+    if (dist < minDist) {
+      const nx = dx / (dist || 1);
+      const ny = dy / (dist || 1);
+      const overlap = minDist - dist + 1;
+      ball.x += nx * overlap;
+      ball.y += ny * overlap;
+      if (p.hitCooldown <= 0 && ball.y <= p.y + 3) {
+        // reflect, then add player velocity (the "sticky slime" trick)
+        const dot = ball.vx * nx + ball.vy * ny;
+        ball.vx = ball.vx - 2 * dot * nx + p.vx * 0.5;
+        ball.vy = ball.vy - 2 * dot * ny + p.vy * 0.05;
+        // extra upward pop on body contact — side hits get bonus lift so rallies stay alive
+        ball.vy -= HIT_UP_BOOST + Math.abs(nx) * 2.0;
+        // directional bias toward opponent's court — strongest on top hits, fades on side hits
+        const towardOpponent = p === p1 ? 1 : -1;
+        ball.vx += towardOpponent * (1 - Math.abs(nx)) * HIT_SIDE_BIAS;
+        // cap max speed
+        const sp = Math.hypot(ball.vx, ball.vy);
+        if (sp > MAX_BALL_SPEED) {
+          ball.vx *= MAX_BALL_SPEED / sp;
+          ball.vy *= MAX_BALL_SPEED / sp;
+        }
+        // Spike boost — player is airborne + hit angle is top-of-head → ball gains speed
+        const playerKey = p === p1 ? 'p1' : 'p2';
+        const isSpike = p.y < GROUND_Y - 25 && Math.abs(nx) < 0.5;
+        if (isSpike) {
+          ball.vx *= 1.6;
+          ball.vy *= 1.6;
+          const sp2 = Math.hypot(ball.vx, ball.vy);
+          const SPIKE_MAX = 11;
+          if (sp2 > SPIKE_MAX) {
+            ball.vx *= SPIKE_MAX / sp2;
+            ball.vy *= SPIKE_MAX / sp2;
+          }
+          sfxCombo();
+          spawnSparkBurst(ball.x, ball.y);
+          state.spikePopTimer = 40;
+          state.spikePopX = ball.x;
+          state.spikePopY = ball.y - 30;
+        }
+        p.hitCooldown = 16;
+        sfxHit();
+        recordRallyHit(playerKey);
+      }
+    }
+  }
+
+  // Ball-net collision — closest-point on net rectangle gives natural top/side/corner bounces
+  if (state.netCooldown > 0) {
+    const clearTop = ball.y + BALL_R < NET_TOP - 8;
+    const clearLeft = ball.x + BALL_R < NET_LEFT - 8;
+    const clearRight = ball.x - BALL_R > NET_RIGHT + 8;
+    if (clearTop || clearLeft || clearRight) state.netCooldown--;
+  }
+  {
+    const cx = Math.max(NET_LEFT, Math.min(ball.x, NET_RIGHT));
+    const cy = Math.max(NET_TOP, Math.min(ball.y, GROUND_Y));
+    const netDx = ball.x - cx;
+    const netDy = ball.y - cy;
+    const netDist = Math.hypot(netDx, netDy);
+    if (netDist < BALL_R) {
+      let nx, ny;
+      if (netDist > 0.1) {
+        // Outside the rectangle — normal points from closest point to ball center
+        nx = netDx / netDist;
+        ny = netDy / netDist;
+      } else {
+        // Ball center inside net — pick the shortest escape (top / left / right; bottom blocked by ground)
+        const dTop = ball.y - NET_TOP;
+        const dLeft = ball.x - NET_LEFT;
+        const dRight = NET_RIGHT - ball.x;
+        const m = Math.min(dTop, dLeft, dRight);
+        if (m === dTop)       { nx = 0;  ny = -1; }
+        else if (m === dLeft) { nx = -1; ny = 0;  }
+        else                  { nx = 1;  ny = 0;  }
+      }
+      // Always push out so ball doesn't clip through
+      const overlap = BALL_R - netDist + 1;
+      ball.x += nx * overlap;
+      ball.y += ny * overlap;
+      // Bounce + sound only when cooldown clear
+      if (state.netCooldown <= 0) {
+        const vDotN = ball.vx * nx + ball.vy * ny;
+        if (vDotN < 0) {
+          const e = 0.75; // restitution
+          ball.vx -= (1 + e) * vDotN * nx;
+          ball.vy -= (1 + e) * vDotN * ny;
+        }
+        state.netCooldown = 16;
+        sfxNet();
+      }
+    }
+  }
+
+  // Ball hits ground -> score + celebration
+  if (ball.y + BALL_R >= GROUND_Y) {
+    const winner = ball.x < W / 2 ? 'p2' : 'p1';
+    state.score[winner]++;
+    updateScore();
+    startCelebration(winner);
+  }
+}
+
+function drawPlayer(p, pose) {
+  const cx = p.x, cy = p.y;
+  const R = PLAYER_R;
+
+  // Tip the loser over (rotate around the feet, away from the net)
+  if (pose === 'sad') {
+    const tiltDir = cx > W / 2 ? 1 : -1;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(tiltDir * Math.PI / 2 * 0.78);
+    ctx.translate(-cx, -cy);
+  }
+
+  const bodyCy = cy - R * 0.95;
+  const bodyRx = R * 0.95;
+  const bodyRy = R * 0.7;
+
+  // bent-knee legs — drawn first so body covers the hip area
+  ctx.strokeStyle = '#3a2410';
+  ctx.lineWidth = 6;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (const side of [-1, 1]) {
+    const hipX = cx + side * R * 0.28;
+    const hipY = bodyCy + bodyRy * 0.4;
+    const kneeX = cx + side * R * 0.42;  // bowed outward at the knee
+    const kneeY = cy - 6;
+    const footX = cx + side * R * 0.20;  // tucked back inward
+    const footY = cy;
+    ctx.beginPath();
+    ctx.moveTo(hipX, hipY);
+    ctx.lineTo(kneeX, kneeY);
+    ctx.lineTo(footX, footY);
+    ctx.stroke();
+  }
+  // feet
+  ctx.fillStyle = '#3a2410';
+  for (const side of [-1, 1]) {
+    const footX = cx + side * R * 0.20;
+    ctx.beginPath();
+    ctx.ellipse(footX, cy + 1, 7.5, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // potato body (egg-shaped)
+  ctx.fillStyle = p.color;
+  ctx.beginPath();
+  ctx.ellipse(cx, bodyCy, bodyRx, bodyRy, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // bottom shading (darker lower half)
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.beginPath();
+  ctx.ellipse(cx, bodyCy, bodyRx, bodyRy, 0, 0, Math.PI, false);
+  ctx.closePath();
+  ctx.fill();
+
+  // top-left highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.beginPath();
+  ctx.ellipse(cx - bodyRx * 0.35, bodyCy - bodyRy * 0.5, bodyRx * 0.22, bodyRy * 0.18, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // potato spots (the little dark "eyes" on a real potato)
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  const spots = [
+    [ 0.40, -0.45, 3.0],
+    [-0.50, -0.20, 2.6],
+    [ 0.10, -0.65, 2.2],
+    [-0.20, -0.40, 2.4],
+    [ 0.55, 0.05, 2.4],
+    [-0.60, 0.20, 2.2],
+    [ 0.30, 0.30, 2.0],
+    [-0.10, 0.50, 2.0],
+  ];
+  for (const [fx, fy, sr] of spots) {
+    ctx.beginPath();
+    ctx.arc(cx + fx * bodyRx, bodyCy + fy * bodyRy, sr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // body outline
+  ctx.strokeStyle = 'rgba(0,0,0,0.75)';
+  ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  ctx.ellipse(cx, bodyCy, bodyRx, bodyRy, 0, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // topper (crown / leaf / star / bow) — sits on top of body
+  if (p.topper && p.topper !== 'none') {
+    drawTopper(cx, bodyCy - bodyRy, p.topper);
+  }
+
+  // eyes — vary by pose
+  const eyeY = bodyCy - bodyRy * 0.3;
+  if (pose === 'sad') {
+    // X eyes
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    for (const ex of [-11, 11]) {
+      const eyeCx = cx + ex;
+      ctx.beginPath();
+      ctx.moveTo(eyeCx - 5, eyeY - 5);
+      ctx.lineTo(eyeCx + 5, eyeY + 5);
+      ctx.moveTo(eyeCx + 5, eyeY - 5);
+      ctx.lineTo(eyeCx - 5, eyeY + 5);
+      ctx.stroke();
+    }
+  } else if (pose === 'happy') {
+    // closed happy arcs ^_^
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    for (const ex of [-11, 11]) {
+      const eyeCx = cx + ex;
+      ctx.beginPath();
+      ctx.arc(eyeCx, eyeY + 2, 5, Math.PI + 0.2, -0.2, false);
+      ctx.stroke();
+    }
+  } else {
+    // tracking eyes
+    const ball = state.ball;
+    for (const ex of [-11, 11]) {
+      const eyeCx = cx + ex;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(eyeCx, eyeY, 6.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      const ddx = ball.x - eyeCx;
+      const ddy = ball.y - eyeY;
+      const dlen = Math.hypot(ddx, ddy) || 1;
+      const off = 2.8;
+      const px = eyeCx + (ddx / dlen) * off;
+      const py = eyeY + (ddy / dlen) * off;
+      ctx.fillStyle = '#000';
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(px - 1, py - 1.3, 0.9, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // mouth
+  ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  if (pose === 'happy') {
+    ctx.arc(cx, bodyCy + bodyRy * 0.05, 9, 0.15, Math.PI - 0.15);
+  } else if (pose === 'sad') {
+    ctx.arc(cx, bodyCy + bodyRy * 0.3, 6, Math.PI + 0.3, -0.3);
+  } else {
+    ctx.arc(cx, bodyCy + bodyRy * 0.05, 7, 0.25, Math.PI - 0.25);
+  }
+  ctx.stroke();
+
+  if (pose === 'sad') ctx.restore();
+}
+
+function drawCloud(x, y, scale) {
+  ctx.beginPath();
+  ctx.arc(x, y, 18 * scale, 0, Math.PI * 2);
+  ctx.arc(x + 18 * scale, y - 6 * scale, 14 * scale, 0, Math.PI * 2);
+  ctx.arc(x + 32 * scale, y + 2 * scale, 16 * scale, 0, Math.PI * 2);
+  ctx.arc(x + 14 * scale, y + 8 * scale, 14 * scale, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawBall(b) {
+  // shadow on ground
+  const shadowScale = Math.max(0.2, 1 - (GROUND_Y - b.y) / 400);
+  ctx.fillStyle = 'rgba(80, 50, 20, 0.35)';
+  ctx.beginPath();
+  ctx.ellipse(b.x, GROUND_Y + 2, BALL_R * shadowScale, 4 * shadowScale, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Boost glow — visible while ball is moving faster than normal cap
+  const bsp = Math.hypot(b.vx, b.vy);
+  if (bsp > MAX_BALL_SPEED + 0.5) {
+    const intensity = Math.min(1, (bsp - MAX_BALL_SPEED) / 5);
+    ctx.fillStyle = `rgba(255, 87, 34, ${0.30 * intensity})`;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, BALL_R + 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(255, 235, 59, ${0.45 * intensity})`;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, BALL_R + 8, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // opaque backing so emoji's transparent/light areas don't show background through
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, BALL_R * 0.78, 0, Math.PI * 2);
+  ctx.fill();
+
+  // real volleyball — emoji rendered by the OS
+  const size = BALL_R * 2.15;
+  ctx.font = `${size}px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🏐', b.x, b.y);
+}
+
+function drawSpikePop() {
+  if (state.spikePopTimer <= 0) return;
+  const total = 40;
+  const elapsed = total - state.spikePopTimer;
+  const prog = elapsed / total;
+  const scale = 0.5 + prog * 1.2;
+  const alpha = Math.max(0, 1 - prog);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(state.spikePopX, state.spikePopY - prog * 40);
+  ctx.scale(scale, scale);
+  ctx.font = 'bold 30px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 5;
+  ctx.strokeText('💥 SPIKE!', 0, 0);
+  ctx.fillStyle = '#ff5722';
+  ctx.fillText('💥 SPIKE!', 0, 0);
+  ctx.restore();
+}
+
+function drawRally() {
+  // small persistent counter (top-center) once rally gets going
+  if (state.phase === 'play' && state.rallyHits >= 3 && !state.celebrating) {
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(W / 2 - 78, 6, 156, 30);
+    ctx.fillStyle = rallyColor(state.rallyHits);
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🏐 RALLY × ' + state.rallyHits, W / 2, 21);
+  }
+
+  // milestone pop banner — fixed font, scale via transform (avoids per-frame glyph cache rebuild for emoji)
+  if (state.rallyPopTimer > 0) {
+    const total = 90;
+    const elapsed = total - state.rallyPopTimer;
+    const prog = elapsed / total;
+    let scale, alpha;
+    if (prog < 0.15) {
+      scale = 0.4 + (prog / 0.15) * 0.8;
+      alpha = prog / 0.15;
+    } else if (prog < 0.7) {
+      scale = 1.2;
+      alpha = 1;
+    } else {
+      scale = 1.2 + (prog - 0.7) * 0.6;
+      alpha = Math.max(0, 1 - (prog - 0.7) / 0.3);
+    }
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(W / 2, H / 2 - 70);
+    ctx.scale(scale, scale);
+    ctx.font = 'bold 40px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 5;
+    ctx.strokeText(state.rallyPopText, 0, 0);
+    ctx.fillStyle = rallyColor(state.rallyPopLevel);
+    ctx.fillText(state.rallyPopText, 0, 0);
+    ctx.restore();
+  }
+}
+
+function getMenuButtons() {
+  const targets = [5, 11, 21];
+  const btnW = 130, btnH = 65, gap = 35;
+  const totalW = btnW * targets.length + gap * (targets.length - 1);
+  const startX = (W - totalW) / 2;
+  const y = 365;
+  return targets.map((s, i) => ({
+    x: startX + i * (btnW + gap),
+    y, w: btnW, h: btnH,
+    label: s + '점',
+    score: s
+  }));
+}
+
+function getCharButtons() {
+  const p1X = W * 0.25;
+  const p2X = W * 0.75;
+  const aw = 32, ah = 32;
+  const ay = 165 - ah / 2;
+  return [
+    { kind: 'p1Prev', x: p1X - 75, y: ay, w: aw, h: ah },
+    { kind: 'p1Next', x: p1X + 43, y: ay, w: aw, h: ah },
+    { kind: 'p2Prev', x: p2X - 75, y: ay, w: aw, h: ah },
+    { kind: 'p2Next', x: p2X + 43, y: ay, w: aw, h: ah }
+  ];
+}
+
+function drawMenu() {
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Title
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 34px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🥔 감자배구 🥔', W / 2, 65);
+
+  // Character selectors
+  for (const [pKey, x, labelColor] of [['p1', W * 0.25, '#ff8a7a'], ['p2', W * 0.75, '#7ad0ff']]) {
+    const idx = pKey === 'p1' ? state.p1CharIdx : state.p2CharIdx;
+    const c = CHARACTERS[idx];
+
+    ctx.fillStyle = labelColor;
+    ctx.font = 'bold 22px sans-serif';
+    ctx.fillText(pKey.toUpperCase(), x, 115);
+
+    drawCharPreview(x, 165, idx);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillText(c.name, x, 220);
+  }
+
+  // Character arrows
+  ctx.font = 'bold 22px sans-serif';
+  for (const cb of getCharButtons()) {
+    ctx.fillStyle = '#ffd17a';
+    ctx.fillRect(cb.x, cb.y, cb.w, cb.h);
+    ctx.strokeStyle = '#7a3f0a';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(cb.x, cb.y, cb.w, cb.h);
+    ctx.fillStyle = '#7a3f0a';
+    ctx.fillText(cb.kind.endsWith('Next') ? '▶' : '◀', cb.x + cb.w / 2, cb.y + cb.h / 2);
+  }
+
+  // Score prompt
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 26px sans-serif';
+  ctx.fillText('몇 점 내기?', W / 2, 320);
+
+  // Score buttons
+  ctx.font = 'bold 24px sans-serif';
+  for (const btn of getMenuButtons()) {
+    ctx.fillStyle = '#ffd17a';
+    ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
+    ctx.strokeStyle = '#7a3f0a';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
+    ctx.fillStyle = '#7a3f0a';
+    ctx.fillText(btn.label, btn.x + btn.w / 2, btn.y + btn.h / 2);
+  }
+
+  // Hint
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = '16px sans-serif';
+  ctx.fillText('숫자 1 / 2 / 3 으로 시작 · P1 캐릭: A/D · P2 캐릭: ← →  (또는 클릭)', W / 2, H - 50);
+}
+
+function drawMatchEnd() {
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  ctx.fillRect(0, 0, W, H);
+  const winner = state.matchWinner;
+  ctx.fillStyle = winner === 'p1' ? '#ff8a7a' : '#7ad0ff';
+  ctx.font = 'bold 52px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🏆 ' + (winner === 'p1' ? 'P1' : 'P2') + ' 승리! 🏆', W / 2, H / 2 - 30);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 28px sans-serif';
+  ctx.fillText(state.score.p1 + ' : ' + state.score.p2, W / 2, H / 2 + 30);
+  ctx.font = '17px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.fillText('SPACE / R / 클릭 → 메뉴로', W / 2, H / 2 + 75);
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // soft clouds
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  drawCloud(120, 70, 1);
+  drawCloud(560, 50, 0.85);
+  drawCloud(680, 110, 0.7);
+
+  // ground line (sand edge)
+  ctx.fillStyle = 'rgba(120, 70, 30, 0.4)';
+  ctx.fillRect(0, GROUND_Y + PLAYER_R * 0.05, W, 2);
+
+  // net — coral pole with white top cap
+  ctx.fillStyle = '#ff5a8c';
+  ctx.fillRect(NET_LEFT, NET_TOP, NET_W, NET_H);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(NET_LEFT - 2, NET_TOP, NET_W + 4, 6);
+
+  // players + ball
+  let p1Pose = 'idle', p2Pose = 'idle';
+  const poseWinner = state.celebrating ? state.lastWinner
+                   : state.phase === 'matchEnd' ? state.matchWinner
+                   : null;
+  if (poseWinner === 'p1') { p1Pose = 'happy'; p2Pose = 'sad'; }
+  else if (poseWinner === 'p2') { p1Pose = 'sad'; p2Pose = 'happy'; }
+  drawPlayer(state.p1, p1Pose);
+  drawPlayer(state.p2, p2Pose);
+  drawBall(state.ball);
+  drawParticles();
+  drawSpikePop();
+  drawRally();
+
+  // overlays — menu / matchEnd take precedence over message
+  if (state.phase === 'menu') {
+    drawMenu();
+  } else if (state.phase === 'matchEnd') {
+    drawMatchEnd();
+  } else if (state.message) {
+    if (state.celebrating) {
+      ctx.fillStyle = 'rgba(255, 200, 100, 0.88)';
+      ctx.fillRect(0, 20, W, 56);
+      ctx.fillStyle = '#7a3f0a';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(state.message, W / 2, 48);
+    } else {
+      ctx.fillStyle = 'rgba(0,0,0,0.55)';
+      ctx.fillRect(0, H / 2 - 40, W, 80);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 26px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(state.message, W / 2, H / 2);
+    }
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+updateScore();
+loop();
+</script>
+</body>
+</html>

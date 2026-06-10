@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>📚 영단어 마스터</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --primary: #4f46e5;
+    --accent: #0d9488;
+    --ink: #1e293b;
+    --muted: #64748b;
+    --line: #e2e8f0;
+  }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(900px 400px at 85% -50px, rgba(124, 58, 237, 0.08), transparent 60%),
+      radial-gradient(700px 350px at 10% -30px, rgba(79, 70, 229, 0.10), transparent 60%),
+      linear-gradient(180deg, #f8faff 0%, #eef1fb 100%);
+    color: var(--ink);
+    font-family: 'Segoe UI Variable', 'Segoe UI', 'Noto Sans KR', sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 28px 16px 40px;
+    min-height: 100vh;
+  }
+  h1 { margin: 0 0 4px; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; color: #312e81; }
+  h1 .grad {
+    background: linear-gradient(90deg, #4f46e5, #9333ea);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .subtitle { font-size: 13px; color: var(--muted); margin: 0 0 20px; }
+
+  .level-bar, .unit-bar, .tabs {
+    display: flex; gap: 7px; margin-bottom: 12px;
+    flex-wrap: wrap; justify-content: center; max-width: 780px;
+  }
+  .chip {
+    padding: 8px 18px; background: #fff; border: 1px solid var(--line);
+    border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 14px;
+    color: #475569; transition: all 0.15s ease; user-select: none;
+    box-shadow: 0 1px 2px rgba(30, 41, 90, 0.05);
+  }
+  .chip:hover { border-color: #c7d2fe; background: #f5f7ff; transform: translateY(-1px); }
+  .chip.active {
+    background: linear-gradient(135deg, #4f46e5, #6d28d9); color: #fff; border-color: transparent;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+  }
+  .unit-chip {
+    padding: 7px 13px; background: #fff; border: 1px solid var(--line);
+    border-radius: 12px; cursor: pointer; font-size: 12.5px; font-weight: 600;
+    color: #475569; transition: all 0.15s ease; user-select: none; text-align: center;
+    box-shadow: 0 1px 2px rgba(30, 41, 90, 0.05);
+  }
+  .unit-chip:hover { border-color: #99f6e4; background: #f0fdfa; transform: translateY(-1px); }
+  .unit-chip.active {
+    background: linear-gradient(135deg, #0d9488, #0f766e); color: #fff; border-color: transparent;
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35);
+  }
+  .unit-chip .badge { display: block; font-size: 10.5px; font-weight: 700; margin-top: 2px; opacity: 0.75; }
+  .tab {
+    padding: 9px 17px; background: #fff; border: 1px solid var(--line);
+    border-radius: 12px; cursor: pointer; font-weight: 600; font-size: 14px;
+    color: #475569; transition: all 0.15s ease; user-select: none;
+    box-shadow: 0 1px 2px rgba(30, 41, 90, 0.05);
+  }
+  .tab:hover { border-color: #c7d2fe; background: #f5f7ff; transform: translateY(-1px); }
+  .tab.active {
+    background: linear-gradient(135deg, #4f46e5, #6d28d9); color: #fff; border-color: transparent;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+  }
+  .tab .cnt { color: #ef4444; font-weight: 800; }
+  .tab.active .cnt { color: #fecaca; }
+
+  .voice-bar {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 16px;
+    font-size: 13px; color: var(--muted); flex-wrap: wrap; justify-content: center;
+  }
+  .voice-bar select {
+    padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px;
+    font-size: 13px; font-family: inherit; max-width: 300px; outline: none;
+    background: #fff; color: var(--ink);
+    box-shadow: 0 1px 2px rgba(30, 41, 90, 0.05);
+  }
+  .voice-bar select:focus { border-color: #a5b4fc; }
+
+  .card {
+    background: #fff; border-radius: 20px; padding: 28px;
+    width: 700px; max-width: 100%;
+    border: 1px solid #eceff7;
+    box-shadow: 0 1px 2px rgba(30,41,90,.04), 0 16px 40px rgba(60, 70, 180, 0.10);
+  }
+
+  /* word table */
+  table.words { width: 100%; border-collapse: collapse; }
+  table.words th {
+    text-align: left; font-size: 11px; color: #94a3b8; text-transform: uppercase;
+    letter-spacing: 0.8px; padding: 8px 10px; border-bottom: 1px solid var(--line);
+  }
+  table.words td { padding: 10px; border-bottom: 1px solid #f1f5f9; font-size: 15.5px; }
+  table.words tr.wrow { transition: background 0.1s; }
+  table.words tr.wrow:hover { background: #f5f7ff; }
+  td.eng { font-weight: 700; color: #4338ca; width: 42%; cursor: pointer; }
+  td.kor { color: #334155; cursor: pointer; }
+  td.pos-td { width: 56px; }
+  td.star { width: 30px; text-align: center; }
+  .ipa { color: #9aa5b8; font-size: 12.5px; font-weight: 400; white-space: nowrap; }
+  .q-ipa { text-align: center; color: #94a3b8; font-size: 15px; margin: -10px 0 8px; }
+  .pos {
+    display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 8px;
+    border-radius: 999px; white-space: nowrap;
+  }
+  .pos-n { background: #e0e9ff; color: #3b5bdb; }
+  .pos-v { background: #ffedd5; color: #c2410c; }
+  .pos-a { background: #d1fae5; color: #047857; }
+  .pos-d { background: #ede9fe; color: #6d28d9; }
+  .pos-x { background: #f1f5f9; color: #64748b; }
+  .m-hidden { filter: blur(7px); user-select: none; }
+  .toolbar { display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 12px; flex-wrap: wrap; }
+  .toolbar button.on { background: linear-gradient(135deg, #0d9488, #0f766e); color: #fff; box-shadow: 0 3px 10px rgba(13,148,136,.3); }
+  .unit-title { font-size: 17px; font-weight: 700; color: #0f766e; margin: 0 0 12px; }
+
+  button {
+    padding: 10px 20px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #4f46e5, #6d28d9); color: #fff;
+    font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+    box-shadow: 0 3px 10px rgba(79, 70, 229, 0.25);
+    transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s;
+  }
+  button:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(79, 70, 229, 0.3); }
+  button:active { transform: translateY(0); }
+  button.secondary { background: #eef1f8; color: #334155; box-shadow: none; }
+  button.secondary:hover { background: #e2e8f0; box-shadow: none; }
+  button.green { background: linear-gradient(135deg, #0d9488, #0f766e); box-shadow: 0 3px 10px rgba(13,148,136,.25); }
+  button.red { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 3px 10px rgba(239,68,68,.25); }
+
+  /* flashcard */
+  .flash {
+    margin: 10px auto 16px; width: 100%; max-width: 480px; height: 240px;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    border-radius: 24px; color: #fff; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; cursor: pointer;
+    font-size: 44px; font-weight: 800; user-select: none;
+    transition: transform 0.15s ease, box-shadow 0.15s;
+    text-align: center; padding: 16px;
+    box-shadow: 0 16px 40px rgba(79, 70, 229, 0.35);
+  }
+  .flash:hover { transform: translateY(-2px) scale(1.01); }
+  .flash.back {
+    background: linear-gradient(135deg, #0d9488 0%, #059669 100%);
+    font-size: 29px; box-shadow: 0 16px 40px rgba(13, 148, 136, 0.35);
+  }
+  .flash .sub { font-size: 14px; font-weight: 400; opacity: 0.85; margin-top: 12px; }
+  .center { text-align: center; }
+  .progress-line { font-size: 13.5px; color: var(--muted); margin-bottom: 8px; text-align: center; }
+
+  /* test */
+  .q-meaning { font-size: 27px; font-weight: 700; text-align: center; margin: 20px 0; }
+  .q-word { font-size: 46px; font-weight: 800; text-align: center; margin: 18px 0 12px; color: #4338ca; letter-spacing: -0.5px; }
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
+  .opt {
+    padding: 15px 10px; background: #f8fafc; border: 1.5px solid var(--line);
+    border-radius: 14px; cursor: pointer; font-size: 15.5px; text-align: center;
+    transition: all 0.12s ease; user-select: none;
+  }
+  .opt:hover { background: #f5f7ff; border-color: #a5b4fc; transform: translateY(-1px); }
+  .opt.right { background: #ecfdf5; border-color: #10b981; color: #047857; font-weight: 700; }
+  .opt.wrong { background: #fef2f2; border-color: #ef4444; color: #b91c1c; }
+  input.answer {
+    width: 100%; padding: 14px; font-size: 20px; border: 1.5px solid var(--line);
+    border-radius: 14px; outline: none; text-align: center; font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input.answer:focus { border-color: #818cf8; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12); }
+  .feedback { min-height: 30px; margin-top: 14px; font-weight: 700; font-size: 17px; text-align: center; }
+  .ok { color: #059669; }
+  .no { color: #dc2626; }
+
+  /* stats */
+  .stats-wrap { overflow-x: auto; }
+  table.stats { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  table.stats th, table.stats td { padding: 7px 5px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; }
+  table.stats th { color: #94a3b8; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; }
+  table.stats td.lv { font-weight: 700; color: #4338ca; }
+  .totals { margin-top: 16px; font-size: 14px; color: #475569; text-align: center; line-height: 1.9; }
+  .totals b { color: #4f46e5; }
+
+  .info { margin-top: 18px; font-size: 12.5px; color: #94a3b8; text-align: center; line-height: 1.7; max-width: 700px; }
+  .wrong-list { max-height: 320px; overflow-y: auto; margin: 10px 0; }
+  .wrong-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 10px; border-bottom: 1px solid #f1f5f9; font-size: 15px; }
+  .wrong-item .lv-tag { font-size: 11px; color: #94a3b8; margin-right: 8px; background: #f1f5f9; padding: 2px 7px; border-radius: 999px; }
+  .wrong-item .say-w { color: #4338ca; cursor: pointer; }
+
+  /* ===== app layout: hero banner + integrated card ===== */
+  .hero {
+    width: 740px; max-width: 100%;
+    background: linear-gradient(120deg, #4f46e5 0%, #7c3aed 55%, #9333ea 100%);
+    border-radius: 24px; color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 26px 32px; margin-bottom: 16px;
+    box-shadow: 0 16px 40px rgba(79, 70, 229, 0.30);
+    position: relative; overflow: hidden;
+  }
+  .hero::after {
+    content: ''; position: absolute; right: -50px; top: -70px;
+    width: 230px; height: 230px; background: rgba(255,255,255,0.07); border-radius: 50%;
+  }
+  .hero::before {
+    content: ''; position: absolute; left: 30%; bottom: -90px;
+    width: 180px; height: 180px; background: rgba(255,255,255,0.05); border-radius: 50%;
+  }
+  .hero h1 { margin: 0 0 6px; font-size: 28px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+  .tagline { margin: 0 0 14px; font-size: 13.5px; opacity: 0.85; }
+  .hero-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+  .hstat {
+    background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.25);
+    padding: 6px 12px; border-radius: 999px; font-size: 12.5px;
+  }
+  .hstat b { font-weight: 800; }
+  .hero-art { flex-shrink: 0; margin-left: 16px; position: relative; z-index: 1; }
+
+  .main-card { width: 740px; }
+  .main-card .tabs {
+    justify-content: center; margin: 0 0 16px; padding-bottom: 16px;
+    border-bottom: 1px solid #f1f5f9; max-width: none;
+  }
+  .unit-picker { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
+  #unitSel {
+    flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px;
+    font-family: inherit; font-size: 14px; font-weight: 600; color: var(--ink);
+    background: #f8fafc; outline: none; cursor: pointer;
+  }
+  #unitSel:focus { border-color: #a5b4fc; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.10); }
+  .nav-btn { padding: 10px 14px; border-radius: 10px; font-size: 12px; }
+  .best-badge {
+    font-size: 12px; font-weight: 700; padding: 7px 13px; border-radius: 999px;
+    background: #f1f5f9; color: #94a3b8; white-space: nowrap;
+  }
+  .best-badge.has { background: #ccfbf1; color: #0f766e; }
+
+  /* ===== mobile ===== */
+  @media (max-width: 600px) {
+    body { padding: 14px 10px 30px; }
+    .hero { flex-direction: column; text-align: center; padding: 22px 16px; }
+    .hero-art { margin: 10px 0 0; }
+    .hero-art svg { width: 120px; height: 96px; }
+    .hero-stats { justify-content: center; }
+    .hero h1 { font-size: 23px; }
+    .tagline { font-size: 12px; }
+    .card { padding: 18px 13px; }
+    .tab { padding: 8px 10px; font-size: 12.5px; }
+    .chip { padding: 7px 12px; font-size: 13px; }
+    .q-word { font-size: 33px; }
+    .q-meaning { font-size: 20px; }
+    .opts { grid-template-columns: 1fr; }
+    .flash { height: 200px; font-size: 34px; }
+    .flash.back { font-size: 21px; }
+    table.words td { padding: 8px 6px; font-size: 14px; }
+    table.words th { padding: 6px; }
+    td.eng { width: auto; }
+    td.eng .ipa { display: block; white-space: normal; }
+    .unit-picker { flex-wrap: wrap; }
+    .best-badge { display: none; }
+    button { padding: 9px 15px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="hero-text">
+    <h1>영단어 마스터</h1>
+    <p class="tagline">초5 ~ 고3 필수 영단어 1,200 · 발음기호 · 원어민 발음</p>
+    <div class="hero-stats">
+      <span class="hstat">⭐ 외운 단어 <b id="hMastered">0</b></span>
+      <span class="hstat">🎯 정답률 <b id="hAcc">0%</b></span>
+      <span class="hstat">🔥 최고 연속 <b id="hStreak">0</b></span>
+    </div>
+  </div>
+  <div class="hero-art">
+    <svg width="150" height="120" viewBox="0 0 150 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g transform="rotate(-8 30 28)">
+        <rect x="14" y="12" width="32" height="32" rx="8" fill="#ffffff"/>
+        <text x="30" y="35" text-anchor="middle" font-size="20" font-weight="800" fill="#4f46e5" font-family="Segoe UI, sans-serif">A</text>
+      </g>
+      <g transform="rotate(6 75 20)">
+        <rect x="59" y="4" width="32" height="32" rx="8" fill="#ffd166"/>
+        <text x="75" y="27" text-anchor="middle" font-size="20" font-weight="800" fill="#7a4f00" font-family="Segoe UI, sans-serif">B</text>
+      </g>
+      <g transform="rotate(-5 118 30)">
+        <rect x="102" y="14" width="32" height="32" rx="8" fill="#99f6e4"/>
+        <text x="118" y="37" text-anchor="middle" font-size="20" font-weight="800" fill="#0f766e" font-family="Segoe UI, sans-serif">C</text>
+      </g>
+      <path d="M75 64 C58 54 36 52 20 56 L20 100 C36 96 58 98 75 108 C92 98 114 96 130 100 L130 56 C114 52 92 54 75 64 Z" fill="#ffffff" opacity="0.95"/>
+      <path d="M75 64 L75 108" stroke="#c7d2fe" stroke-width="3"/>
+      <path d="M30 66 C44 63 58 64 68 70" stroke="#c7d2fe" stroke-width="3" stroke-linecap="round"/>
+      <path d="M30 78 C44 75 58 76 68 82" stroke="#e0e7ff" stroke-width="3" stroke-linecap="round"/>
+      <path d="M82 70 C92 64 106 63 120 66" stroke="#c7d2fe" stroke-width="3" stroke-linecap="round"/>
+      <path d="M82 82 C92 76 106 75 120 78" stroke="#e0e7ff" stroke-width="3" stroke-linecap="round"/>
+      <path d="M12 60 l2.5 5 5 2.5 -5 2.5 -2.5 5 -2.5 -5 -5 -2.5 5 -2.5 Z" fill="#ffd166"/>
+      <circle cx="140" cy="48" r="3" fill="#ffd166"/>
+      <circle cx="8" cy="40" r="2.5" fill="#99f6e4"/>
+    </svg>
+  </div>
+</div>
+
+<div class="level-bar" id="levelBar"></div>
+
+<div class="card main-card">
+  <div class="tabs" id="modeTabs">
+    <div class="tab active" data-mode="table">📖 단어표</div>
+    <div class="tab" data-mode="cards">🃏 카드</div>
+    <div class="tab" data-mode="test">✏️ 테스트</div>
+    <div class="tab" data-mode="wrong">❌ 오답 <span class="cnt" id="wrongCnt">0</span></div>
+    <div class="tab" data-mode="stats">📊 기록</div>
+  </div>
+  <div class="unit-picker" id="unitPicker">
+    <button class="secondary nav-btn" id="unitPrev">◀</button>
+    <select id="unitSel"></select>
+    <button class="secondary nav-btn" id="unitNext">▶</button>
+    <span class="best-badge" id="unitBestBadge"></span>
+  </div>
+  <div id="content"></div>
+</div>
+
+<div class="voice-bar">
+  🔊 발음:
+  <select id="srcSel">
+    <option value="dict">원어민 사전 발음 (추천)</option>
+    <option value="google">구글 번역 발음</option>
+    <option value="browser">내 컴퓨터 음성</option>
+  </select>
+  <span id="voiceWrap" style="display:none">음성: <select id="voiceSel"></select></span>
+  <button class="secondary" id="voiceTest" style="padding:6px 12px;font-size:12px">들어보기</button>
+</div>
+<div class="info">
+  단어를 클릭하면 발음이 들려요 🔊 · 품사: <span class="pos pos-n">명</span> 명사 <span class="pos pos-v">동</span> 동사 <span class="pos pos-a">형</span> 형용사 <span class="pos pos-d">부</span> 부사 <span class="pos pos-x">전·접</span> 전치사/접속사<br>
+  ⭐ = 테스트에서 3번 이상 맞힌 단어 · 모든 기록은 자동 저장<br>
+  원어민 사전 발음·구글 발음은 인터넷 연결이 필요해요 (안 되면 자동으로 다음 발음 소스로 넘어갑니다)
+</div>
+
+<script src="english-vocab-data.js"></script>
+<script>
+// ===== Word data: english-vocab-data.js 에서 로드 (const RAW) =====
+
+const LEVEL_NAMES = Object.keys(RAW);
+
+// ===== Persistent store =====
+const STORE_KEY = 'en-vocab-v1';
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; }
+}
+const sv = loadStore();
+const store = {
+  wordStats: sv.wordStats || {},
+  unitBest: sv.unitBest || {},
+  wrongKeys: Array.isArray(sv.wrongKeys) ? sv.wrongKeys : [],
+  answered: sv.answered || 0,
+  correct: sv.correct || 0,
+  streak: sv.streak || 0,
+  bestStreak: sv.bestStreak || 0
+};
+function saveStore() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {}
+}
+
+// ===== State =====
+let curLevel = LEVEL_NAMES[0];
+let curUnit = 0;
+let mode = 'table';
+let hideMode = 'none';   // 'none' | 'kor' | 'eng'
+
+let cardQueue = [], cardFlipped = false, cardDone = 0, cardTotal = 0;
+let testType = null, testQs = [], testIdx = 0, testScore = 0, testLocked = false, testOver = false;
+let wrongQuizOn = false, wrongLocked = false;
+let speakAllOn = false;
+
+// ===== Helpers =====
+function keyOf(level, w) { return level + '|' + w; }
+function unitWords(level, u) {
+  return RAW[level][u][1].map(([w, m, p, ipa]) => ({ w, m, p, ipa: ipa || '', key: keyOf(level, w) }));
+}
+function levelWords(level) {
+  return RAW[level].flatMap((unit, u) => unitWords(level, u));
+}
+function allWords() {
+  return LEVEL_NAMES.flatMap(lv => levelWords(lv));
+}
+function findByKey(key) {
+  const [lv, w] = key.split('|');
+  if (!RAW[lv]) return null;
+  for (const [, list] of RAW[lv]) {
+    const hit = list.find(([ww]) => ww === w);
+    if (hit) return { w: hit[0], m: hit[1], p: hit[2], ipa: hit[3] || '', key, level: lv };
+  }
+  return null;
+}
+function stat(key) { return store.wordStats[key] || { c: 0, w: 0 }; }
+function bumpStat(key, ok) {
+  const s = store.wordStats[key] || { c: 0, w: 0 };
+  if (ok) s.c++; else s.w++;
+  store.wordStats[key] = s;
+  store.answered++;
+  if (ok) {
+    store.correct++;
+    store.streak++;
+    if (store.streak > store.bestStreak) store.bestStreak = store.streak;
+    const i = store.wrongKeys.indexOf(key);
+    if (i >= 0) store.wrongKeys.splice(i, 1);
+  } else {
+    store.streak = 0;
+    if (!store.wrongKeys.includes(key)) store.wrongKeys.push(key);
+  }
+  saveStore();
+  updateWrongCnt();
+}
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+function posClass(p) {
+  const c = p.charAt(0);
+  if (c === '명') return 'pos-n';
+  if (c === '동') return 'pos-v';
+  if (c === '형') return 'pos-a';
+  if (c === '부') return 'pos-d';
+  return 'pos-x';
+}
+function posTag(p) { return `<span class="pos ${posClass(p)}">${p}</span>`; }
+function updateWrongCnt() {
+  document.getElementById('wrongCnt').textContent = store.wrongKeys.length;
+  updateHeroStats();
+}
+function updateHeroStats() {
+  let mastered = 0;
+  for (const k in store.wordStats) if (store.wordStats[k].c >= 3) mastered++;
+  const acc = store.answered ? Math.round(store.correct / store.answered * 100) : 0;
+  document.getElementById('hMastered').textContent = mastered;
+  document.getElementById('hAcc').textContent = acc + '%';
+  document.getElementById('hStreak').textContent = store.bestStreak;
+}
+
+// ===== Pronunciation system =====
+// Sources: 'dict' (real human recordings from Free Dictionary API / Wiktionary)
+//          'google' (Google Translate TTS), 'browser' (built-in speechSynthesis)
+// Fallback chain: dict -> google -> browser
+const ttsOK = 'speechSynthesis' in window;
+const VOICE_KEY = 'en-vocab-voice';
+const SRC_KEY = 'en-vocab-audiosrc';
+let enVoice = null;
+let audioSrc = localStorage.getItem(SRC_KEY) || 'dict';
+
+const player = new Audio();
+function stopAudio() {
+  try { player.onended = null; player.onerror = null; player.pause(); } catch (e) {}
+  if (ttsOK) { try { speechSynthesis.cancel(); } catch (e) {} }
+}
+
+// --- real human audio from dictionary (cached) ---
+const DICT_CACHE_KEY = 'en-vocab-dictcache';
+let dictCache = {};
+try { dictCache = JSON.parse(localStorage.getItem(DICT_CACHE_KEY)) || {}; } catch (e) {}
+function saveDictCache() {
+  try { localStorage.setItem(DICT_CACHE_KEY, JSON.stringify(dictCache)); } catch (e) {}
+}
+async function getDictAudio(word) {
+  if (word in dictCache) return dictCache[word];
+  let best = null;
+  try {
+    const r = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word));
+    if (r.ok) {
+      const data = await r.json();
+      outer:
+      for (const entry of data) {
+        for (const ph of (entry.phonetics || [])) {
+          if (!ph.audio) continue;
+          if (/-us\.mp3/i.test(ph.audio)) { best = ph.audio; break outer; }
+          if (!best) best = ph.audio;
+        }
+      }
+    }
+  } catch (e) { return null; }   // network error: don't cache, retry later
+  dictCache[word] = best;        // null = known to have no audio
+  saveDictCache();
+  return best;
+}
+function prefetchDictAudio(words) {
+  if (audioSrc !== 'dict') return;
+  words.forEach(w => { if (/^[A-Za-z'-]+$/.test(w)) getDictAudio(w.toLowerCase()); });
+}
+
+function playUrl(url) {
+  return new Promise(res => {
+    let done = false;
+    const finish = ok => { if (!done) { done = true; res(ok); } };
+    player.onended = () => finish(true);
+    player.onerror = () => finish(false);
+    player.src = url;
+    player.play().then(() => setTimeout(() => finish(true), 10000))
+                 .catch(() => finish(false));
+  });
+}
+function googleTtsUrl(text) {
+  return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=' + encodeURIComponent(text);
+}
+
+// --- browser TTS fallback ---
+function enVoices() {
+  return speechSynthesis.getVoices().filter(v => /^en([-_]|$)/i.test(v.lang));
+}
+function rankVoice(v) {
+  let s = 0;
+  if (/natural|neural/i.test(v.name)) s += 8;
+  if (v.localService) s += 4;
+  if (/en[-_]US/i.test(v.lang)) s += 2;
+  return s;
+}
+function pickDefaultVoice() {
+  const vs = enVoices();
+  if (!vs.length) return null;
+  return vs.slice().sort((a, b) => rankVoice(b) - rankVoice(a))[0];
+}
+function populateVoiceSel() {
+  const sel = document.getElementById('voiceSel');
+  const vs = enVoices();
+  const savedName = localStorage.getItem(VOICE_KEY);
+  if (!vs.length) { sel.innerHTML = '<option>음성 불러오는 중…</option>'; return; }
+  sel.innerHTML = vs.map(v =>
+    `<option value="${esc(v.name)}">${esc(v.name)} (${v.lang})${v.localService ? '' : ' · 원격'}</option>`).join('');
+  const chosen = vs.find(v => v.name === savedName) || pickDefaultVoice();
+  if (chosen) { sel.value = chosen.name; enVoice = chosen; }
+}
+function speakTTS(text) {
+  return new Promise(res => {
+    if (!ttsOK) return res(false);
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US';
+    u.rate = 0.9;
+    if (enVoice) u.voice = enVoice;
+    u.onend = () => res(true);
+    u.onerror = () => res(true);
+    try {
+      speechSynthesis.cancel();
+      setTimeout(() => { speechSynthesis.speak(u); speechSynthesis.resume(); }, 50);
+    } catch (e) { res(false); }
+  });
+}
+
+// --- main entry: play once, resolve when finished ---
+async function pronounce(text) {
+  stopAudio();
+  const single = /^[A-Za-z'-]+$/.test(text.trim());
+  if (audioSrc === 'dict' && single) {
+    const url = await getDictAudio(text.trim().toLowerCase());
+    if (url && await playUrl(url)) return;
+  }
+  if (audioSrc === 'dict' || audioSrc === 'google') {
+    if (await playUrl(googleTtsUrl(text))) return;
+  }
+  await speakTTS(text);
+}
+function speak(text) { pronounce(text); }   // fire-and-forget wrapper
+
+function stopSpeakAll() {
+  if (speakAllOn) {
+    speakAllOn = false;
+    stopAudio();
+  }
+}
+
+// --- settings UI wiring ---
+(function initAudioUI() {
+  const srcSel = document.getElementById('srcSel');
+  const voiceWrap = document.getElementById('voiceWrap');
+  srcSel.value = audioSrc;
+  voiceWrap.style.display = audioSrc === 'browser' ? 'inline' : 'none';
+  srcSel.addEventListener('change', () => {
+    audioSrc = srcSel.value;
+    localStorage.setItem(SRC_KEY, audioSrc);
+    voiceWrap.style.display = audioSrc === 'browser' ? 'inline' : 'none';
+  });
+  document.getElementById('voiceTest').addEventListener('click', () => speak('beautiful'));
+  if (ttsOK) {
+    populateVoiceSel();
+    speechSynthesis.onvoiceschanged = populateVoiceSel;
+    setTimeout(populateVoiceSel, 400);
+    setInterval(() => { if (speechSynthesis.speaking) speechSynthesis.resume(); }, 6000);
+    document.getElementById('voiceSel').addEventListener('change', e => {
+      const v = enVoices().find(x => x.name === e.target.value);
+      if (v) { enVoice = v; localStorage.setItem(VOICE_KEY, v.name); }
+    });
+  }
+})();
+
+// ===== Top bars =====
+function renderLevelBar() {
+  const bar = document.getElementById('levelBar');
+  bar.innerHTML = LEVEL_NAMES.map(lv =>
+    `<div class="chip ${lv === curLevel ? 'active' : ''}" data-lv="${lv}">${lv}</div>`).join('');
+  bar.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+    stopSpeakAll();
+    curLevel = c.dataset.lv;
+    curUnit = 0;
+    resetModeStates();
+    renderAll();
+  }));
+}
+function renderUnitBar() {
+  const sel = document.getElementById('unitSel');
+  sel.innerHTML = RAW[curLevel].map(([title], u) => {
+    const best = store.unitBest[curLevel + '|' + u];
+    return `<option value="${u}">${u + 1}단원 · ${title}${best !== undefined ? '  (' + best + '점)' : ''}</option>`;
+  }).join('');
+  sel.value = curUnit;
+  const best = store.unitBest[curLevel + '|' + curUnit];
+  const badge = document.getElementById('unitBestBadge');
+  badge.textContent = best !== undefined ? '최고 ' + best + '점' : '기록 없음';
+  badge.className = 'best-badge' + (best !== undefined ? ' has' : '');
+  // unit picker only matters for unit-scoped modes
+  document.getElementById('unitPicker').style.display =
+    (mode === 'wrong' || mode === 'stats') ? 'none' : 'flex';
+}
+function gotoUnit(u) {
+  stopSpeakAll();
+  curUnit = (u + RAW[curLevel].length) % RAW[curLevel].length;
+  resetModeStates();
+  renderAll();
+}
+document.getElementById('unitSel').addEventListener('change', e => gotoUnit(parseInt(e.target.value)));
+document.getElementById('unitPrev').addEventListener('click', () => gotoUnit(curUnit - 1));
+document.getElementById('unitNext').addEventListener('click', () => gotoUnit(curUnit + 1));
+function resetModeStates() {
+  testType = null; testQs = []; testOver = false;
+  cardQueue = []; cardTotal = 0; wrongQuizOn = false;
+  if (mode === 'cards') startCards();
+}
+
+// ===== Mode: word table =====
+function renderTable() {
+  const words = unitWords(curLevel, curUnit);
+  const title = RAW[curLevel][curUnit][0];
+  let html = `<div class="unit-title">${curLevel} · ${curUnit + 1}단원 「${title}」</div>
+    <div class="toolbar">
+      <button class="secondary ${hideMode === 'eng' ? 'on' : ''}" id="hideEng">단어 가리기</button>
+      <button class="secondary ${hideMode === 'kor' ? 'on' : ''}" id="hideKor">뜻 가리기</button>
+      <button class="secondary" id="speakAll">${speakAllOn ? '⏹ 중지' : '🔊 전체 듣기'}</button>
+    </div>
+    <table class="words"><tr><th>영단어</th><th>품사</th><th>뜻</th><th></th></tr>`;
+  for (const it of words) {
+    const mastered = stat(it.key).c >= 3;
+    html += `<tr class="wrow" data-w="${esc(it.w)}">
+      <td class="eng ${hideMode === 'eng' ? 'm-hidden' : ''}">${esc(it.w)} <span class="ipa">${esc(it.ipa)}</span></td>
+      <td class="pos-td">${posTag(it.p)}</td>
+      <td class="kor ${hideMode === 'kor' ? 'm-hidden' : ''}">${esc(it.m)}</td>
+      <td class="star">${mastered ? '⭐' : ''}</td></tr>`;
+  }
+  html += '</table>';
+  const el = document.getElementById('content');
+  el.innerHTML = html;
+
+  el.querySelectorAll('tr.wrow').forEach(tr => {
+    const eng = tr.querySelector('.eng');
+    const kor = tr.querySelector('.kor');
+    eng.addEventListener('click', () => {
+      if (eng.classList.contains('m-hidden')) eng.classList.remove('m-hidden');
+      else speak(tr.dataset.w);
+    });
+    kor.addEventListener('click', () => {
+      if (kor.classList.contains('m-hidden')) kor.classList.remove('m-hidden');
+      else speak(tr.dataset.w);
+    });
+  });
+  el.querySelector('#hideEng').addEventListener('click', () => {
+    hideMode = hideMode === 'eng' ? 'none' : 'eng';
+    renderTable();
+  });
+  el.querySelector('#hideKor').addEventListener('click', () => {
+    hideMode = hideMode === 'kor' ? 'none' : 'kor';
+    renderTable();
+  });
+  el.querySelector('#speakAll').addEventListener('click', () => {
+    if (speakAllOn) {            // stop
+      stopSpeakAll();
+      renderTable();
+      return;
+    }
+    speakAllOn = true;
+    renderTable();
+    const ws = words.map(x => x.w);
+    let i = 0;
+    const step = async () => {
+      if (!speakAllOn) return;
+      if (i >= ws.length) {
+        speakAllOn = false;
+        if (mode === 'table') renderTable();
+        return;
+      }
+      await pronounce(ws[i]);
+      if (!speakAllOn) return;
+      i++;
+      setTimeout(step, 380);
+    };
+    step();
+  });
+  prefetchDictAudio(words.map(x => x.w));
+}
+
+// ===== Mode: flashcards =====
+function startCards() {
+  cardQueue = shuffle(unitWords(curLevel, curUnit).slice());
+  cardTotal = cardQueue.length;
+  cardDone = 0;
+  cardFlipped = false;
+}
+function renderCards() {
+  const el = document.getElementById('content');
+  if (cardQueue.length === 0 && cardTotal === 0) startCards();
+  if (cardQueue.length === 0) {
+    el.innerHTML = `<div class="center" style="padding:40px 0">
+      <div style="font-size:60px">🎉</div>
+      <div style="font-size:20px;font-weight:bold;margin:12px 0">카드 한 바퀴 완료!</div>
+      <button id="againBtn">다시 섞어서 보기</button></div>`;
+    el.querySelector('#againBtn').addEventListener('click', () => { startCards(); renderCards(); });
+    return;
+  }
+  const cur = cardQueue[0];
+  el.innerHTML = `
+    <div class="progress-line">남은 카드 ${cardQueue.length}장 · 완료 ${cardDone}장</div>
+    <div class="flash ${cardFlipped ? 'back' : ''}" id="flashCard">
+      ${cardFlipped ? esc(cur.m) : esc(cur.w)}
+      <div class="sub">${cardFlipped ? posTag(cur.p) + ' ' + esc(cur.w) + ' ' + esc(cur.ipa) : esc(cur.ipa) + ' · 클릭하면 뜻이 보여요'}</div>
+    </div>
+    <div class="actions" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+      <button class="secondary" id="sayBtn">🔊 발음</button>
+      <button class="red" id="dontKnow">❌ 몰라요</button>
+      <button class="green" id="know">✅ 알아요</button>
+    </div>`;
+  el.querySelector('#flashCard').addEventListener('click', () => { cardFlipped = !cardFlipped; renderCards(); });
+  el.querySelector('#sayBtn').addEventListener('click', () => speak(cur.w));
+  el.querySelector('#dontKnow').addEventListener('click', () => {
+    cardQueue.push(cardQueue.shift());
+    cardFlipped = false;
+    renderCards();
+  });
+  el.querySelector('#know').addEventListener('click', () => {
+    cardQueue.shift();
+    cardDone++;
+    cardFlipped = false;
+    renderCards();
+  });
+  speak(cur.w);
+}
+
+// ===== Mode: test =====
+function startTest(type) {
+  testType = type;
+  testQs = shuffle(unitWords(curLevel, curUnit).slice());
+  testIdx = 0; testScore = 0; testLocked = false; testOver = false;
+  renderTest();
+}
+function mcOptions(correct) {
+  const pool = levelWords(curLevel).filter(x => x.w !== correct.w && x.m !== correct.m);
+  const picks = shuffle(pool.slice()).slice(0, 3).map(x => x.m);
+  return shuffle([correct.m, ...picks]);
+}
+function renderTest() {
+  const el = document.getElementById('content');
+  if (testType === null) {
+    el.innerHTML = `<div class="center" style="padding:26px 0">
+      <div class="unit-title" style="text-align:center">${curLevel} · ${curUnit + 1}단원 테스트 (10문제)</div>
+      <p style="color:#64748b">유형을 골라주세요</p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button id="mcBtn">영어 → 뜻 (4지선다)</button>
+        <button id="typeBtn" class="green">뜻 → 영어 (직접 입력)</button>
+      </div></div>`;
+    el.querySelector('#mcBtn').addEventListener('click', () => startTest('mc'));
+    el.querySelector('#typeBtn').addEventListener('click', () => startTest('type'));
+    return;
+  }
+  if (testOver) {
+    const pct = Math.round(testScore / testQs.length * 100);
+    const bk = curLevel + '|' + curUnit;
+    const prevBest = store.unitBest[bk];
+    const isNewBest = prevBest === undefined || pct > prevBest;
+    if (isNewBest) { store.unitBest[bk] = pct; saveStore(); }
+    el.innerHTML = `<div class="center" style="padding:30px 0">
+      <div style="font-size:56px">${pct === 100 ? '🏆' : pct >= 70 ? '😊' : '💪'}</div>
+      <div style="font-size:26px;font-weight:bold;margin:10px 0">${pct}점</div>
+      <div style="color:#64748b">${testScore} / ${testQs.length} 정답${isNewBest && prevBest !== undefined ? ' · 최고 기록 갱신!' : ''}</div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap">
+        <button id="retry">다시 풀기</button>
+        <button class="secondary" id="otherType">다른 유형</button>
+      </div></div>`;
+    el.querySelector('#retry').addEventListener('click', () => startTest(testType));
+    el.querySelector('#otherType').addEventListener('click', () => { testType = null; renderTest(); });
+    renderUnitBar();
+    return;
+  }
+  const q = testQs[testIdx];
+  const head = `<div class="progress-line">${testIdx + 1} / ${testQs.length} · 점수 ${testScore}</div>`;
+  if (testType === 'mc') {
+    const opts = mcOptions(q);
+    let html = head + `<div class="q-word">${esc(q.w)} <button class="secondary" style="font-size:13px;padding:6px 10px;vertical-align:middle" id="sayQ">🔊</button></div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
+    opts.forEach(o => { html += `<div class="opt" data-m="${esc(o)}">${esc(o)}</div>`; });
+    html += '</div><div class="feedback" id="fb">&nbsp;</div>';
+    el.innerHTML = html;
+    el.querySelector('#sayQ').addEventListener('click', () => speak(q.w));
+    el.querySelectorAll('.opt').forEach(op => op.addEventListener('click', () => {
+      if (testLocked) return;
+      testLocked = true;
+      const ok = op.dataset.m === q.m;
+      op.classList.add(ok ? 'right' : 'wrong');
+      if (!ok) {
+        el.querySelectorAll('.opt').forEach(o2 => { if (o2.dataset.m === q.m) o2.classList.add('right'); });
+      }
+      const fb = el.querySelector('#fb');
+      fb.textContent = ok ? '✓ 정답!' : '✗ 정답: ' + q.m;
+      fb.className = 'feedback ' + (ok ? 'ok' : 'no');
+      if (ok) testScore++;
+      bumpStat(q.key, ok);
+      setTimeout(() => {
+        testIdx++; testLocked = false;
+        if (testIdx >= testQs.length) testOver = true;
+        renderTest();
+      }, ok ? 800 : 1500);
+    }));
+    speak(q.w);
+  } else {
+    el.innerHTML = head + `<div class="q-meaning">${esc(q.m)} ${posTag(q.p)}</div>
+      <input class="answer" id="ans" placeholder="영어 단어를 입력하고 Enter" autocomplete="off" spellcheck="false">
+      <div class="feedback" id="fb">&nbsp;</div>`;
+    const inp = el.querySelector('#ans');
+    inp.focus();
+    inp.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' || testLocked) return;
+      const v = inp.value.trim().toLowerCase();
+      if (!v) return;
+      testLocked = true;
+      const ok = v === q.w.toLowerCase();
+      const fb = el.querySelector('#fb');
+      fb.textContent = ok ? '✓ 정답!' : '✗ 정답: ' + q.w;
+      fb.className = 'feedback ' + (ok ? 'ok' : 'no');
+      if (ok) testScore++;
+      bumpStat(q.key, ok);
+      speak(q.w);
+      setTimeout(() => {
+        testIdx++; testLocked = false;
+        if (testIdx >= testQs.length) testOver = true;
+        renderTest();
+      }, ok ? 800 : 1600);
+    });
+  }
+}
+
+// ===== Mode: wrong review =====
+function renderWrong() {
+  const el = document.getElementById('content');
+  if (store.wrongKeys.length === 0) {
+    el.innerHTML = `<div class="center" style="padding:40px 0">
+      <div style="font-size:60px">🎉</div>
+      <div style="font-size:20px;font-weight:bold;margin:12px 0">틀린 단어가 없어요!</div>
+      <div style="color:#64748b">테스트에서 틀린 단어가 여기에 모여요.</div></div>`;
+    return;
+  }
+  if (!wrongQuizOn) {
+    const items = store.wrongKeys.map(findByKey).filter(Boolean);
+    let html = `<div class="unit-title">틀린 단어 ${items.length}개</div><div class="wrong-list">`;
+    for (const it of items) {
+      html += `<div class="wrong-item"><span><span class="lv-tag">${it.level}</span><b class="say-w" data-w="${esc(it.w)}">${esc(it.w)}</b> <span class="ipa">${esc(it.ipa)}</span> ${posTag(it.p)}</span><span>${esc(it.m)}</span></div>`;
+    }
+    html += `</div><div class="center"><button id="startWrong">오답 퀴즈 시작 (맞히면 목록에서 빠져요)</button></div>`;
+    el.innerHTML = html;
+    el.querySelectorAll('.say-w').forEach(b => b.addEventListener('click', () => speak(b.dataset.w)));
+    el.querySelector('#startWrong').addEventListener('click', () => { wrongQuizOn = true; renderWrong(); });
+    return;
+  }
+  const key = store.wrongKeys[Math.floor(Math.random() * store.wrongKeys.length)];
+  const q = findByKey(key);
+  if (!q) { store.wrongKeys = store.wrongKeys.filter(k => k !== key); saveStore(); updateWrongCnt(); renderWrong(); return; }
+  const pool = allWords().filter(x => x.w !== q.w && x.m !== q.m);
+  const opts = shuffle([q.m, ...shuffle(pool.slice()).slice(0, 3).map(x => x.m)]);
+  let html = `<div class="progress-line">남은 오답 ${store.wrongKeys.length}개</div>
+    <div class="q-word">${esc(q.w)} <button class="secondary" style="font-size:13px;padding:6px 10px;vertical-align:middle" id="sayQ">🔊</button></div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
+  opts.forEach(o => { html += `<div class="opt" data-m="${esc(o)}">${esc(o)}</div>`; });
+  html += '</div><div class="feedback" id="fb">&nbsp;</div><div class="center"><button class="secondary" id="stopWrong">그만하기</button></div>';
+  el.innerHTML = html;
+  el.querySelector('#sayQ').addEventListener('click', () => speak(q.w));
+  el.querySelector('#stopWrong').addEventListener('click', () => { wrongQuizOn = false; renderWrong(); });
+  wrongLocked = false;
+  el.querySelectorAll('.opt').forEach(op => op.addEventListener('click', () => {
+    if (wrongLocked) return;
+    wrongLocked = true;
+    const ok = op.dataset.m === q.m;
+    op.classList.add(ok ? 'right' : 'wrong');
+    if (!ok) el.querySelectorAll('.opt').forEach(o2 => { if (o2.dataset.m === q.m) o2.classList.add('right'); });
+    const fb = el.querySelector('#fb');
+    fb.textContent = ok ? '✓ 정답! 목록에서 제거' : '✗ 정답: ' + q.m;
+    fb.className = 'feedback ' + (ok ? 'ok' : 'no');
+    bumpStat(q.key, ok);
+    setTimeout(() => {
+      if (store.wrongKeys.length === 0) wrongQuizOn = false;
+      renderWrong();
+    }, ok ? 800 : 1500);
+  }));
+  speak(q.w);
+}
+
+// ===== Mode: stats =====
+function renderStats() {
+  const el = document.getElementById('content');
+  const maxUnits = Math.max(...LEVEL_NAMES.map(lv => RAW[lv].length));
+  let html = `<div class="unit-title">학습 기록</div><div class="stats-wrap">
+    <table class="stats"><tr><th>레벨</th>`;
+  for (let u = 0; u < maxUnits; u++) html += `<th>${u + 1}단원</th>`;
+  html += '<th>⭐ 외운 단어</th></tr>';
+  for (const lv of LEVEL_NAMES) {
+    const lw = levelWords(lv);
+    let mastered = 0;
+    for (const it of lw) if (stat(it.key).c >= 3) mastered++;
+    html += `<tr><td class="lv">${lv}</td>`;
+    for (let u = 0; u < maxUnits; u++) {
+      if (u >= RAW[lv].length) { html += '<td></td>'; continue; }
+      const b = store.unitBest[lv + '|' + u];
+      html += `<td>${b !== undefined ? b : '—'}</td>`;
+    }
+    html += `<td>${mastered}/${lw.length}</td></tr>`;
+  }
+  const acc = store.answered ? Math.round(store.correct / store.answered * 100) : 0;
+  html += `</table></div>
+    <div class="totals">
+      누적 정답률 <b>${acc}%</b> · 푼 문제 <b>${store.answered}</b> · 현재 연속 <b>${store.streak}</b> · 최고 연속 <b>${store.bestStreak}</b>
+    </div>
+    <div class="center" style="margin-top:14px"><button class="red" id="resetBtn">기록 전체 초기화</button></div>`;
+  el.innerHTML = html;
+  el.querySelector('#resetBtn').addEventListener('click', () => {
+    if (!confirm('정말 모든 학습 기록을 지울까요?')) return;
+    localStorage.removeItem(STORE_KEY);
+    store.wordStats = {}; store.unitBest = {}; store.wrongKeys = [];
+    store.answered = 0; store.correct = 0; store.streak = 0; store.bestStreak = 0;
+    updateWrongCnt();
+    renderAll();
+  });
+}
+
+// ===== Render dispatch =====
+function renderContent() {
+  if (mode === 'table') renderTable();
+  else if (mode === 'cards') renderCards();
+  else if (mode === 'test') renderTest();
+  else if (mode === 'wrong') renderWrong();
+  else renderStats();
+}
+function renderAll() {
+  renderLevelBar();
+  renderUnitBar();
+  renderContent();
+}
+
+document.querySelectorAll('#modeTabs .tab').forEach(t => {
+  t.addEventListener('click', () => {
+    stopSpeakAll();
+    document.querySelectorAll('#modeTabs .tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    mode = t.dataset.mode;
+    if (mode === 'cards') startCards();
+    if (mode === 'test') { testType = null; testOver = false; }
+    if (mode === 'wrong') wrongQuizOn = false;
+    renderUnitBar();
+    renderContent();
+  });
+});
+
+// ===== Init =====
+updateWrongCnt();
+renderAll();
+</script>
+</body>
+</html>

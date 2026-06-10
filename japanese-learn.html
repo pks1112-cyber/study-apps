@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>🌸 일본어 학습 🌸</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: linear-gradient(180deg, #fff5f8 0%, #ffe6ee 100%);
+    color: #4a2c3a;
+    font-family: 'Segoe UI', 'Noto Sans KR', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px;
+    min-height: 100vh;
+  }
+  h1 {
+    margin: 0 0 18px;
+    font-size: 30px;
+    color: #d63384;
+    text-shadow: 2px 2px 0 #fff;
+  }
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .tab {
+    padding: 10px 18px;
+    background: #fff;
+    border: 2px solid #ffc1cc;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #6c4757;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .tab:hover { background: #ffe6ee; }
+  .tab.active {
+    background: #d63384;
+    color: white;
+    border-color: #d63384;
+  }
+  .card {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    width: 540px;
+    max-width: 100%;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    text-align: center;
+  }
+  .meaning {
+    color: #888;
+    font-size: 18px;
+    margin-bottom: 8px;
+    min-height: 26px;
+  }
+  .prompt {
+    font-size: 96px;
+    margin: 8px 0;
+    color: #2a1825;
+    font-weight: 500;
+    line-height: 1.1;
+    word-break: keep-all;
+  }
+  .prompt.small { font-size: 40px; line-height: 1.35; }
+  .prompt.medium { font-size: 60px; }
+  .reading {
+    color: #b58aa0;
+    font-size: 18px;
+    margin: 4px 0 12px;
+    min-height: 24px;
+    letter-spacing: 1px;
+  }
+  input[type="text"] {
+    width: 100%;
+    padding: 14px;
+    font-size: 22px;
+    border: 2px solid #ffc1cc;
+    border-radius: 10px;
+    outline: none;
+    text-align: center;
+    font-family: inherit;
+  }
+  input[type="text"]:focus { border-color: #d63384; }
+  .actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  button {
+    padding: 10px 22px;
+    background: #d63384;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button.secondary {
+    background: #f5e1e8;
+    color: #6c4757;
+  }
+  button:hover { opacity: 0.85; }
+  button:active { transform: translateY(1px); }
+  .feedback {
+    min-height: 32px;
+    margin-top: 14px;
+    font-weight: bold;
+    font-size: 18px;
+  }
+  .correct { color: #28a745; }
+  .wrong { color: #d63384; }
+  .answer-display {
+    margin-top: 4px;
+    color: #888;
+    font-size: 15px;
+    min-height: 22px;
+  }
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 18px;
+    font-size: 14px;
+    color: #888;
+  }
+  .footer span { color: #d63384; font-weight: bold; }
+  .life-stats {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #f0d4dd;
+    font-size: 12px;
+    color: #b58aa0;
+    text-align: center;
+  }
+  .info {
+    margin-top: 18px;
+    font-size: 13px;
+    color: #999;
+    text-align: center;
+    line-height: 1.6;
+    max-width: 540px;
+  }
+  /* Chart (study) view */
+  .chart-card { width: 660px; }
+  .chart-toggle {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 18px;
+  }
+  .chart-toggle button {
+    background: #f5e1e8;
+    color: #6c4757;
+    padding: 8px 18px;
+  }
+  .chart-toggle button.active { background: #d63384; color: #fff; }
+  .chart-section-title {
+    text-align: left;
+    color: #d63384;
+    font-weight: bold;
+    font-size: 15px;
+    margin: 18px 0 8px;
+  }
+  .kana-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 7px;
+  }
+  .kana-cell {
+    background: #fff;
+    border: 2px solid #ffd6e0;
+    border-radius: 10px;
+    padding: 8px 2px 6px;
+    cursor: pointer;
+    transition: all 0.12s;
+    user-select: none;
+  }
+  .kana-cell:hover { background: #ffe6ee; border-color: #d63384; transform: translateY(-2px); }
+  .kana-cell:active { transform: translateY(0); }
+  .kana-cell.flash { background: #d63384; }
+  .kana-cell.flash .big, .kana-cell.flash .rom { color: #fff; }
+  .kana-cell .big { font-size: 30px; color: #2a1825; line-height: 1.1; }
+  .kana-cell .rom { font-size: 12px; color: #b58aa0; margin-top: 2px; }
+  .kana-cell.empty { background: transparent; border: none; cursor: default; }
+  .kana-cell.empty:hover { transform: none; }
+  .chart-hint { margin-top: 16px; font-size: 13px; color: #999; }
+</style>
+</head>
+<body>
+<h1>🌸 일본어 학습 🌸</h1>
+<div class="tabs">
+  <div class="tab active" data-mode="chart">📖 표 외우기</div>
+  <div class="tab" data-mode="hiragana">히라가나</div>
+  <div class="tab" data-mode="katakana">가타카나</div>
+  <div class="tab" data-mode="words">단어</div>
+  <div class="tab" data-mode="sentences">문장</div>
+  <div class="tab" data-mode="review">❌ 복습 <span id="reviewCount">0</span></div>
+</div>
+
+<!-- Study chart view -->
+<div class="card chart-card" id="chartView">
+  <div class="chart-toggle">
+    <button id="chartHira" class="active">히라가나</button>
+    <button id="chartKata">가타카나</button>
+  </div>
+  <div id="chartBody"></div>
+  <div class="chart-hint" id="voiceStatus">🔊 글자를 클릭하면 일본어 발음이 들려요</div>
+</div>
+
+<!-- Quiz view -->
+<div class="card" id="quizCard" style="display:none;">
+  <div class="meaning" id="meaning">&nbsp;</div>
+  <div class="prompt" id="prompt">あ</div>
+  <div class="reading" id="reading">&nbsp;</div>
+  <input type="text" id="answer" placeholder="발음을 한글로 입력 (예: 와따시)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
+  <div class="actions">
+    <button id="check">확인 (Enter)</button>
+    <button id="speak" class="secondary">🔊 듣기</button>
+    <button id="hint" class="secondary">힌트</button>
+    <button id="next" class="secondary">다음 ▶</button>
+  </div>
+  <div class="feedback" id="feedback">&nbsp;</div>
+  <div class="answer-display" id="answerDisplay">&nbsp;</div>
+  <div class="footer">
+    <div>점수: <span id="score">0</span></div>
+    <div>🔥 연속: <span id="streak">0</span></div>
+    <div>진행: <span id="progress">1 / —</span></div>
+  </div>
+  <div class="life-stats" id="lifeStats">누적 정답률 0%  ·  최고 연속 0  ·  푼 문제 0</div>
+</div>
+<div class="info">
+  발음을 한글로 적으세요. 예: わたしはげんきです。 → 와따시와 갱끼데쓰<br>
+  된소리/거센소리/연한소리 모두 인정 (카/까/가, 데스/데쓰 등)
+</div>
+
+<script>
+// === Data ===
+
+const HIRAGANA = [
+  { k: 'あ', r: ['아'] }, { k: 'い', r: ['이'] }, { k: 'う', r: ['우'] }, { k: 'え', r: ['에'] }, { k: 'お', r: ['오'] },
+  { k: 'か', r: ['카', '가', '까'] }, { k: 'き', r: ['키', '기', '끼'] }, { k: 'く', r: ['쿠', '구', '꾸'] }, { k: 'け', r: ['케', '게', '께'] }, { k: 'こ', r: ['코', '고', '꼬'] },
+  { k: 'さ', r: ['사'] }, { k: 'し', r: ['시'] }, { k: 'す', r: ['스', '쓰'] }, { k: 'せ', r: ['세'] }, { k: 'そ', r: ['소'] },
+  { k: 'た', r: ['타', '다', '따'] }, { k: 'ち', r: ['치', '지', '찌'] }, { k: 'つ', r: ['츠', '쯔'] }, { k: 'て', r: ['테', '데', '떼'] }, { k: 'と', r: ['토', '도', '또'] },
+  { k: 'な', r: ['나'] }, { k: 'に', r: ['니'] }, { k: 'ぬ', r: ['누'] }, { k: 'ね', r: ['네'] }, { k: 'の', r: ['노'] },
+  { k: 'は', r: ['하'] }, { k: 'ひ', r: ['히'] }, { k: 'ふ', r: ['후', '흐'] }, { k: 'へ', r: ['헤'] }, { k: 'ほ', r: ['호'] },
+  { k: 'ま', r: ['마'] }, { k: 'み', r: ['미'] }, { k: 'む', r: ['무'] }, { k: 'め', r: ['메'] }, { k: 'も', r: ['모'] },
+  { k: 'や', r: ['야'] }, { k: 'ゆ', r: ['유'] }, { k: 'よ', r: ['요'] },
+  { k: 'ら', r: ['라'] }, { k: 'り', r: ['리'] }, { k: 'る', r: ['루'] }, { k: 'れ', r: ['레'] }, { k: 'ろ', r: ['로'] },
+  { k: 'わ', r: ['와'] }, { k: 'を', r: ['오', '워'] }, { k: 'ん', r: ['응', 'ㄴ', '은'] },
+  // dakuten / handakuten
+  { k: 'が', r: ['가'] }, { k: 'ぎ', r: ['기'] }, { k: 'ぐ', r: ['구'] }, { k: 'げ', r: ['게'] }, { k: 'ご', r: ['고'] },
+  { k: 'ざ', r: ['자'] }, { k: 'じ', r: ['지'] }, { k: 'ず', r: ['즈'] }, { k: 'ぜ', r: ['제'] }, { k: 'ぞ', r: ['조'] },
+  { k: 'だ', r: ['다'] }, { k: 'ぢ', r: ['지'] }, { k: 'づ', r: ['즈'] }, { k: 'で', r: ['데'] }, { k: 'ど', r: ['도'] },
+  { k: 'ば', r: ['바'] }, { k: 'び', r: ['비'] }, { k: 'ぶ', r: ['부'] }, { k: 'べ', r: ['베'] }, { k: 'ぼ', r: ['보'] },
+  { k: 'ぱ', r: ['파', '빠'] }, { k: 'ぴ', r: ['피', '삐'] }, { k: 'ぷ', r: ['푸', '뿌'] }, { k: 'ぺ', r: ['페', '뻬'] }, { k: 'ぽ', r: ['포', '뽀'] }
+];
+
+const KATAKANA = [
+  { k: 'ア', r: ['아'] }, { k: 'イ', r: ['이'] }, { k: 'ウ', r: ['우'] }, { k: 'エ', r: ['에'] }, { k: 'オ', r: ['오'] },
+  { k: 'カ', r: ['카', '가', '까'] }, { k: 'キ', r: ['키', '기', '끼'] }, { k: 'ク', r: ['쿠', '구', '꾸'] }, { k: 'ケ', r: ['케', '게', '께'] }, { k: 'コ', r: ['코', '고', '꼬'] },
+  { k: 'サ', r: ['사'] }, { k: 'シ', r: ['시'] }, { k: 'ス', r: ['스', '쓰'] }, { k: 'セ', r: ['세'] }, { k: 'ソ', r: ['소'] },
+  { k: 'タ', r: ['타', '다', '따'] }, { k: 'チ', r: ['치', '지', '찌'] }, { k: 'ツ', r: ['츠', '쯔'] }, { k: 'テ', r: ['테', '데', '떼'] }, { k: 'ト', r: ['토', '도', '또'] },
+  { k: 'ナ', r: ['나'] }, { k: 'ニ', r: ['니'] }, { k: 'ヌ', r: ['누'] }, { k: 'ネ', r: ['네'] }, { k: 'ノ', r: ['노'] },
+  { k: 'ハ', r: ['하'] }, { k: 'ヒ', r: ['히'] }, { k: 'フ', r: ['후', '흐'] }, { k: 'ヘ', r: ['헤'] }, { k: 'ホ', r: ['호'] },
+  { k: 'マ', r: ['마'] }, { k: 'ミ', r: ['미'] }, { k: 'ム', r: ['무'] }, { k: 'メ', r: ['메'] }, { k: 'モ', r: ['모'] },
+  { k: 'ヤ', r: ['야'] }, { k: 'ユ', r: ['유'] }, { k: 'ヨ', r: ['요'] },
+  { k: 'ラ', r: ['라'] }, { k: 'リ', r: ['리'] }, { k: 'ル', r: ['루'] }, { k: 'レ', r: ['레'] }, { k: 'ロ', r: ['로'] },
+  { k: 'ワ', r: ['와'] }, { k: 'ヲ', r: ['오', '워'] }, { k: 'ン', r: ['응', 'ㄴ', '은'] },
+  { k: 'ガ', r: ['가'] }, { k: 'ギ', r: ['기'] }, { k: 'グ', r: ['구'] }, { k: 'ゲ', r: ['게'] }, { k: 'ゴ', r: ['고'] },
+  { k: 'ザ', r: ['자'] }, { k: 'ジ', r: ['지'] }, { k: 'ズ', r: ['즈'] }, { k: 'ゼ', r: ['제'] }, { k: 'ゾ', r: ['조'] },
+  { k: 'ダ', r: ['다'] }, { k: 'ヂ', r: ['지'] }, { k: 'ヅ', r: ['즈'] }, { k: 'デ', r: ['데'] }, { k: 'ド', r: ['도'] },
+  { k: 'バ', r: ['바'] }, { k: 'ビ', r: ['비'] }, { k: 'ブ', r: ['부'] }, { k: 'ベ', r: ['베'] }, { k: 'ボ', r: ['보'] },
+  { k: 'パ', r: ['파', '빠'] }, { k: 'ピ', r: ['피', '삐'] }, { k: 'プ', r: ['푸', '뿌'] }, { k: 'ペ', r: ['페', '뻬'] }, { k: 'ポ', r: ['포', '뽀'] }
+];
+
+const WORDS = [
+  { jp: 'こんにちは', reading: 'こんにちは', kor: ['곤니치와', '곤니찌와'], meaning: '안녕하세요 (낮 인사)' },
+  { jp: 'おはよう', reading: 'おはよう', kor: ['오하요', '오하요우'], meaning: '안녕 (아침 인사)' },
+  { jp: 'こんばんは', reading: 'こんばんは', kor: ['곤방와'], meaning: '안녕하세요 (저녁 인사)' },
+  { jp: 'ありがとう', reading: 'ありがとう', kor: ['아리가또', '아리가토', '아리가또우', '아리가토우'], meaning: '고맙습니다' },
+  { jp: 'すみません', reading: 'すみません', kor: ['스미마셍', '스미마센'], meaning: '죄송합니다 / 실례합니다' },
+  { jp: 'はい', reading: 'はい', kor: ['하이'], meaning: '네' },
+  { jp: 'いいえ', reading: 'いいえ', kor: ['이이에'], meaning: '아니요' },
+  { jp: '私', reading: 'わたし', kor: ['와타시', '와따시'], meaning: '나, 저' },
+  { jp: '元気', reading: 'げんき', kor: ['겐키', '갱끼', '겡끼', '겡키'], meaning: '잘 지냄, 건강함' },
+  { jp: '猫', reading: 'ねこ', kor: ['네코', '네꼬'], meaning: '고양이' },
+  { jp: '犬', reading: 'いぬ', kor: ['이누'], meaning: '개' },
+  { jp: '水', reading: 'みず', kor: ['미즈'], meaning: '물' },
+  { jp: '食べる', reading: 'たべる', kor: ['타베루', '다베루'], meaning: '먹다' },
+  { jp: '飲む', reading: 'のむ', kor: ['노무'], meaning: '마시다' },
+  { jp: '行く', reading: 'いく', kor: ['이쿠', '이꾸'], meaning: '가다' },
+  { jp: '見る', reading: 'みる', kor: ['미루'], meaning: '보다' },
+  { jp: '学校', reading: 'がっこう', kor: ['갓코우', '갓꼬우', '각꼬오', '갓코오'], meaning: '학교' },
+  { jp: '友達', reading: 'ともだち', kor: ['토모다치', '도모다치', '토모다찌'], meaning: '친구' },
+  { jp: '日本', reading: 'にほん', kor: ['니혼', '니홍'], meaning: '일본' },
+  { jp: '韓国', reading: 'かんこく', kor: ['칸코쿠', '강꼬꾸', '간고쿠'], meaning: '한국' },
+  { jp: '先生', reading: 'せんせい', kor: ['센세이', '셍세이'], meaning: '선생님' },
+  { jp: '学生', reading: 'がくせい', kor: ['각세이', '가쿠세이'], meaning: '학생' },
+  { jp: '本', reading: 'ほん', kor: ['혼', '홍'], meaning: '책' },
+  { jp: '今日', reading: 'きょう', kor: ['쿄오', '교오', '쿄우'], meaning: '오늘' },
+  { jp: '明日', reading: 'あした', kor: ['아시타', '아시따'], meaning: '내일' },
+  { jp: '好き', reading: 'すき', kor: ['스키', '스끼'], meaning: '좋아함' },
+  { jp: '大丈夫', reading: 'だいじょうぶ', kor: ['다이조부', '다이조오부', '다이죠부'], meaning: '괜찮음' },
+  { jp: '美味しい', reading: 'おいしい', kor: ['오이시이'], meaning: '맛있다' }
+];
+
+const SENTENCES = [
+  { jp: 'わたしはがくせいです。', reading: 'わたしはがくせいです。', kor: ['와따시와 각세이데쓰', '와타시와 가쿠세이데스'], meaning: '저는 학생입니다.' },
+  { jp: 'おなまえはなんですか。', reading: 'おなまえはなんですか。', kor: ['오나마에와 난데스카', '오나마에와 난데쓰까'], meaning: '이름이 무엇입니까?' },
+  { jp: 'いただきます。', reading: 'いただきます。', kor: ['이따다끼마쓰', '이타다키마스'], meaning: '잘 먹겠습니다.' },
+  { jp: 'ごちそうさまでした。', reading: 'ごちそうさまでした。', kor: ['고치소사마데시따', '고치소사마데시타'], meaning: '잘 먹었습니다.' },
+  { jp: 'おやすみなさい。', reading: 'おやすみなさい。', kor: ['오야스미나사이'], meaning: '안녕히 주무세요.' },
+  { jp: 'はじめまして。', reading: 'はじめまして。', kor: ['하지메마시테', '하지메마시떼'], meaning: '처음 뵙겠습니다.' },
+  { jp: 'よろしくおねがいします。', reading: 'よろしくおねがいします。', kor: ['요로시쿠 오네가이시마스', '요로시꾸 오네가이시마쓰'], meaning: '잘 부탁드립니다.' },
+  { jp: 'にほんごをべんきょうします。', reading: 'にほんごをべんきょうします。', kor: ['니혼고오 벵쿄시마스', '니혼고오 벵쿄오시마쓰'], meaning: '일본어를 공부합니다.' },
+  { jp: 'おいしいです。', reading: 'おいしいです。', kor: ['오이시이데쓰', '오이시이데스'], meaning: '맛있습니다.' },
+  { jp: 'ありがとうございます。', reading: 'ありがとうございます。', kor: ['아리가또 고자이마쓰', '아리가토 고자이마스'], meaning: '대단히 감사합니다.' },
+  { jp: 'わたしはげんきです。', reading: 'わたしはげんきです。', kor: ['와따시와 갱끼데쓰', '와타시와 겐키데스'], meaning: '저는 잘 지냅니다.' },
+  { jp: 'すきです。', reading: 'すきです。', kor: ['스키데스', '스끼데쓰'], meaning: '좋아합니다.' },
+  { jp: 'だいじょうぶです。', reading: 'だいじょうぶです。', kor: ['다이조부데쓰', '다이죠부데스'], meaning: '괜찮습니다.' },
+  { jp: 'にほんがすきです。', reading: 'にほんがすきです。', kor: ['니혼가 스키데스', '니홍가 스끼데쓰'], meaning: '일본을 좋아합니다.' },
+  { jp: 'みずをのみます。', reading: 'みずをのみます。', kor: ['미즈오 노미마스', '미즈오 노미마쓰'], meaning: '물을 마십니다.' }
+];
+
+// Gojūon chart: each cell = [hiragana, katakana, korean reading]
+const GOJUON = [
+  [['あ','ア','아'],['い','イ','이'],['う','ウ','우'],['え','エ','에'],['お','オ','오']],
+  [['か','カ','카'],['き','キ','키'],['く','ク','쿠'],['け','ケ','케'],['こ','コ','코']],
+  [['さ','サ','사'],['し','シ','시'],['す','ス','스'],['せ','セ','세'],['そ','ソ','소']],
+  [['た','タ','타'],['ち','チ','치'],['つ','ツ','츠'],['て','テ','테'],['と','ト','토']],
+  [['な','ナ','나'],['に','ニ','니'],['ぬ','ヌ','누'],['ね','ネ','네'],['の','ノ','노']],
+  [['は','ハ','하'],['ひ','ヒ','히'],['ふ','フ','후'],['へ','ヘ','헤'],['ほ','ホ','호']],
+  [['ま','マ','마'],['み','ミ','미'],['む','ム','무'],['め','メ','메'],['も','モ','모']],
+  [['や','ヤ','야'],null,['ゆ','ユ','유'],null,['よ','ヨ','요']],
+  [['ら','ラ','라'],['り','リ','리'],['る','ル','루'],['れ','レ','레'],['ろ','ロ','로']],
+  [['わ','ワ','와'],null,null,null,['を','ヲ','오']],
+  [['ん','ン','응'],null,null,null,null]
+];
+
+const GOJUON_DAKUTEN = [
+  [['が','ガ','가'],['ぎ','ギ','기'],['ぐ','グ','구'],['げ','ゲ','게'],['ご','ゴ','고']],
+  [['ざ','ザ','자'],['じ','ジ','지'],['ず','ズ','즈'],['ぜ','ゼ','제'],['ぞ','ゾ','조']],
+  [['だ','ダ','다'],['ぢ','ヂ','지'],['づ','ヅ','즈'],['で','デ','데'],['ど','ド','도']],
+  [['ば','バ','바'],['び','ビ','비'],['ぶ','ブ','부'],['べ','ベ','베'],['ぼ','ボ','보']],
+  [['ぱ','パ','파'],['ぴ','ピ','피'],['ぷ','プ','푸'],['ぺ','ペ','페'],['ぽ','ポ','포']]
+];
+
+// Yōon (요음): [hiragana, katakana, [korean readings]]
+const YOON = [
+  ['きゃ','キャ',['캬','꺄','갸']], ['きゅ','キュ',['큐','뀨','규']], ['きょ','キョ',['쿄','꾜','교']],
+  ['しゃ','シャ',['샤']],          ['しゅ','シュ',['슈']],          ['しょ','ショ',['쇼']],
+  ['ちゃ','チャ',['차','짜','자']], ['ちゅ','チュ',['추','쮸','주']], ['ちょ','チョ',['초','쪼','조']],
+  ['にゃ','ニャ',['냐']],          ['にゅ','ニュ',['뉴']],          ['にょ','ニョ',['뇨']],
+  ['ひゃ','ヒャ',['햐']],          ['ひゅ','ヒュ',['휴']],          ['ひょ','ヒョ',['효']],
+  ['みゃ','ミャ',['먀']],          ['みゅ','ミュ',['뮤']],          ['みょ','ミョ',['묘']],
+  ['りゃ','リャ',['랴']],          ['りゅ','リュ',['류']],          ['りょ','リョ',['료']],
+  ['ぎゃ','ギャ',['갸']],          ['ぎゅ','ギュ',['규']],          ['ぎょ','ギョ',['교']],
+  ['じゃ','ジャ',['자','쟈']],     ['じゅ','ジュ',['주','쥬']],     ['じょ','ジョ',['조','죠']],
+  ['びゃ','ビャ',['뱌']],          ['びゅ','ビュ',['뷰']],          ['びょ','ビョ',['뵤']],
+  ['ぴゃ','ピャ',['퍄','뺘']],     ['ぴゅ','ピュ',['퓨','쀼']],     ['ぴょ','ピョ',['표','뾰']]
+];
+
+// Append yōon to the hiragana / katakana quiz decks
+YOON.forEach(([h, k, r]) => {
+  HIRAGANA.push({ k: h, r: r.slice() });
+  KATAKANA.push({ k: k, r: r.slice() });
+});
+
+// === Persistent stats (localStorage) ===
+const STORE_KEY = 'jp-learn-v1';
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+  catch (e) { return {}; }
+}
+function saveStore() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {}
+}
+const saved = loadStore();
+const store = {
+  answered: saved.answered || 0,
+  correct: saved.correct || 0,
+  bestStreak: saved.bestStreak || 0,
+  wrongKeys: Array.isArray(saved.wrongKeys) ? saved.wrongKeys : []  // ["mode key", ...]
+};
+
+// === State ===
+let mode = 'chart';
+let chartScript = 'hira';
+let streak = 0;
+let deck = [];
+let idx = 0;
+let score = 0;
+let wrongTried = false;
+
+// Index every item by "mode key" so the review deck can be rebuilt from saved keys
+const ITEM_INDEX = {};
+function indexItems(arr, m) {
+  arr.forEach(it => { ITEM_INDEX[m + ' ' + (it.k || it.jp)] = Object.assign({ __mode: m }, it); });
+}
+indexItems(HIRAGANA, 'hiragana');
+indexItems(KATAKANA, 'katakana');
+indexItems(WORDS, 'words');
+indexItems(SENTENCES, 'sentences');
+
+function itemMode(item) { return item.__mode || mode; }
+function keyOf(item) { return item.k || item.jp; }
+function wrongKeyOf(item) { return itemMode(item) + ' ' + keyOf(item); }
+function isKana(m) { return m === 'hiragana' || m === 'katakana'; }
+function answersFor(item) { return isKana(itemMode(item)) ? item.r : item.kor; }
+
+function getData() {
+  switch (mode) {
+    case 'hiragana': return HIRAGANA;
+    case 'katakana': return KATAKANA;
+    case 'words': return WORDS;
+    case 'sentences': return SENTENCES;
+    case 'review': return store.wrongKeys.map(k => ITEM_INDEX[k]).filter(Boolean);
+  }
+}
+
+function shuffleDeck() {
+  deck = getData().slice();
+  for (let i = deck.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [deck[i], deck[j]] = [deck[j], deck[i]];
+  }
+  idx = 0;
+}
+
+function normalize(s) {
+  return s.trim().replace(/\s+/g, '').toLowerCase();
+}
+
+function render() {
+  const item = deck[idx];
+  if (!item) return;
+  const m = itemMode(item);
+  const promptEl = document.getElementById('prompt');
+  const meaningEl = document.getElementById('meaning');
+  const readingEl = document.getElementById('reading');
+  const answerEl = document.getElementById('answer');
+  const feedbackEl = document.getElementById('feedback');
+  const answerDisplay = document.getElementById('answerDisplay');
+
+  promptEl.className = 'prompt';
+  if (isKana(m)) {
+    promptEl.textContent = item.k;
+    meaningEl.innerHTML = '&nbsp;';
+    readingEl.innerHTML = '&nbsp;';
+  } else if (m === 'words') {
+    promptEl.textContent = item.jp;
+    promptEl.classList.add('medium');
+    meaningEl.textContent = item.meaning;
+    readingEl.innerHTML = '&nbsp;';
+  } else {
+    promptEl.textContent = item.jp;
+    promptEl.classList.add('small');
+    meaningEl.textContent = item.meaning;
+    readingEl.innerHTML = '&nbsp;';
+  }
+  answerEl.value = '';
+  answerEl.focus();
+  feedbackEl.innerHTML = '&nbsp;';
+  feedbackEl.className = 'feedback';
+  answerDisplay.innerHTML = '&nbsp;';
+  wrongTried = false;
+
+  document.getElementById('progress').textContent = `${idx + 1} / ${deck.length}`;
+}
+
+function check() {
+  const item = deck[idx];
+  if (!item) return;
+  const ans = normalize(document.getElementById('answer').value);
+  if (!ans) return;
+  const isCorrect = answersFor(item).some(a => normalize(a) === ans);
+  const feedbackEl = document.getElementById('feedback');
+  if (isCorrect) {
+    feedbackEl.textContent = '✓ 정답!';
+    feedbackEl.className = 'feedback correct';
+    if (!wrongTried) {
+      score++;
+      streak++;
+      store.answered++;
+      store.correct++;
+      if (streak > store.bestStreak) store.bestStreak = streak;
+      removeWrong(item);   // mastered → drop from review list
+    }
+    document.getElementById('score').textContent = score;
+    saveStore();
+    updateStatsUI();
+    speak(item.reading || item.k || item.jp);
+    setTimeout(next, 900);
+  } else {
+    feedbackEl.textContent = '✗ 다시!';
+    feedbackEl.className = 'feedback wrong';
+    if (!wrongTried) {
+      streak = 0;
+      store.answered++;
+      addWrong(item);      // remember for review
+      saveStore();
+      updateStatsUI();
+    }
+    wrongTried = true;
+  }
+}
+
+function addWrong(item) {
+  const key = wrongKeyOf(item);
+  if (!store.wrongKeys.includes(key)) store.wrongKeys.push(key);
+}
+function removeWrong(item) {
+  const key = wrongKeyOf(item);
+  const i = store.wrongKeys.indexOf(key);
+  if (i >= 0) store.wrongKeys.splice(i, 1);
+}
+
+function next() {
+  idx++;
+  if (mode === 'review') {
+    // Review deck shrinks as items are mastered; refresh from current wrong list
+    if (store.wrongKeys.length === 0) { showReviewEmpty(); return; }
+    if (idx >= deck.length) shuffleDeck();
+    if (deck.length === 0) { showReviewEmpty(); return; }
+    if (idx >= deck.length) idx = 0;
+  } else if (idx >= deck.length) {
+    shuffleDeck();
+  }
+  render();
+}
+
+function showReviewEmpty() {
+  document.getElementById('prompt').className = 'prompt medium';
+  document.getElementById('prompt').textContent = '🎉';
+  document.getElementById('meaning').textContent = '복습할 문제가 없어요!';
+  document.getElementById('reading').innerHTML = '&nbsp;';
+  document.getElementById('answer').value = '';
+  document.getElementById('feedback').innerHTML = '&nbsp;';
+  document.getElementById('answerDisplay').textContent = '문제를 틀리면 여기에 모여요.';
+  document.getElementById('progress').textContent = '0 / 0';
+}
+
+function showHint() {
+  const item = deck[idx];
+  if (!item) return;
+  document.getElementById('answerDisplay').textContent = '정답: ' + answersFor(item).join(' / ');
+  if (!isKana(itemMode(item)) && item.reading && item.reading !== item.jp) {
+    document.getElementById('reading').textContent = '【' + item.reading + '】';
+  }
+}
+
+function updateStatsUI() {
+  const acc = store.answered ? Math.round((store.correct / store.answered) * 100) : 0;
+  document.getElementById('streak').textContent = streak;
+  document.getElementById('lifeStats').textContent =
+    `누적 정답률 ${acc}%  ·  최고 연속 ${store.bestStreak}  ·  푼 문제 ${store.answered}`;
+  const rc = document.getElementById('reviewCount');
+  if (rc) rc.textContent = store.wrongKeys.length;
+}
+
+// === Text-to-speech (Japanese) ===
+const ttsOK = 'speechSynthesis' in window;
+let jaVoice = null;
+
+function findJaVoice() {
+  const voices = speechSynthesis.getVoices();
+  const ja = voices.filter(v => /^ja([-_]|$)/i.test(v.lang) || /japanese|日本/i.test(v.name));
+  // Prefer a local (offline) voice — Chrome's remote "Google" voices often play silently
+  return ja.find(v => v.localService) || ja[0] || null;
+}
+
+function refreshVoice() {
+  if (!ttsOK) return;
+  jaVoice = findJaVoice();
+  const status = document.getElementById('voiceStatus');
+  if (!status) return;
+  const total = speechSynthesis.getVoices().length;
+  if (jaVoice) {
+    if (jaVoice.localService === false) {
+      status.innerHTML = '🔊 음성: ' + jaVoice.name + ' <span style="color:#d63384">(원격 음성 — Comet·Chrome 등 일부 브라우저에선 무음일 수 있어요. 무음이면 Edge로 열거나, Windows에 일본어 음성을 설치하면 모든 브라우저에서 됩니다)</span>';
+    } else {
+      status.textContent = '🔊 글자를 클릭하면 발음이 들려요 (음성: ' + jaVoice.name + ')';
+    }
+    status.style.color = '#b58aa0';
+  } else if (total === 0) {
+    status.textContent = '⏳ 음성 목록을 불러오는 중…';
+    status.style.color = '#b58aa0';
+  } else {
+    status.innerHTML = '⚠ 일본어 음성이 없어 소리가 안 나요. <b>Windows 설정 → 시간 및 언어 → 언어 → 일본어 추가(음성 포함)</b> 후 브라우저 재시작, 또는 Edge 브라우저에서 열어보세요.';
+    status.style.color = '#d63384';
+  }
+}
+
+if (ttsOK) {
+  refreshVoice();
+  speechSynthesis.onvoiceschanged = refreshVoice;
+  // Some browsers populate voices a beat late
+  setTimeout(refreshVoice, 300);
+  setTimeout(refreshVoice, 1200);
+  // Keep-alive: Chrome silently pauses the synth engine after a while
+  setInterval(() => { if (speechSynthesis.speaking) speechSynthesis.resume(); }, 6000);
+  // Warm up the engine on the very first user interaction (helps Google/remote voices)
+  const warm = () => {
+    try {
+      const u = new SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+    window.removeEventListener('pointerdown', warm);
+  };
+  window.addEventListener('pointerdown', warm);
+}
+
+function speak(text) {
+  if (!ttsOK) return;
+  if (!jaVoice) jaVoice = findJaVoice();
+  const fire = () => {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP';
+    u.rate = 0.85;
+    if (jaVoice) u.voice = jaVoice;
+    u.onerror = () => refreshVoice();
+    speechSynthesis.speak(u);
+    speechSynthesis.resume();
+  };
+  try {
+    if (speechSynthesis.speaking || speechSynthesis.pending) {
+      // Cancel any current utterance, then fire on the next tick.
+      // Calling speak() synchronously right after cancel() drops audio in Chrome.
+      speechSynthesis.cancel();
+      setTimeout(fire, 60);
+    } else {
+      fire();
+    }
+  } catch (e) { /* ignore */ }
+  if (!jaVoice) refreshVoice();
+}
+
+// === Chart rendering ===
+function buildGrid(rows, scriptIdx, cols) {
+  cols = cols || 5;
+  let html = `<div class="kana-grid" style="grid-template-columns:repeat(${cols},1fr)">`;
+  for (const row of rows) {
+    for (const cell of row) {
+      if (!cell) {
+        html += '<div class="kana-cell empty"></div>';
+        continue;
+      }
+      const kana = cell[scriptIdx];
+      const reading = Array.isArray(cell[2]) ? cell[2][0] : cell[2];
+      html += `<div class="kana-cell" data-kana="${kana}"><div class="big">${kana}</div><div class="rom">${reading}</div></div>`;
+    }
+  }
+  html += '</div>';
+  return html;
+}
+
+function chunk(arr, n) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+  return out;
+}
+
+function renderChart() {
+  const scriptIdx = chartScript === 'hira' ? 0 : 1;
+  const body = document.getElementById('chartBody');
+  body.innerHTML =
+    '<div class="chart-section-title">기본 (청음)</div>' +
+    buildGrid(GOJUON, scriptIdx) +
+    '<div class="chart-section-title">탁음 · 반탁음</div>' +
+    buildGrid(GOJUON_DAKUTEN, scriptIdx) +
+    '<div class="chart-section-title">요음 (꺾어 읽기)</div>' +
+    buildGrid(chunk(YOON, 3), scriptIdx, 3);
+  body.querySelectorAll('.kana-cell[data-kana]').forEach(cell => {
+    cell.addEventListener('click', () => {
+      speak(cell.dataset.kana);
+      cell.classList.add('flash');
+      setTimeout(() => cell.classList.remove('flash'), 200);
+    });
+  });
+  document.getElementById('chartHira').classList.toggle('active', chartScript === 'hira');
+  document.getElementById('chartKata').classList.toggle('active', chartScript === 'kata');
+}
+
+// === View switching ===
+function applyMode(newMode) {
+  mode = newMode;
+  const isChart = mode === 'chart';
+  document.getElementById('chartView').style.display = isChart ? 'block' : 'none';
+  document.getElementById('quizCard').style.display = isChart ? 'none' : 'block';
+  document.querySelector('.info').style.display = isChart ? 'none' : 'block';
+  if (isChart) {
+    renderChart();
+    return;
+  }
+  score = 0;
+  streak = 0;
+  document.getElementById('score').textContent = 0;
+  updateStatsUI();
+  if (mode === 'review' && store.wrongKeys.length === 0) {
+    deck = [];
+    idx = 0;
+    showReviewEmpty();
+    return;
+  }
+  shuffleDeck();
+  render();
+}
+
+// === Events ===
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    applyMode(t.dataset.mode);
+  });
+});
+document.getElementById('chartHira').addEventListener('click', () => { chartScript = 'hira'; renderChart(); });
+document.getElementById('chartKata').addEventListener('click', () => { chartScript = 'kata'; renderChart(); });
+document.getElementById('check').addEventListener('click', check);
+document.getElementById('next').addEventListener('click', next);
+document.getElementById('hint').addEventListener('click', showHint);
+document.getElementById('speak').addEventListener('click', () => {
+  const item = deck[idx];
+  if (item) speak(item.reading || item.k || item.jp);
+});
+document.getElementById('answer').addEventListener('keydown', e => {
+  if (e.key === 'Enter') check();
+});
+
+// === Init ===
+updateStatsUI();
+applyMode('chart');
+</script>
+</body>
+</html>
