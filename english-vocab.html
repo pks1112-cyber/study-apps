@@ -240,8 +240,35 @@
   }
   .best-badge.has { background: #ccfbf1; color: #0f766e; }
 
+  /* ===== search ===== */
+  .search-box {
+    width: 100%; padding: 13px 16px; font-size: 16px;
+    border: 1.5px solid var(--line); border-radius: 14px;
+    outline: none; font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .search-box:focus { border-color: #818cf8; box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12); }
+  .search-results { margin-top: 14px; max-height: 430px; overflow-y: auto; }
+  .search-empty { text-align: center; color: #94a3b8; padding: 36px 0; font-size: 14px; }
+  .search-count { font-size: 12.5px; color: #94a3b8; margin-bottom: 8px; }
+  .result-item {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    padding: 10px 8px; border-bottom: 1px solid #f1f5f9;
+  }
+  .result-word { font-size: 16px; }
+  .result-word b { color: #4338ca; cursor: pointer; }
+  .result-meaning { font-size: 13.5px; color: #475569; margin-top: 2px; }
+  .result-side { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .result-side .lv-tag {
+    font-size: 11px; color: #64748b; background: #f1f5f9;
+    padding: 3px 8px; border-radius: 999px; white-space: nowrap;
+  }
+  .jump-btn { padding: 6px 11px; font-size: 12px; }
+
   /* ===== mobile ===== */
   @media (max-width: 600px) {
+    .result-item { flex-wrap: wrap; }
+    .result-side { width: 100%; justify-content: flex-end; }
     body { padding: 14px 10px 30px; }
     .hero { flex-direction: column; text-align: center; padding: 22px 16px; }
     .hero-art { margin: 10px 0 0; }
@@ -313,6 +340,7 @@
     <div class="tab" data-mode="cards">🃏 카드</div>
     <div class="tab" data-mode="test">✏️ 테스트</div>
     <div class="tab" data-mode="wrong">❌ 오답 <span class="cnt" id="wrongCnt">0</span></div>
+    <div class="tab" data-mode="search">🔍 검색</div>
     <div class="tab" data-mode="stats">📊 기록</div>
   </div>
   <div class="unit-picker" id="unitPicker">
@@ -371,6 +399,7 @@ let curLevel = LEVEL_NAMES[0];
 let curUnit = 0;
 let mode = 'table';
 let hideMode = 'none';   // 'none' | 'kor' | 'eng'
+let searchQuery = '';
 
 let cardQueue = [], cardFlipped = false, cardDone = 0, cardTotal = 0;
 let testType = null, testQs = [], testIdx = 0, testScore = 0, testLocked = false, testOver = false;
@@ -624,7 +653,7 @@ function renderUnitBar() {
   badge.className = 'best-badge' + (best !== undefined ? ' has' : '');
   // unit picker only matters for unit-scoped modes
   document.getElementById('unitPicker').style.display =
-    (mode === 'wrong' || mode === 'stats') ? 'none' : 'flex';
+    (mode === 'wrong' || mode === 'stats' || mode === 'search') ? 'none' : 'flex';
 }
 function gotoUnit(u) {
   stopSpeakAll();
@@ -911,6 +940,82 @@ function renderWrong() {
   speak(q.w);
 }
 
+// ===== Mode: search =====
+function searchWords(q) {
+  const ql = q.toLowerCase();
+  const out = [];
+  for (const lv of LEVEL_NAMES) {
+    RAW[lv].forEach((unit, u) => {
+      for (const [w, m, p, ipa] of unit[1]) {
+        let rank = -1;
+        const wl = w.toLowerCase();
+        if (wl === ql) rank = 0;                 // exact word match first
+        else if (wl.startsWith(ql)) rank = 1;
+        else if (wl.includes(ql)) rank = 2;
+        else if (m.includes(q)) rank = 3;        // korean meaning match
+        if (rank >= 0) out.push({ w, m, p, ipa: ipa || '', level: lv, unit: u, key: lv + '|' + w, rank });
+      }
+    });
+  }
+  out.sort((a, b) => a.rank - b.rank || a.w.localeCompare(b.w));
+  return { total: out.length, list: out.slice(0, 50) };
+}
+
+function switchMode(m) {
+  mode = m;
+  document.querySelectorAll('#modeTabs .tab').forEach(x => x.classList.toggle('active', x.dataset.mode === m));
+  resetModeStates();
+  renderAll();
+}
+
+function renderSearch() {
+  const el = document.getElementById('content');
+  el.innerHTML = `
+    <input class="search-box" id="searchBox" placeholder="영어 단어 또는 한글 뜻으로 검색 (예: apple, 사과)" autocomplete="off" spellcheck="false">
+    <div class="search-results" id="searchResults"></div>`;
+  const box = el.querySelector('#searchBox');
+  box.value = searchQuery;
+  box.focus();
+  box.setSelectionRange(box.value.length, box.value.length);
+  box.addEventListener('input', () => { searchQuery = box.value; renderSearchResults(); });
+  renderSearchResults();
+}
+
+function renderSearchResults() {
+  const wrap = document.getElementById('searchResults');
+  const q = searchQuery.trim();
+  if (!q) {
+    wrap.innerHTML = '<div class="search-empty">1,200개 단어를 영어 철자나 한글 뜻으로 검색할 수 있어요</div>';
+    return;
+  }
+  const rs = searchWords(q);
+  if (!rs.total) {
+    wrap.innerHTML = `<div class="search-empty">"${esc(q)}" 검색 결과가 없어요</div>`;
+    return;
+  }
+  let html = `<div class="search-count">${rs.total}개 결과${rs.total > 50 ? ' (상위 50개 표시)' : ''} · 단어를 클릭하면 발음이 들려요</div>`;
+  for (const r of rs.list) {
+    const mastered = stat(r.key).c >= 3;
+    html += `<div class="result-item">
+      <div class="result-main">
+        <div class="result-word"><b class="say-w" data-w="${esc(r.w)}">${esc(r.w)}</b> <span class="ipa">${esc(r.ipa)}</span> ${posTag(r.p)} ${mastered ? '⭐' : ''}</div>
+        <div class="result-meaning">${esc(r.m)}</div>
+      </div>
+      <div class="result-side">
+        <span class="lv-tag">${r.level} ${r.unit + 1}단원</span>
+        <button class="secondary jump-btn" data-lv="${r.level}" data-u="${r.unit}">단어표 보기</button>
+      </div>
+    </div>`;
+  }
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('.say-w').forEach(b => b.addEventListener('click', () => speak(b.dataset.w)));
+  wrap.querySelectorAll('.jump-btn').forEach(b => b.addEventListener('click', () => {
+    curLevel = b.dataset.lv;
+    curUnit = parseInt(b.dataset.u);
+    switchMode('table');
+  }));
+}
+
 // ===== Mode: stats =====
 function renderStats() {
   const el = document.getElementById('content');
@@ -954,6 +1059,7 @@ function renderContent() {
   else if (mode === 'cards') renderCards();
   else if (mode === 'test') renderTest();
   else if (mode === 'wrong') renderWrong();
+  else if (mode === 'search') renderSearch();
   else renderStats();
 }
 function renderAll() {
