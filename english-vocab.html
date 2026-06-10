@@ -240,6 +240,15 @@
   }
   .best-badge.has { background: #ccfbf1; color: #0f766e; }
 
+  /* ===== example sentences ===== */
+  tr.wrow.has-ex td { border-bottom: none; padding-bottom: 4px; }
+  .ex-row td { padding: 0 10px 10px; border-bottom: 1px solid #f1f5f9; font-size: 12.5px; line-height: 1.5; }
+  .ex-row .ex-en { color: #475569; cursor: pointer; }
+  .ex-row .ex-en:hover { color: #4338ca; }
+  .ex-row .ex-ko { color: #94a3b8; margin-left: 6px; }
+  .flash-ex { font-size: 13px; line-height: 1.55; opacity: 0.92; margin-top: 10px; font-weight: 400; }
+  .test-opt.ta { grid-column: 1 / -1; }
+
   /* ===== compact redesign: segmented tabs, level select, review toggle, test cards ===== */
   .main-card .tabs {
     display: flex; gap: 4px; background: #f1f5f9; border-radius: 14px; padding: 4px;
@@ -505,7 +514,8 @@ let speakAllOn = false;
 // ===== Helpers =====
 function keyOf(level, w) { return level + '|' + w; }
 function unitWords(level, u) {
-  return RAW[level][u][1].map(([w, m, p, ipa]) => ({ w, m, p, ipa: ipa || '', key: keyOf(level, w) }));
+  return RAW[level][u][1].map(([w, m, p, ipa, ex, exk]) =>
+    ({ w, m, p, ipa: ipa || '', ex: ex || '', exk: exk || '', key: keyOf(level, w) }));
 }
 function levelWords(level) {
   return RAW[level].flatMap((unit, u) => unitWords(level, u));
@@ -518,7 +528,7 @@ function findByKey(key) {
   if (!RAW[lv]) return null;
   for (const [, list] of RAW[lv]) {
     const hit = list.find(([ww]) => ww === w);
-    if (hit) return { w: hit[0], m: hit[1], p: hit[2], ipa: hit[3] || '', key, level: lv };
+    if (hit) return { w: hit[0], m: hit[1], p: hit[2], ipa: hit[3] || '', ex: hit[4] || '', exk: hit[5] || '', key, level: lv };
   }
   return null;
 }
@@ -796,11 +806,16 @@ function renderTable() {
     <table class="words"><tr><th>영단어</th><th>품사</th><th>뜻</th><th></th></tr>`;
   for (const it of words) {
     const mastered = stat(it.key).c >= 3;
-    html += `<tr class="wrow" data-w="${esc(it.w)}">
+    html += `<tr class="wrow ${it.ex ? 'has-ex' : ''}" data-w="${esc(it.w)}">
       <td class="eng ${hideMode === 'eng' ? 'm-hidden' : ''}">${esc(it.w)} <span class="ipa">${esc(it.ipa)}</span></td>
       <td class="pos-td">${posTag(it.p)}</td>
       <td class="kor ${hideMode === 'kor' ? 'm-hidden' : ''}">${esc(it.m)}</td>
       <td class="star">${mastered ? '⭐' : ''}</td></tr>`;
+    if (it.ex) {
+      html += `<tr class="ex-row"><td colspan="4">
+        <span class="ex-en ${hideMode === 'eng' ? 'm-hidden' : ''}" data-s="${esc(it.ex)}">${esc(it.ex)}</span>
+        <span class="ex-ko ${hideMode === 'kor' ? 'm-hidden' : ''}">${esc(it.exk)}</span></td></tr>`;
+    }
   }
   html += '</table>';
   const el = document.getElementById('content');
@@ -818,6 +833,11 @@ function renderTable() {
       else speak(tr.dataset.w);
     });
   });
+  el.querySelectorAll('.ex-en').forEach(s => s.addEventListener('click', () => {
+    if (s.classList.contains('m-hidden')) s.classList.remove('m-hidden');
+    else speak(s.dataset.s);
+  }));
+  el.querySelectorAll('.ex-ko').forEach(s => s.addEventListener('click', () => s.classList.remove('m-hidden')));
   el.querySelector('#hideEng').addEventListener('click', () => {
     hideMode = hideMode === 'eng' ? 'none' : 'eng';
     renderTable();
@@ -877,6 +897,7 @@ function renderCards() {
     <div class="flash ${cardFlipped ? 'back' : ''}" id="flashCard">
       ${cardFlipped ? esc(cur.m) : esc(cur.w)}
       <div class="sub">${cardFlipped ? posTag(cur.p) + ' ' + esc(cur.w) + ' ' + esc(cur.ipa) : esc(cur.ipa) + ' · 클릭하면 뜻이 보여요'}</div>
+      ${cardFlipped && cur.ex ? `<div class="sub flash-ex">${esc(cur.ex)}<br>${esc(cur.exk)}</div>` : ''}
     </div>
     <div class="actions" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
       <button class="secondary" id="sayBtn">🔊 발음</button>
@@ -902,7 +923,9 @@ function renderCards() {
 // ===== Mode: test =====
 function startTest(type) {
   testType = type;
-  testQs = shuffle(unitWords(curLevel, curUnit).slice());
+  let pool = unitWords(curLevel, curUnit).slice();
+  if (type === 'cloze') pool = pool.filter(x => x.ex);
+  testQs = shuffle(pool);
   testIdx = 0; testScore = 0; testLocked = false; testOver = false;
   renderTest();
 }
@@ -915,17 +938,20 @@ function renderTest() {
   const el = document.getElementById('content');
   if (testType === null) {
     const taBest = store.taBest[curLevel];
+    const hasEx = unitWords(curLevel, curUnit).some(x => x.ex);
     el.innerHTML = `
       <div class="unit-title">✏️ ${curLevel} · ${curUnit + 1}단원 테스트</div>
       <div class="test-grid">
         <div class="test-opt" id="mcBtn"><div class="to-icon">🅰️</div><b>4지선다</b><span>영어 보고 뜻 고르기 · 10문제</span></div>
         <div class="test-opt" id="typeBtn"><div class="to-icon">⌨️</div><b>직접 입력</b><span>뜻 보고 영어 쓰기 · 10문제</span></div>
         <div class="test-opt" id="dictBtn"><div class="to-icon">🎧</div><b>듣고 쓰기</b><span>발음 듣고 철자 입력 · 10문제</span></div>
+        ${hasEx ? `<div class="test-opt" id="clozeBtn"><div class="to-icon">📝</div><b>빈칸 채우기</b><span>예문 속 빈칸 단어 입력 · 10문제</span></div>` : ''}
         <div class="test-opt ta" id="taBtn"><div class="to-icon">⚡</div><b>타임어택 60초</b><span>${curLevel} 전체 · 최고 ${taBest !== undefined ? taBest + '점' : '기록 없음'}</span></div>
       </div>`;
     el.querySelector('#mcBtn').addEventListener('click', () => startTest('mc'));
     el.querySelector('#typeBtn').addEventListener('click', () => startTest('type'));
     el.querySelector('#dictBtn').addEventListener('click', () => startTest('dict'));
+    if (hasEx) el.querySelector('#clozeBtn').addEventListener('click', () => startTest('cloze'));
     el.querySelector('#taBtn').addEventListener('click', startTimeAttack);
     return;
   }
@@ -977,6 +1003,34 @@ function renderTest() {
       }, ok ? 800 : 1500);
     }));
     speak(q.w);
+  } else if (testType === 'cloze') {
+    const safe = q.w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const blanked = q.ex.replace(new RegExp('\\b' + safe + '\\b', 'i'), '_____');
+    el.innerHTML = head + `
+      <div class="q-meaning" style="font-size:21px;line-height:1.65;margin:22px 0 8px">${esc(blanked)}</div>
+      <div class="q-ipa" style="margin:0 0 14px">${esc(q.exk)} · 힌트: ${esc(q.m)} ${posTag(q.p)}</div>
+      <input class="answer" id="ans" placeholder="빈칸에 들어갈 영어 단어 입력 후 Enter" autocomplete="off" spellcheck="false">
+      <div class="feedback" id="fb">&nbsp;</div>`;
+    const inp = el.querySelector('#ans');
+    inp.focus();
+    inp.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' || testLocked) return;
+      const v = inp.value.trim().toLowerCase();
+      if (!v) return;
+      testLocked = true;
+      const ok = v === q.w.toLowerCase();
+      const fb = el.querySelector('#fb');
+      fb.textContent = (ok ? '✓ 정답! ' : '✗ 정답: ') + q.w;
+      fb.className = 'feedback ' + (ok ? 'ok' : 'no');
+      if (ok) testScore++;
+      bumpStat(q.key, ok);
+      speak(q.ex);
+      setTimeout(() => {
+        testIdx++; testLocked = false;
+        if (testIdx >= testQs.length) testOver = true;
+        renderTest();
+      }, ok ? 1300 : 2200);
+    });
   } else if (testType === 'dict') {
     el.innerHTML = head + `<div class="center" style="margin:20px 0 8px">
       <button id="replay" style="font-size:22px;padding:16px 28px;background:linear-gradient(135deg,#0ea5e9,#0284c7)">🔊 다시 듣기</button>
