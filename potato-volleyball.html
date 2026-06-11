@@ -48,30 +48,31 @@
   }
   .game-wrap { position: relative; max-width: 100%; }
 
-  /* ===== 터치 컨트롤 (가상 버튼) ===== */
-  .touch-controls { display: none; position: absolute; inset: 0; pointer-events: none; }
-  .game-wrap.show-touch .touch-controls { display: block; }
+  /* ===== 터치 컨트롤 — 게임 화면을 가리지 않게 캔버스 아래 별도 줄 ===== */
+  .touch-bar {
+    display: none; width: 100%; margin-top: 8px;
+    justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .touch-bar.show { display: flex; }
+  .tc-group { display: flex; gap: 10px; align-items: center; }
   .tbtn {
-    position: absolute; width: 62px; height: 62px; border-radius: 50%;
+    width: 64px; height: 64px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     font-size: 24px; font-weight: 700; padding: 0; font-family: inherit; cursor: pointer;
-    background: rgba(255,255,255,0.40); color: #7a3f0a;
+    background: rgba(255,255,255,0.78); color: #7a3f0a;
     border: 2.5px solid rgba(122,63,10,0.45);
-    pointer-events: auto; touch-action: none;
+    touch-action: none;
     user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
   }
-  .tbtn.pressed { background: rgba(255,209,122,0.9); }
+  .tbtn.pressed { background: #ffd17a; }
   .tbtn.pbtn1 { border-color: rgba(231,76,60,0.6); }
   .tbtn.pbtn2 { border-color: rgba(52,152,219,0.6); }
-  #tP1L { left: 12px; bottom: 12px; }
-  #tP1R { left: 86px; bottom: 12px; }
-  #tP1J { left: 49px; bottom: 88px; }
-  #tP2R { right: 12px; bottom: 12px; }
-  #tP2L { right: 86px; bottom: 12px; }
-  #tP2J { right: 49px; bottom: 88px; }
-  /* 1인 모드: P2 버튼 숨기고 점프를 오른쪽 엄지 위치로 (양손 조작) */
-  .mode-1p #tP2L, .mode-1p #tP2R, .mode-1p #tP2J { display: none; }
-  .mode-1p #tP1J { left: auto; right: 16px; bottom: 16px; width: 80px; height: 80px; font-size: 32px; }
+  /* 1인 모드: P2 버튼 숨기고 점프만 오른쪽에 크게 (양손 엄지) */
+  .touch-bar.mode-1p .pbtn2 { display: none; }
+  .touch-bar.mode-1p #tP1J { width: 84px; height: 84px; font-size: 32px; }
+  /* 터치 기기는 버튼 줄 공간을 미리 확보 (화면 크기 출렁임 방지) */
+  body.touch canvas { max-height: calc(100vh - 240px); max-height: calc(100dvh - 240px); }
 
   .rotate-hint {
     display: none; margin-top: 8px; font-size: 13px; font-weight: 700; color: #c2410c;
@@ -101,11 +102,12 @@
   /* 가로로 누운 폰: 헤더를 최소화해서 게임 화면을 최대로 */
   @media (max-height: 480px) {
     body { padding: 4px; }
-    h1 { font-size: 15px; margin: 2px 0 0; }
+    h1 { display: none; }
     .score { font-size: 18px; margin: 2px 0 4px; }
     .info { display: none; }
     .rotate-hint { display: none; }
     canvas { max-height: calc(100vh - 64px); max-height: calc(100dvh - 64px); }
+    body.touch canvas { max-height: calc(100vh - 142px); max-height: calc(100dvh - 142px); }
   }
 </style>
 </head>
@@ -115,13 +117,17 @@
 <div class="score"><span class="p1" id="p1Score">0</span> : <span class="p2" id="p2Score">0</span></div>
 <div class="game-wrap" id="gameWrap">
   <canvas id="game" width="1100" height="620"></canvas>
-  <div class="touch-controls">
+</div>
+<div class="touch-bar" id="touchBar">
+  <div class="tc-group" id="tcLeft">
     <button class="tbtn pbtn1" id="tP1L">◀</button>
     <button class="tbtn pbtn1" id="tP1R">▶</button>
     <button class="tbtn pbtn1" id="tP1J">⬆</button>
+  </div>
+  <div class="tc-group" id="tcRight">
+    <button class="tbtn pbtn2" id="tP2J">⬆</button>
     <button class="tbtn pbtn2" id="tP2L">◀</button>
     <button class="tbtn pbtn2" id="tP2R">▶</button>
-    <button class="tbtn pbtn2" id="tP2J">⬆</button>
   </div>
 </div>
 <div class="rotate-hint">📱 폰을 가로로 돌리면 화면이 더 커져요!</div>
@@ -137,8 +143,14 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 
-// 터치 기기 감지 — 가상 버튼 표시 여부
-const TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+// 터치 기기 감지 — 가상 버튼 표시 여부 (?touch 파라미터는 PC 테스트용)
+const TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window
+  || new URLSearchParams(location.search).has('touch');
+// 폰 판별 — 화면이 좁으면 1인 모드 전용 (2인은 PC/태블릿) (?phone은 테스트용)
+// screen.*가 0으로 나오는 환경이 있어 뷰포트 크기로 폴백
+const _minScreen = Math.min(screen.width || window.innerWidth, screen.height || window.innerHeight);
+const PHONE = (TOUCH && _minScreen > 0 && _minScreen < 600)
+  || new URLSearchParams(location.search).has('phone');
 
 const GROUND_Y = H - 40;
 const NET_W = 6, NET_H = 160;
@@ -194,6 +206,8 @@ const state = {
   spikePopX: 0,
   spikePopY: 0
 };
+
+if (PHONE) state.gameMode = '1p';   // 폰에서는 1인 모드 고정
 
 const keys = {};
 window.addEventListener('keydown', e => {
@@ -251,6 +265,7 @@ canvas.addEventListener('click', e => {
   if (state.phase === 'menu') {
     for (const mb of getModeButtons()) {
       if (x >= mb.x && x <= mb.x + mb.w && y >= mb.y && y <= mb.y + mb.h) {
+        if (PHONE && mb.mode === '2p') return;   // 폰에서는 2인 잠금
         state.gameMode = mb.mode;
         playTone({ freq: 700, duration: 0.07, type: 'triangle', volume: 0.18 });
         return;
@@ -1234,15 +1249,15 @@ function getCharButtons() {
   ];
 }
 
-function drawBtnRect(b, active, fontSize) {
-  ctx.fillStyle = active ? '#ffd17a' : 'rgba(255,255,255,0.16)';
+function drawBtnRect(b, active, fontSize, locked) {
+  ctx.fillStyle = locked ? 'rgba(255,255,255,0.06)' : active ? '#ffd17a' : 'rgba(255,255,255,0.16)';
   ctx.fillRect(b.x, b.y, b.w, b.h);
-  ctx.strokeStyle = active ? '#7a3f0a' : 'rgba(255,255,255,0.55)';
+  ctx.strokeStyle = locked ? 'rgba(255,255,255,0.25)' : active ? '#7a3f0a' : 'rgba(255,255,255,0.55)';
   ctx.lineWidth = 2.5;
   ctx.strokeRect(b.x, b.y, b.w, b.h);
-  ctx.fillStyle = active ? '#7a3f0a' : '#fff';
+  ctx.fillStyle = locked ? 'rgba(255,255,255,0.35)' : active ? '#7a3f0a' : '#fff';
   ctx.font = `bold ${fontSize}px sans-serif`;
-  ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2);
+  ctx.fillText(locked ? '🔒 ' + b.label : b.label, b.x + b.w / 2, b.y + b.h / 2);
 }
 
 function drawMenu() {
@@ -1256,9 +1271,14 @@ function drawMenu() {
   ctx.textBaseline = 'middle';
   ctx.fillText('🥔 감자배구 🥔', W / 2, 48);
 
-  // Mode buttons (혼자 / 둘이서)
+  // Mode buttons (혼자 / 둘이서) — 폰에서는 2인 잠금 표시
   for (const mb of getModeButtons()) {
-    drawBtnRect(mb, state.gameMode === mb.mode, 19);
+    drawBtnRect(mb, state.gameMode === mb.mode, 19, PHONE && mb.mode === '2p');
+  }
+  if (PHONE) {
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '13px sans-serif';
+    ctx.fillText('둘이서 모드는 PC나 태블릿에서!', W / 2 + 138, 146);
   }
 
   // Character selectors
@@ -1438,10 +1458,19 @@ bindTouchBtn('tP2L', 'arrowleft');
 bindTouchBtn('tP2R', 'arrowright');
 bindTouchBtn('tP2J', 'arrowup');
 
-const gameWrap = document.getElementById('gameWrap');
+const touchBar = document.getElementById('touchBar');
+const tcLeft = document.getElementById('tcLeft');
+const tcRight = document.getElementById('tcRight');
 function syncTouchUI() {
-  gameWrap.classList.toggle('show-touch', TOUCH && state.phase === 'play');
-  gameWrap.classList.toggle('mode-1p', state.gameMode === '1p');
+  touchBar.classList.toggle('show', TOUCH && state.phase === 'play');
+  touchBar.classList.toggle('mode-1p', state.gameMode === '1p');
+  // 1인: 점프 버튼을 오른쪽 그룹으로(오른손 엄지), 2인: P1 묶음으로 복귀
+  const j = document.getElementById('tP1J');
+  if (state.gameMode === '1p') {
+    if (j.parentElement !== tcRight) tcRight.appendChild(j);
+  } else {
+    if (j.parentElement !== tcLeft) tcLeft.appendChild(j);
+  }
 }
 
 function loop() {
