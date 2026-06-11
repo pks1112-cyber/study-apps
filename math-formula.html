@@ -131,6 +131,19 @@
   .hidden-cell { filter: blur(6px); cursor: pointer; }
   .table-hint { margin-top: 16px; font-size: 12.5px; color: #8aa9a3; }
 
+  /* ===== 검색 ===== */
+  #searchInput {
+    width: 100%; padding: 13px 14px; font-size: 15px; font-weight: 600;
+    border: 2px solid #5eead4; border-radius: 14px; outline: none;
+    font-family: inherit; color: var(--ink); background: #fbfffe;
+    margin-bottom: 14px;
+  }
+  #searchInput:focus { box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.10); }
+  .sr-badge { font-size: 11.5px; font-weight: 700; color: var(--primary); margin-bottom: 2px; }
+  .sr-count { text-align: left; font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+  mark { background: #fde68a; color: inherit; border-radius: 3px; padding: 0 1px; }
+  .search-hint { color: var(--muted); font-size: 13.5px; padding: 30px 0; }
+
   /* ===== sub toggle ===== */
   .sub-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
   .subseg {
@@ -274,6 +287,7 @@
   <div class="tab" data-mode="cards"><span class="ti">🃏</span><span class="tl">카드</span></div>
   <div class="tab" data-mode="test"><span class="ti">✏️</span><span class="tl">테스트</span></div>
   <div class="tab" data-mode="review"><span class="ti">🔄</span><span class="tl">복습 <span id="reviewCount">0</span></span></div>
+  <div class="tab" data-mode="search"><span class="ti">🔍</span><span class="tl">검색</span></div>
 </div>
 
 <!-- 공식표 -->
@@ -322,6 +336,12 @@
     <div>진행: <span id="progress">1 / —</span></div>
   </div>
   <div class="life-stats" id="lifeStats">누적 정답률 0%  ·  최고 연속 0  ·  푼 문제 0</div>
+</div>
+
+<!-- 검색 -->
+<div class="card" id="searchView" style="display:none;">
+  <input type="text" id="searchInput" placeholder="🔍 공식 이름 검색 (예: 근의 공식, 피타고라스, 미분)" autocomplete="off">
+  <div id="searchBody" class="search-hint">공식 이름이나 단원으로 검색해 보세요</div>
 </div>
 
 <div class="info">
@@ -612,6 +632,39 @@ function updateStatsUI() {
   document.getElementById('hAnswered').textContent = store.answered;
 }
 
+// === 검색 ===
+function escReg(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function hl(text, q) {
+  if (!text || !q) return text || '';
+  return text.replace(new RegExp(escReg(q), 'gi'), m => `<mark>${m}</mark>`);
+}
+function renderSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  const body = document.getElementById('searchBody');
+  if (!q) {
+    body.className = 'search-hint';
+    body.textContent = '공식 이름이나 단원으로 검색해 보세요';
+    return;
+  }
+  const ql = q.toLowerCase();
+  const hits = ALL.filter(x =>
+    (x.name + ' ' + x.desc + ' ' + x.cat + ' ' + x.lv).toLowerCase().includes(ql));
+  if (!hits.length) {
+    body.className = 'search-hint';
+    body.textContent = `"${q}" 검색 결과가 없어요`;
+    return;
+  }
+  body.className = '';
+  body.innerHTML = `<div class="sr-count">${hits.length}개 찾음</div><div class="formula-list">` +
+    hits.map((it, i) =>
+      `<div class="mt-row"><div class="mt-left">` +
+      `<div class="sr-badge">${it.lv} · ${it.cat}</div>` +
+      `<div class="mt-name">${hl(it.name, q)}</div>` +
+      (it.desc ? `<div class="mt-desc">${hl(it.desc, q)}</div>` : '') +
+      `</div><div class="mt-tex" data-i="${i}"></div></div>`).join('') + '</div>';
+  body.querySelectorAll('.mt-tex').forEach(cell => tex(cell, hits[+cell.dataset.i].tex));
+}
+
 // === 뷰 전환 ===
 function applyMode(newMode) {
   mode = newMode;
@@ -619,6 +672,9 @@ function applyMode(newMode) {
   document.getElementById('tableView').style.display = mode === 'table' ? 'block' : 'none';
   document.getElementById('cardsView').style.display = mode === 'cards' ? 'block' : 'none';
   document.getElementById('quizCard').style.display = isQuiz ? 'block' : 'none';
+  document.getElementById('searchView').style.display = mode === 'search' ? 'block' : 'none';
+  document.querySelector('.level-bar').style.display = mode === 'search' ? 'none' : 'block';
+  if (mode === 'search') { renderSearch(); document.getElementById('searchInput').focus(); return; }
   if (mode === 'table') { renderTable(); return; }
   if (mode === 'cards') { shuffleCards(); renderCardsView(); return; }
   score = 0;
@@ -686,6 +742,7 @@ document.querySelectorAll('#dirToggle .subseg').forEach(b => b.addEventListener(
   document.querySelectorAll('#dirToggle .subseg').forEach(x => x.classList.toggle('on', x.dataset.d === qDir));
   renderQuiz();
 }));
+document.getElementById('searchInput').addEventListener('input', renderSearch);
 
 // === 초기화 (KaTeX defer 로드 후) ===
 window.addEventListener('load', () => {
