@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>🏛️ 한국사 마스터</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --primary: #c2410c;
+    --primary-2: #9a3412;
+    --ink: #3d2a1e;
+    --muted: #9b7d6a;
+    --line: #f3ddcc;
+  }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(900px 400px at 85% -50px, rgba(194, 65, 12, 0.07), transparent 60%),
+      radial-gradient(700px 350px at 10% -30px, rgba(234, 130, 60, 0.09), transparent 60%),
+      linear-gradient(180deg, #fdf9f4 0%, #faeede 100%);
+    color: var(--ink);
+    font-family: 'Segoe UI Variable', 'Segoe UI', 'Noto Sans KR', sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 28px 16px 40px;
+    min-height: 100vh;
+  }
+
+  /* ===== hero ===== */
+  .hero {
+    width: 700px; max-width: 100%;
+    background: linear-gradient(120deg, #c2410c 0%, #9a3412 55%, #7c2d12 100%);
+    border-radius: 24px; color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 24px 30px; margin-bottom: 16px;
+    box-shadow: 0 16px 40px rgba(194, 65, 12, 0.28);
+    position: relative; overflow: hidden;
+  }
+  .hero::after {
+    content: ''; position: absolute; right: -50px; top: -70px;
+    width: 220px; height: 220px; background: rgba(255,255,255,0.08); border-radius: 50%;
+  }
+  .hero::before {
+    content: ''; position: absolute; left: 30%; bottom: -90px;
+    width: 170px; height: 170px; background: rgba(255,255,255,0.05); border-radius: 50%;
+  }
+  .hero h1 { margin: 0 0 6px; font-size: 27px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+  .tagline { margin: 0 0 13px; font-size: 13px; opacity: 0.88; }
+  .hero-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+  .hstat {
+    background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.25);
+    padding: 6px 12px; border-radius: 999px; font-size: 12.5px;
+  }
+  .hstat b { font-weight: 800; }
+  .hero-art { flex-shrink: 0; margin-left: 14px; position: relative; z-index: 1; }
+  .home-btn {
+    position: absolute; top: 12px; right: 14px; z-index: 2;
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30);
+    color: #fff; text-decoration: none; font-size: 12px; font-weight: 700;
+    padding: 6px 12px; border-radius: 999px; transition: background 0.12s;
+  }
+  .home-btn:hover { background: rgba(255,255,255,0.32); }
+
+  /* ===== era bar ===== */
+  .level-bar { width: 700px; max-width: 100%; margin-bottom: 12px; }
+  #eraSel, #cardCatSel, #quizCatSel {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 12px;
+    font-family: inherit; font-size: 14px; font-weight: 600; color: var(--ink);
+    background: #fff; outline: none; cursor: pointer;
+  }
+  #cardCatSel, #quizCatSel { background: #fdf6ef; margin-bottom: 14px; }
+  #eraSel:focus, #cardCatSel:focus, #quizCatSel:focus { border-color: #f0a878; }
+  .level-desc { margin: 7px 4px 0; font-size: 12.5px; color: var(--muted); }
+
+  /* ===== segmented tabs ===== */
+  .tabs {
+    width: 700px; max-width: 100%;
+    display: flex; gap: 4px; background: #f7ebdf; border-radius: 14px; padding: 4px;
+    margin-bottom: 14px;
+  }
+  .tab {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px;
+    padding: 7px 2px; border-radius: 11px; cursor: pointer; user-select: none;
+    color: #87604a; transition: all 0.13s ease; min-width: 0;
+  }
+  .tab:hover { background: #fff; }
+  .tab.active {
+    background: linear-gradient(135deg, #c2410c, #9a3412); color: #fff;
+    box-shadow: 0 3px 10px rgba(194, 65, 12, 0.30);
+  }
+  .tab .ti { font-size: 17px; line-height: 1.2; font-weight: 700; }
+  .tab .tl { font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .tab .tl span { color: #fed7aa; }
+  .tab:not(.active) .tl span { color: #c2410c; }
+
+  /* ===== cards ===== */
+  .card {
+    background: #fff; border-radius: 20px; padding: 28px;
+    width: 700px; max-width: 100%;
+    border: 1px solid #f5e6d8;
+    box-shadow: 0 1px 2px rgba(110, 60, 20, .04), 0 16px 40px rgba(170, 90, 40, 0.10);
+    text-align: center;
+  }
+
+  /* ===== 정리표 ===== */
+  .hide-toggles { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; }
+  .chip {
+    background: #f5e8dc; color: #6c4e3a; box-shadow: none;
+    padding: 8px 16px; border-radius: 999px; font-size: 12.5px;
+  }
+  .chip:hover { box-shadow: none; transform: none; background: #f0ddcb; }
+  .chip.on { background: linear-gradient(135deg, #c2410c, #9a3412); color: #fff; }
+  .chip.on:hover { background: linear-gradient(135deg, #c2410c, #9a3412); }
+  .history-list { display: flex; flex-direction: column; gap: 8px; max-height: 560px; overflow-y: auto; padding-right: 4px; }
+  .ht-cat { text-align: left; color: var(--primary); font-weight: 700; font-size: 14px; margin: 12px 0 2px; }
+  .ht-cat:first-child { margin-top: 0; }
+  .ht-row {
+    display: flex; align-items: center; gap: 14px; text-align: left;
+    background: #fdf6ef; border: 1px solid var(--line); border-radius: 12px;
+    padding: 11px 14px;
+  }
+  .ht-left { flex: 1; min-width: 0; }
+  .ht-name { font-size: 15.5px; font-weight: 700; color: #33211a; line-height: 1.35; word-break: keep-all; }
+  .ht-desc { font-size: 12.5px; color: var(--muted); margin-top: 2px; word-break: keep-all; }
+  .ht-content { flex: 1.5; min-width: 0; font-size: 14px; font-weight: 600; color: #4a3527; line-height: 1.5; word-break: keep-all; }
+  .hidden-cell { filter: blur(6px); cursor: pointer; }
+  .table-hint { margin-top: 16px; font-size: 12.5px; color: #b0907a; }
+
+  /* ===== sub toggle ===== */
+  .sub-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+  .subseg {
+    flex: 1; background: #f5e8dc; color: #6c4e3a; box-shadow: none;
+    padding: 11px; border-radius: 12px; font-size: 14px;
+  }
+  .subseg:hover { box-shadow: none; transform: none; background: #f0ddcb; }
+  .subseg.on { background: linear-gradient(135deg, #c2410c, #9a3412); color: #fff; }
+  .subseg.on:hover { background: linear-gradient(135deg, #c2410c, #9a3412); }
+
+  /* ===== flip card ===== */
+  .flip-card {
+    background: linear-gradient(135deg, #fdf4ea, #fae9d8);
+    border: 2px solid #f0d9c2; border-radius: 18px;
+    min-height: 220px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+    padding: 24px 18px; cursor: pointer; user-select: none; margin-bottom: 14px;
+    transition: background 0.15s; overflow: hidden;
+  }
+  .flip-card.back { background: linear-gradient(135deg, #c2410c, #7c2d12); border-color: transparent; }
+  .fc-cat { font-size: 12px; font-weight: 700; color: #c39b7e; }
+  .flip-card.back .fc-cat { color: #fed7aa; }
+  .fc-main { font-size: 26px; font-weight: 800; color: #33211a; line-height: 1.45; word-break: keep-all; width: 100%; }
+  .flip-card.back .fc-main { color: #fff; font-size: 20px; font-weight: 700; }
+  .fc-sub { font-size: 14px; color: #c39b7e; line-height: 1.6; word-break: keep-all; }
+  .flip-card.back .fc-sub { color: #ffedd5; font-size: 14px; }
+
+  /* ===== quiz ===== */
+  .q-label { color: var(--muted); font-size: 14.5px; margin-bottom: 10px; }
+  .q-prompt {
+    min-height: 64px; display: flex; align-items: center; justify-content: center;
+    font-size: 23px; font-weight: 800; color: #33211a; line-height: 1.45;
+    word-break: keep-all; margin-bottom: 6px; padding: 4px 0; width: 100%;
+  }
+  .q-prompt.long { font-size: 18px; font-weight: 700; }
+  .q-desc { min-height: 22px; font-size: 13.5px; color: var(--muted); margin-bottom: 12px; word-break: keep-all; }
+  .opts { display: flex; flex-direction: column; gap: 9px; }
+  .opt {
+    background: #fdf6ef; color: var(--ink); border: 1.5px solid var(--line);
+    border-radius: 13px; padding: 13px 14px; font-size: 14.5px; font-weight: 600;
+    box-shadow: none; line-height: 1.45; word-break: keep-all; white-space: normal;
+  }
+  .opt:hover { transform: none; box-shadow: none; background: #fbeede; border-color: #eebd92; }
+  .opt.right { background: #ecf8ef; border-color: #34c98a; color: #0b7a4e; }
+  .opt.bad { background: #fdeeee; border-color: #ef8e8e; color: #c0392b; }
+
+  button {
+    padding: 10px 20px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #c2410c, #9a3412); color: #fff;
+    font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+    box-shadow: 0 3px 10px rgba(194, 65, 12, 0.22);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  button:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(194, 65, 12, 0.28); }
+  button:active { transform: translateY(0); }
+  button.secondary { background: #f5e8dc; color: #6c4e3a; box-shadow: none; }
+  button.secondary:hover { background: #f0ddcb; box-shadow: none; }
+  .actions { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+
+  .feedback { min-height: 30px; margin-top: 14px; font-weight: 700; font-size: 17px; }
+  .correct { color: #0d9466; }
+  .wrong { color: #d6336c; }
+  .footer {
+    display: flex; justify-content: space-between; margin-top: 18px;
+    font-size: 13.5px; color: var(--muted);
+  }
+  .footer span { color: var(--primary); font-weight: 800; }
+  .life-stats {
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line);
+    font-size: 12px; color: #b0907a;
+  }
+  .info {
+    margin-top: 16px; font-size: 12.5px; color: #b0907a; text-align: center;
+    line-height: 1.7; max-width: 700px;
+  }
+
+  /* ===== mobile ===== */
+  @media (max-width: 600px) {
+    body { padding: 14px 10px 30px; }
+    .hero { flex-direction: column; text-align: center; padding: 20px 16px; }
+    .hero-art { margin: 10px 0 0; }
+    .hero-art svg { width: 110px; height: 90px; }
+    .hero-stats { justify-content: center; }
+    .hero h1 { font-size: 22px; }
+    .tagline { font-size: 11.5px; }
+    .tab .ti { font-size: 15px; }
+    .tab .tl { font-size: 9.5px; }
+    .card { padding: 20px 13px; }
+    button { padding: 9px 14px; font-size: 13px; }
+    .ht-row { gap: 9px; padding: 9px 10px; flex-direction: column; align-items: flex-start; }
+    .ht-content { font-size: 13px; }
+    .fc-main { font-size: 21px; }
+    .flip-card.back .fc-main { font-size: 17px; }
+    .q-prompt { font-size: 19px; }
+    .q-prompt.long { font-size: 15.5px; }
+    .opt { font-size: 13px; padding: 11px 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="hero">
+  <a class="home-btn" href="index.html">🏠 홈</a>
+  <div class="hero-text">
+    <h1>한국사 마스터</h1>
+    <p class="tagline">선사 시대부터 현대까지 핵심 정리 <b id="totCnt">—</b>개 — 외우고, 카드로 익히고, 테스트!</p>
+    <div class="hero-stats">
+      <span class="hstat">🎯 정답률 <b id="hAcc">0%</b></span>
+      <span class="hstat">🔥 최고 연속 <b id="hStreak">0</b></span>
+      <span class="hstat">📚 푼 문제 <b id="hAnswered">0</b></span>
+    </div>
+  </div>
+  <div class="hero-art">
+    <svg width="140" height="115" viewBox="0 0 140 115" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g transform="rotate(-8 32 32)">
+        <rect x="12" y="14" width="40" height="40" rx="10" fill="#ffffff"/>
+        <text x="32" y="43" text-anchor="middle" font-size="22" font-weight="700" fill="#c2410c" font-family="sans-serif">한</text>
+      </g>
+      <g transform="rotate(7 105 28)">
+        <rect x="85" y="8" width="40" height="40" rx="10" fill="#fed7aa"/>
+        <text x="105" y="37" text-anchor="middle" font-size="22" font-weight="700" fill="#7c2d12" font-family="sans-serif">史</text>
+      </g>
+      <g transform="rotate(-4 70 88)">
+        <circle cx="70" cy="88" r="21" fill="#ffffff"/>
+        <path d="M 49 88 A 21 21 0 0 1 91 88 A 10.5 10.5 0 0 1 70 88 A 10.5 10.5 0 0 0 49 88 Z" fill="#dc2626"/>
+        <path d="M 91 88 A 21 21 0 0 1 49 88 A 10.5 10.5 0 0 1 70 88 A 10.5 10.5 0 0 0 91 88 Z" fill="#2563eb"/>
+      </g>
+      <circle cx="22" cy="78" r="3" fill="#fed7aa"/>
+      <circle cx="124" cy="62" r="4" fill="#ffedd5"/>
+      <circle cx="130" cy="98" r="2.5" fill="#fed7aa"/>
+    </svg>
+  </div>
+</div>
+
+<div class="level-bar">
+  <select id="eraSel"></select>
+  <div class="level-desc" id="eraDesc"></div>
+</div>
+
+<div class="tabs" id="modeTabs">
+  <div class="tab active" data-mode="table"><span class="ti">📖</span><span class="tl">정리표</span></div>
+  <div class="tab" data-mode="cards"><span class="ti">🃏</span><span class="tl">카드</span></div>
+  <div class="tab" data-mode="test"><span class="ti">✏️</span><span class="tl">테스트</span></div>
+  <div class="tab" data-mode="review"><span class="ti">🔄</span><span class="tl">복습 <span id="reviewCount">0</span></span></div>
+</div>
+
+<!-- 정리표 -->
+<div class="card" id="tableView">
+  <div class="hide-toggles">
+    <button class="chip" id="hideContentBtn">🙈 설명 가리기</button>
+    <button class="chip" id="hideNameBtn">🙈 이름 가리기</button>
+  </div>
+  <div id="tableBody"></div>
+  <div class="table-hint">가린 부분은 눌러서 확인할 수 있어요</div>
+</div>
+
+<!-- 카드 -->
+<div class="card" id="cardsView" style="display:none;">
+  <select id="cardCatSel"></select>
+  <div class="flip-card" id="flipCard">
+    <div class="fc-cat" id="fcCat">&nbsp;</div>
+    <div class="fc-main" id="fcMain">&nbsp;</div>
+    <div class="fc-sub" id="fcSub">&nbsp;</div>
+  </div>
+  <div class="actions">
+    <button id="cardPrev" class="secondary">◀ 이전</button>
+    <button id="cardFlipBtn">뒤집기</button>
+    <button id="cardNext" class="secondary">다음 ▶</button>
+    <button id="cardShuffle" class="secondary">🔀 섞기</button>
+  </div>
+  <div class="footer" style="justify-content:center;">진행:&nbsp;<span id="cardProgress">1 / —</span></div>
+</div>
+
+<!-- 테스트 / 복습 -->
+<div class="card" id="quizCard" style="display:none;">
+  <div class="sub-toggle" id="dirToggle">
+    <button class="subseg on" data-d="mix">🔀 랜덤</button>
+    <button class="subseg" data-d="n2c">이름 → 설명</button>
+    <button class="subseg" data-d="c2n">설명 → 이름</button>
+  </div>
+  <select id="quizCatSel"></select>
+  <div class="q-label" id="qLabel">알맞은 설명을 고르세요</div>
+  <div class="q-prompt" id="qPrompt">&nbsp;</div>
+  <div class="q-desc" id="qDesc">&nbsp;</div>
+  <div class="opts" id="optsBox"></div>
+  <div class="feedback" id="feedback">&nbsp;</div>
+  <div class="footer">
+    <div>점수: <span id="score">0</span></div>
+    <div>🔥 연속: <span id="streak">0</span></div>
+    <div>진행: <span id="progress">1 / —</span></div>
+  </div>
+  <div class="life-stats" id="lifeStats">누적 정답률 0%  ·  최고 연속 0  ·  푼 문제 0</div>
+</div>
+
+<div class="info">
+  네 개의 보기 중에서 알맞은 설명이나 이름을 고르세요. 틀린 문제는 복습 탭에 모여요.<br>
+  © 2026 Mina &amp; Juho. All rights reserved. 무단 복제·배포 금지
+</div>
+
+<script src="korean-history-data.js?v=1"></script>
+<script>
+// === 데이터 펼치기 ===
+const ERAS = Object.keys(H_RAW);
+const ALL = [];
+const ITEM_INDEX = {};
+ERAS.forEach(era => {
+  H_RAW[era].forEach(([cat, items]) => {
+    items.forEach(([name, content, desc]) => {
+      const it = { era, cat, name, content, desc, key: era + '|' + name };
+      ALL.push(it);
+      ITEM_INDEX[it.key] = it;
+    });
+  });
+});
+
+// === 저장 ===
+const STORE_KEY = 'kr-history-v1';
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+  catch (e) { return {}; }
+}
+function saveStore() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {}
+}
+const saved = loadStore();
+const store = {
+  answered: saved.answered || 0,
+  correct: saved.correct || 0,
+  bestStreak: saved.bestStreak || 0,
+  wrongKeys: Array.isArray(saved.wrongKeys) ? saved.wrongKeys : [],
+  era: ERAS.includes(saved.era) ? saved.era : ERAS[0]
+};
+
+// === 상태 ===
+let mode = 'table';            // table | cards | test | review
+let era = store.era;
+let hideContent = false;
+let hideName = false;
+let cardCat = 'all';
+let cardDeck = [];
+let cardIdx = 0;
+let cardFlipped = false;
+let quizCat = 'all';
+let qDir = 'mix';              // mix | n2c | c2n
+let deck = [];
+let idx = 0;
+let score = 0;
+let streak = 0;
+let locked = false;
+let curDir = 'n2c';
+
+function eraItems() { return ALL.filter(x => x.era === era); }
+function reviewItems() { return store.wrongKeys.map(k => ITEM_INDEX[k]).filter(Boolean); }
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function catOptions(items) {
+  const cats = [...new Set(items.map(x => x.cat))];
+  return `<option value="all">전체 (${items.length}개)</option>` +
+    cats.map(c => `<option value="${c}">${c} (${items.filter(x => x.cat === c).length}개)</option>`).join('');
+}
+
+// === 정리표 ===
+function renderTable() {
+  const items = eraItems();
+  const body = document.getElementById('tableBody');
+  let html = '<div class="history-list">';
+  let lastCat = null;
+  items.forEach(it => {
+    if (it.cat !== lastCat) {
+      lastCat = it.cat;
+      html += `<div class="ht-cat">${it.cat}</div>`;
+    }
+    html += `<div class="ht-row">` +
+      `<div class="ht-left${hideName ? ' hidden-cell' : ''}">` +
+      `<div class="ht-name">${it.name}</div>` +
+      (it.desc ? `<div class="ht-desc">${it.desc}</div>` : '') +
+      `</div>` +
+      `<div class="ht-content${hideContent ? ' hidden-cell' : ''}">${it.content}</div>` +
+      `</div>`;
+  });
+  body.innerHTML = html + '</div>';
+  body.querySelectorAll('.hidden-cell').forEach(cell =>
+    cell.addEventListener('click', () => cell.classList.remove('hidden-cell')));
+}
+
+// === 카드 ===
+function shuffleCards() {
+  const items = eraItems();
+  cardDeck = shuffle((cardCat === 'all' ? items : items.filter(x => x.cat === cardCat)).slice());
+  cardIdx = 0;
+  cardFlipped = false;
+}
+function renderCardsView() {
+  const sel = document.getElementById('cardCatSel');
+  sel.innerHTML = catOptions(eraItems());
+  sel.value = cardCat;
+  renderCard();
+}
+function renderCard() {
+  const it = cardDeck[cardIdx];
+  if (!it) return;
+  const card = document.getElementById('flipCard');
+  const main = document.getElementById('fcMain');
+  document.getElementById('fcCat').textContent = it.era + ' · ' + it.cat;
+  if (cardFlipped) {
+    card.classList.add('back');
+    main.textContent = it.content;
+    document.getElementById('fcSub').textContent = it.desc || it.name;
+  } else {
+    card.classList.remove('back');
+    main.textContent = it.name;
+    document.getElementById('fcSub').textContent = '카드를 누르면 설명이 보여요 👆';
+  }
+  document.getElementById('cardProgress').textContent = `${cardIdx + 1} / ${cardDeck.length}`;
+}
+function toggleFlip() {
+  cardFlipped = !cardFlipped;
+  renderCard();
+}
+function moveCard(d) {
+  if (!cardDeck.length) return;
+  cardIdx = (cardIdx + d + cardDeck.length) % cardDeck.length;
+  cardFlipped = false;
+  renderCard();
+}
+
+// === 테스트 / 복습 ===
+function addWrong(item) {
+  if (!store.wrongKeys.includes(item.key)) store.wrongKeys.push(item.key);
+}
+function removeWrong(item) {
+  const i = store.wrongKeys.indexOf(item.key);
+  if (i >= 0) store.wrongKeys.splice(i, 1);
+}
+function quizPool() {
+  if (mode === 'review') return reviewItems();
+  const items = eraItems();
+  return quizCat === 'all' ? items : items.filter(x => x.cat === quizCat);
+}
+function shuffleDeck() {
+  deck = shuffle(quizPool().slice());
+  idx = 0;
+}
+function distractorsFor(item) {
+  const pool = ALL.filter(x => x.era === item.era && x.key !== item.key);
+  const sameCat = shuffle(pool.filter(x => x.cat === item.cat));
+  const others = shuffle(pool.filter(x => x.cat !== item.cat));
+  return sameCat.concat(others).slice(0, 3);
+}
+function renderQuiz() {
+  const item = deck[idx];
+  if (!item) return;
+  locked = false;
+  curDir = qDir === 'mix' ? (Math.random() < 0.5 ? 'n2c' : 'c2n') : qDir;
+  const prompt = document.getElementById('qPrompt');
+  if (curDir === 'n2c') {
+    document.getElementById('qLabel').textContent = '알맞은 설명을 고르세요';
+    prompt.className = 'q-prompt';
+    prompt.textContent = item.name;
+  } else {
+    document.getElementById('qLabel').textContent = '이 설명에 해당하는 것을 고르세요';
+    prompt.className = 'q-prompt long';
+    prompt.textContent = item.content;
+  }
+  document.getElementById('qDesc').innerHTML = '&nbsp;';
+  document.getElementById('feedback').innerHTML = '&nbsp;';
+  document.getElementById('feedback').className = 'feedback';
+  const options = shuffle(distractorsFor(item).concat([item]));
+  const box = document.getElementById('optsBox');
+  box.innerHTML = options.map(o => `<button class="opt" data-k="${o.key}"></button>`).join('');
+  box.querySelectorAll('.opt').forEach(btn => {
+    const o = ITEM_INDEX[btn.dataset.k];
+    btn.textContent = curDir === 'n2c' ? o.content : o.name;
+    btn.addEventListener('click', () => answer(btn, o, item));
+  });
+  document.getElementById('progress').textContent = `${idx + 1} / ${deck.length}`;
+}
+function answer(btn, chosen, item) {
+  if (locked) return;
+  locked = true;
+  const ok = chosen.key === item.key;
+  document.querySelectorAll('#optsBox .opt').forEach(b => {
+    if (b.dataset.k === item.key) b.classList.add('right');
+    else if (b === btn) b.classList.add('bad');
+  });
+  const feedbackEl = document.getElementById('feedback');
+  store.answered++;
+  if (ok) {
+    score++;
+    streak++;
+    store.correct++;
+    if (streak > store.bestStreak) store.bestStreak = streak;
+    removeWrong(item);
+    feedbackEl.textContent = '✓ 정답!';
+    feedbackEl.className = 'feedback correct';
+  } else {
+    streak = 0;
+    addWrong(item);
+    feedbackEl.textContent = '✗ 아쉽다! 초록색이 정답이에요';
+    feedbackEl.className = 'feedback wrong';
+  }
+  if (item.desc) document.getElementById('qDesc').textContent = '💡 ' + item.desc;
+  document.getElementById('score').textContent = score;
+  saveStore();
+  updateStatsUI();
+  setTimeout(next, ok ? 1000 : 2000);
+}
+function next() {
+  idx++;
+  if (mode === 'review') {
+    if (store.wrongKeys.length === 0) { showReviewEmpty(); return; }
+    if (idx >= deck.length) shuffleDeck();
+    if (deck.length === 0) { showReviewEmpty(); return; }
+    if (idx >= deck.length) idx = 0;
+  } else if (idx >= deck.length) {
+    shuffleDeck();
+  }
+  renderQuiz();
+}
+function showReviewEmpty() {
+  document.getElementById('qLabel').textContent = '';
+  document.getElementById('qPrompt').className = 'q-prompt';
+  document.getElementById('qPrompt').textContent = '🎉';
+  document.getElementById('qDesc').textContent = '복습할 문제가 없어요! 문제를 틀리면 여기에 모여요.';
+  document.getElementById('optsBox').innerHTML = '';
+  document.getElementById('feedback').innerHTML = '&nbsp;';
+  document.getElementById('progress').textContent = '0 / 0';
+}
+function refreshQuizControls() {
+  const dt = document.getElementById('dirToggle');
+  const sel = document.getElementById('quizCatSel');
+  if (mode === 'review') {
+    dt.style.display = 'none';
+    sel.style.display = 'none';
+    return;
+  }
+  dt.style.display = 'flex';
+  dt.querySelectorAll('.subseg').forEach(b => b.classList.toggle('on', b.dataset.d === qDir));
+  sel.innerHTML = catOptions(eraItems());
+  sel.value = quizCat;
+  sel.style.display = 'block';
+}
+
+// === 통계 ===
+function updateStatsUI() {
+  const acc = store.answered ? Math.round((store.correct / store.answered) * 100) : 0;
+  document.getElementById('streak').textContent = streak;
+  document.getElementById('lifeStats').textContent =
+    `누적 정답률 ${acc}%  ·  최고 연속 ${store.bestStreak}  ·  푼 문제 ${store.answered}`;
+  document.getElementById('reviewCount').textContent = store.wrongKeys.length;
+  document.getElementById('hAcc').textContent = acc + '%';
+  document.getElementById('hStreak').textContent = store.bestStreak;
+  document.getElementById('hAnswered').textContent = store.answered;
+}
+
+// === 뷰 전환 ===
+function applyMode(newMode) {
+  mode = newMode;
+  const isQuiz = mode === 'test' || mode === 'review';
+  document.getElementById('tableView').style.display = mode === 'table' ? 'block' : 'none';
+  document.getElementById('cardsView').style.display = mode === 'cards' ? 'block' : 'none';
+  document.getElementById('quizCard').style.display = isQuiz ? 'block' : 'none';
+  if (mode === 'table') { renderTable(); return; }
+  if (mode === 'cards') { shuffleCards(); renderCardsView(); return; }
+  score = 0;
+  streak = 0;
+  document.getElementById('score').textContent = 0;
+  updateStatsUI();
+  refreshQuizControls();
+  if (mode === 'review' && store.wrongKeys.length === 0) {
+    deck = [];
+    idx = 0;
+    showReviewEmpty();
+    return;
+  }
+  shuffleDeck();
+  renderQuiz();
+}
+
+// === 이벤트 ===
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    applyMode(t.dataset.mode);
+  });
+});
+document.getElementById('eraSel').addEventListener('change', e => {
+  era = e.target.value;
+  store.era = era;
+  saveStore();
+  document.getElementById('eraDesc').textContent = H_ERA_DESC[era] || '';
+  cardCat = 'all';
+  quizCat = 'all';
+  applyMode(mode);
+});
+document.getElementById('hideContentBtn').addEventListener('click', () => {
+  hideContent = !hideContent;
+  document.getElementById('hideContentBtn').classList.toggle('on', hideContent);
+  renderTable();
+});
+document.getElementById('hideNameBtn').addEventListener('click', () => {
+  hideName = !hideName;
+  document.getElementById('hideNameBtn').classList.toggle('on', hideName);
+  renderTable();
+});
+document.getElementById('cardCatSel').addEventListener('change', e => {
+  cardCat = e.target.value;
+  shuffleCards();
+  renderCard();
+});
+document.getElementById('flipCard').addEventListener('click', toggleFlip);
+document.getElementById('cardFlipBtn').addEventListener('click', toggleFlip);
+document.getElementById('cardPrev').addEventListener('click', () => moveCard(-1));
+document.getElementById('cardNext').addEventListener('click', () => moveCard(1));
+document.getElementById('cardShuffle').addEventListener('click', () => { shuffleCards(); renderCard(); });
+document.getElementById('quizCatSel').addEventListener('change', e => {
+  quizCat = e.target.value;
+  score = 0;
+  document.getElementById('score').textContent = 0;
+  shuffleDeck();
+  renderQuiz();
+});
+document.querySelectorAll('#dirToggle .subseg').forEach(b => b.addEventListener('click', () => {
+  if (qDir === b.dataset.d) return;
+  qDir = b.dataset.d;
+  document.querySelectorAll('#dirToggle .subseg').forEach(x => x.classList.toggle('on', x.dataset.d === qDir));
+  renderQuiz();
+}));
+
+// === 초기화 ===
+const eraSel = document.getElementById('eraSel');
+eraSel.innerHTML = ERAS.map(e2 =>
+  `<option value="${e2}">${e2} (${ALL.filter(x => x.era === e2).length}개)</option>`).join('');
+eraSel.value = era;
+document.getElementById('eraDesc').textContent = H_ERA_DESC[era] || '';
+document.getElementById('totCnt').textContent = ALL.length;
+updateStatsUI();
+applyMode('table');
+</script>
+</body>
+</html>
