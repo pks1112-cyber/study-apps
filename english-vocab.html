@@ -235,7 +235,7 @@
   }
   .unit-picker { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; }
   #unitSel {
-    flex: 1; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px;
+    flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px;
     font-family: inherit; font-size: 14px; font-weight: 600; color: var(--ink);
     background: #f8fafc; outline: none; cursor: pointer;
   }
@@ -285,7 +285,7 @@
   }
   .sub-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
   .subseg {
-    flex: 1; background: #f1f5f9; color: #475569; box-shadow: none;
+    flex: 1; min-width: 0; background: #f1f5f9; color: #475569; box-shadow: none;
     padding: 11px; border-radius: 12px; font-size: 13.5px;
   }
   .subseg:hover { box-shadow: none; transform: none; background: #e2e8f0; }
@@ -385,7 +385,10 @@
     table.words th { padding: 6px; }
     td.eng { width: auto; }
     td.eng .ipa { display: block; white-space: normal; }
-    .unit-picker { flex-wrap: wrap; }
+    .unit-picker { flex-wrap: nowrap; gap: 5px; }
+    .nav-btn { padding: 9px 10px; flex-shrink: 0; }
+    #unitSel { padding: 9px 6px; font-size: 12.5px; }
+    .subseg { font-size: 12px; padding: 10px 4px; }
     .best-badge { display: none; }
     button { padding: 9px 15px; font-size: 13px; }
   }
