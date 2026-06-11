@@ -109,6 +109,17 @@
     canvas { max-height: calc(100vh - 64px); max-height: calc(100dvh - 64px); }
     body.touch canvas { max-height: calc(100vh - 142px); max-height: calc(100dvh - 142px); }
   }
+  /* 세로 모드: 버튼을 화면 맨 아래(엄지가 쉬는 자리)에 게임패드처럼 고정 + 크게 */
+  @media (orientation: portrait) {
+    .touch-bar.show {
+      position: fixed; left: 0; right: 0; width: auto; margin: 0;
+      bottom: max(14px, env(safe-area-inset-bottom));
+      padding: 0 16px; z-index: 10;
+    }
+    .tbtn { width: 76px; height: 76px; font-size: 28px; }
+    .touch-bar.mode-1p #tP1J { width: 96px; height: 96px; font-size: 36px; }
+    body.touch canvas { max-height: none; }
+  }
 </style>
 </head>
 <body>
