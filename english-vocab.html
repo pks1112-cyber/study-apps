@@ -220,6 +220,13 @@
   }
   .hstat b { font-weight: 800; }
   .hero-art { flex-shrink: 0; margin-left: 16px; position: relative; z-index: 1; }
+  .home-btn {
+    position: absolute; top: 12px; right: 14px; z-index: 2;
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30);
+    color: #fff; text-decoration: none; font-size: 12px; font-weight: 700;
+    padding: 6px 12px; border-radius: 999px; transition: background 0.12s;
+  }
+  .home-btn:hover { background: rgba(255,255,255,0.32); }
 
   .main-card { width: 740px; }
   .main-card .tabs {
@@ -386,6 +393,7 @@
 </head>
 <body>
 <div class="hero">
+  <a class="home-btn" href="index.html">🏠 홈</a>
   <div class="hero-text">
     <h1>영단어 마스터</h1>
     <p class="tagline">초5 ~ 고3 필수 영단어 2,000 · 발음기호 · 원어민 발음 · 예문</p>

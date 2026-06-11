@@ -56,6 +56,13 @@
   }
   .hstat b { font-weight: 800; }
   .hero-art { flex-shrink: 0; margin-left: 14px; position: relative; z-index: 1; }
+  .home-btn {
+    position: absolute; top: 12px; right: 14px; z-index: 2;
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30);
+    color: #fff; text-decoration: none; font-size: 12px; font-weight: 700;
+    padding: 6px 12px; border-radius: 999px; transition: background 0.12s;
+  }
+  .home-btn:hover { background: rgba(255,255,255,0.32); }
 
   /* ===== level bar ===== */
   .level-bar { width: 700px; max-width: 100%; margin-bottom: 12px; }
@@ -226,6 +233,7 @@
 </head>
 <body>
 <div class="hero">
+  <a class="home-btn" href="index.html">🏠 홈</a>
   <div class="hero-text">
     <h1>수학 공식 마스터</h1>
     <p class="tagline">초5 ~ 고3 필수 공식 <b id="totCnt">—</b>개 — 외우고, 카드로 익히고, 테스트!</p>

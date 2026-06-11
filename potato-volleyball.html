@@ -31,11 +31,20 @@
   }
   .score { font-size: 32px; margin: 8px 0; font-weight: bold; letter-spacing: 4px; }
   .info { margin-top: 12px; text-align: center; font-size: 14px; line-height: 1.8; color: #6b4423; }
+  .home-btn {
+    position: absolute; top: 14px; left: 14px;
+    background: #fff; border: 2px solid #f3c47a; color: #c2410c;
+    text-decoration: none; font-size: 13px; font-weight: 700;
+    padding: 7px 14px; border-radius: 999px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.10);
+  }
+  .home-btn:hover { background: #fff7ec; }
   .p1 { color: #e74c3c; }
   .p2 { color: #3498db; }
 </style>
 </head>
 <body>
+<a class="home-btn" href="index.html">🏠 홈</a>
 <h1>🥔 감자배구 🥔</h1>
 <div class="score"><span class="p1" id="p1Score">0</span> : <span class="p2" id="p2Score">0</span></div>
 <canvas id="game" width="1100" height="620"></canvas>
