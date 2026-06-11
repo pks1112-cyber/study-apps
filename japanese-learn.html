@@ -4,6 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<!-- Google Analytics — github.io에서만 집계 (localhost 테스트 제외) -->
+<script>
+  if (location.hostname.endsWith('github.io')) {
+    var gs = document.createElement('script');
+    gs.async = true;
+    gs.src = 'https://www.googletagmanager.com/gtag/js?id=G-FQ4BGDPP6D';
+    document.head.appendChild(gs);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { dataLayer.push(arguments); };
+    gtag('js', new Date());
+    gtag('config', 'G-FQ4BGDPP6D');
+  }
+</script>
 <title>🌸 일본어 학습 🌸</title>
 <style>
   * { box-sizing: border-box; }
