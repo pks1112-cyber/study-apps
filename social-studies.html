@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<!-- Google Analytics — github.io에서만 집계 (localhost 테스트 제외) -->
+<script>
+  if (location.hostname.endsWith('github.io')) {
+    var gs = document.createElement('script');
+    gs.async = true;
+    gs.src = 'https://www.googletagmanager.com/gtag/js?id=G-FQ4BGDPP6D';
+    document.head.appendChild(gs);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { dataLayer.push(arguments); };
+    gtag('js', new Date());
+    gtag('config', 'G-FQ4BGDPP6D');
+  }
+</script>
+<title>🌏 사회 마스터</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --primary: #0284c7;
+    --primary-2: #0369a1;
+    --ink: #16344a;
+    --muted: #6e8da0;
+    --line: #d3e9f5;
+  }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(900px 400px at 85% -50px, rgba(2, 132, 199, 0.07), transparent 60%),
+      radial-gradient(700px 350px at 10% -30px, rgba(56, 189, 248, 0.09), transparent 60%),
+      linear-gradient(180deg, #f7fbfe 0%, #e9f4fb 100%);
+    color: var(--ink);
+    font-family: 'Segoe UI Variable', 'Segoe UI', 'Noto Sans KR', sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 28px 16px 40px;
+    min-height: 100vh;
+  }
+
+  /* ===== hero ===== */
+  .hero {
+    width: 700px; max-width: 100%;
+    background: linear-gradient(120deg, #0284c7 0%, #0369a1 55%, #075985 100%);
+    border-radius: 24px; color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 24px 30px; margin-bottom: 16px;
+    box-shadow: 0 16px 40px rgba(2, 132, 199, 0.28);
+    position: relative; overflow: hidden;
+  }
+  .hero::after {
+    content: ''; position: absolute; right: -50px; top: -70px;
+    width: 220px; height: 220px; background: rgba(255,255,255,0.08); border-radius: 50%;
+  }
+  .hero::before {
+    content: ''; position: absolute; left: 30%; bottom: -90px;
+    width: 170px; height: 170px; background: rgba(255,255,255,0.05); border-radius: 50%;
+  }
+  .hero h1 { margin: 0 0 6px; font-size: 27px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+  .tagline { margin: 0 0 13px; font-size: 13px; opacity: 0.88; }
+  .hero-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+  .hstat {
+    background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.25);
+    padding: 6px 12px; border-radius: 999px; font-size: 12.5px;
+  }
+  .hstat b { font-weight: 800; }
+  .hero-art { flex-shrink: 0; margin-left: 14px; position: relative; z-index: 1; }
+  .home-btn {
+    position: absolute; top: 12px; right: 14px; z-index: 2;
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30);
+    color: #fff; text-decoration: none; font-size: 12px; font-weight: 700;
+    padding: 6px 12px; border-radius: 999px; transition: background 0.12s;
+  }
+  .home-btn:hover { background: rgba(255,255,255,0.32); }
+
+  /* ===== era bar ===== */
+  .level-bar { width: 700px; max-width: 100%; margin-bottom: 12px; }
+  .level-label { font-size: 13px; font-weight: 800; color: var(--primary); margin: 0 4px 6px; }
+  #eraSel, #cardCatSel, #quizCatSel {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid var(--line); border-radius: 12px;
+    font-family: inherit; font-size: 14px; font-weight: 600; color: var(--ink);
+    background: #fff; outline: none; cursor: pointer;
+  }
+  #eraSel {
+    border: 2px solid #67b1dd; border-radius: 14px;
+    background: linear-gradient(180deg, #fff 0%, #eaf6fd 100%);
+    font-size: 16px; font-weight: 800; color: #075985;
+    padding: 13px 14px;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.14);
+  }
+  #cardCatSel, #quizCatSel { background: #f3f9fd; margin-bottom: 14px; }
+  #eraSel:focus, #cardCatSel:focus, #quizCatSel:focus { border-color: #7cc0e8; }
+  .level-desc { margin: 7px 4px 0; font-size: 12.5px; color: var(--muted); }
+
+  /* ===== segmented tabs ===== */
+  .tabs {
+    width: 700px; max-width: 100%;
+    display: flex; gap: 4px; background: #e6f2f9; border-radius: 14px; padding: 4px;
+    margin-bottom: 14px;
+  }
+  .tab {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px;
+    padding: 7px 2px; border-radius: 11px; cursor: pointer; user-select: none;
+    color: #51748a; transition: all 0.13s ease; min-width: 0;
+  }
+  .tab:hover { background: #fff; }
+  .tab.active {
+    background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff;
+    box-shadow: 0 3px 10px rgba(2, 132, 199, 0.30);
+  }
+  .tab .ti { font-size: 17px; line-height: 1.2; font-weight: 700; }
+  .tab .tl { font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .tab .tl span { color: #bae6fd; }
+  .tab:not(.active) .tl span { color: #0284c7; }
+
+  /* ===== cards ===== */
+  .card {
+    background: #fff; border-radius: 20px; padding: 28px;
+    width: 700px; max-width: 100%;
+    border: 1px solid #ddedf7;
+    box-shadow: 0 1px 2px rgba(20, 70, 110, .04), 0 16px 40px rgba(40, 120, 170, 0.10);
+    text-align: center;
+  }
+
+  /* ===== 정리표 ===== */
+  .hide-toggles { display: flex; gap: 8px; justify-content: center; margin-bottom: 14px; }
+  .chip {
+    background: #e2eff7; color: #3f6276; box-shadow: none;
+    padding: 8px 16px; border-radius: 999px; font-size: 12.5px;
+  }
+  .chip:hover { box-shadow: none; transform: none; background: #d4e8f4; }
+  .chip.on { background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; }
+  .chip.on:hover { background: linear-gradient(135deg, #0284c7, #0369a1); }
+  .history-list { display: flex; flex-direction: column; gap: 8px; }
+  .ht-cat { text-align: left; color: var(--primary); font-weight: 700; font-size: 14px; margin: 12px 0 2px; }
+  .ht-cat:first-child { margin-top: 0; }
+  .ht-row {
+    display: flex; align-items: center; gap: 14px; text-align: left;
+    background: #f3f9fd; border: 1px solid var(--line); border-radius: 12px;
+    padding: 11px 14px;
+  }
+  .ht-left { flex: 1; min-width: 0; }
+  .ht-name { font-size: 15.5px; font-weight: 700; color: #142b3a; line-height: 1.35; word-break: keep-all; }
+  .ht-desc { font-size: 12.5px; color: var(--muted); margin-top: 2px; word-break: keep-all; }
+  .ht-content { flex: 1.5; min-width: 0; font-size: 14px; font-weight: 600; color: #29455a; line-height: 1.5; word-break: keep-all; }
+  .hidden-cell { filter: blur(6px); cursor: pointer; }
+  .table-hint { margin-top: 16px; font-size: 12.5px; color: #7fa1b5; }
+
+  /* ===== 검색 ===== */
+  #searchInput {
+    width: 100%; padding: 13px 14px; font-size: 15px; font-weight: 600;
+    border: 2px solid #67b1dd; border-radius: 14px; outline: none;
+    font-family: inherit; color: var(--ink); background: #fbfdff;
+    margin-bottom: 14px;
+  }
+  #searchInput:focus { box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.10); }
+  .sr-badge { font-size: 11.5px; font-weight: 700; color: var(--primary); margin-bottom: 2px; }
+  .sr-count { text-align: left; font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+  mark { background: #fde68a; color: inherit; border-radius: 3px; padding: 0 1px; }
+  .search-hint { color: var(--muted); font-size: 13.5px; padding: 30px 0; }
+
+  /* ===== sub toggle ===== */
+  .sub-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
+  .subseg {
+    flex: 1; min-width: 0; background: #e2eff7; color: #3f6276; box-shadow: none;
+    padding: 11px; border-radius: 12px; font-size: 14px;
+  }
+  .subseg:hover { box-shadow: none; transform: none; background: #d4e8f4; }
+  .subseg.on { background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; }
+  .subseg.on:hover { background: linear-gradient(135deg, #0284c7, #0369a1); }
+
+  /* ===== flip card ===== */
+  .flip-card {
+    background: linear-gradient(135deg, #eef7fc, #ddeefa);
+    border: 2px solid #c8e2f2; border-radius: 18px;
+    min-height: 220px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+    padding: 24px 18px; cursor: pointer; user-select: none; margin-bottom: 14px;
+    transition: background 0.15s; overflow: hidden;
+  }
+  .flip-card.back { background: linear-gradient(135deg, #0284c7, #075985); border-color: transparent; }
+  .fc-cat { font-size: 12px; font-weight: 700; color: #84aabf; }
+  .flip-card.back .fc-cat { color: #bae6fd; }
+  .fc-main { font-size: 26px; font-weight: 800; color: #142b3a; line-height: 1.45; word-break: keep-all; width: 100%; }
+  .flip-card.back .fc-main { color: #fff; font-size: 20px; font-weight: 700; }
+  .fc-sub { font-size: 14px; color: #84aabf; line-height: 1.6; word-break: keep-all; }
+  .flip-card.back .fc-sub { color: #e0f2fe; font-size: 14px; }
+
+  /* ===== quiz ===== */
+  .q-label { color: var(--muted); font-size: 14.5px; margin-bottom: 10px; }
+  .q-prompt {
+    min-height: 64px; display: flex; align-items: center; justify-content: center;
+    font-size: 23px; font-weight: 800; color: #142b3a; line-height: 1.45;
+    word-break: keep-all; margin-bottom: 6px; padding: 4px 0; width: 100%;
+  }
+  .q-prompt.long { font-size: 18px; font-weight: 700; }
+  .q-desc { min-height: 22px; font-size: 13.5px; color: var(--muted); margin-bottom: 12px; word-break: keep-all; }
+  .opts { display: flex; flex-direction: column; gap: 9px; }
+  .opt {
+    background: #f3f9fd; color: var(--ink); border: 1.5px solid var(--line);
+    border-radius: 13px; padding: 13px 14px; font-size: 14.5px; font-weight: 600;
+    box-shadow: none; line-height: 1.45; word-break: keep-all; white-space: normal;
+  }
+  .opt:hover { transform: none; box-shadow: none; background: #fbeede; border-color: #eebd92; }
+  .opt.right { background: #ecf8ef; border-color: #34c98a; color: #0b7a4e; }
+  .opt.bad { background: #fdeeee; border-color: #ef8e8e; color: #c0392b; }
+
+  button {
+    padding: 10px 20px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff;
+    font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+    box-shadow: 0 3px 10px rgba(2, 132, 199, 0.22);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  button:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(2, 132, 199, 0.28); }
+  button:active { transform: translateY(0); }
+  button.secondary { background: #e2eff7; color: #3f6276; box-shadow: none; }
+  button.secondary:hover { background: #d4e8f4; box-shadow: none; }
+  .actions { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+
+  .feedback { min-height: 30px; margin-top: 14px; font-weight: 700; font-size: 17px; }
+  .correct { color: #0d9466; }
+  .wrong { color: #d6336c; }
+  .footer {
+    display: flex; justify-content: space-between; margin-top: 18px;
+    font-size: 13.5px; color: var(--muted);
+  }
+  .footer span { color: var(--primary); font-weight: 800; }
+  .life-stats {
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line);
+    font-size: 12px; color: #7fa1b5;
+  }
+  .info {
+    margin-top: 16px; font-size: 12.5px; color: #7fa1b5; text-align: center;
+    line-height: 1.7; max-width: 700px;
+  }
+
+  /* ===== mobile ===== */
+  @media (max-width: 600px) {
+    body { padding: 14px 10px 30px; }
+    .hero { flex-direction: column; text-align: center; padding: 20px 16px; }
+    .hero-art { margin: 10px 0 0; }
+    .hero-art svg { width: 110px; height: 90px; }
+    .hero-stats { justify-content: center; }
+    .hero h1 { font-size: 22px; }
+    .tagline { font-size: 11.5px; }
+    .tab .ti { font-size: 15px; }
+    .tab .tl { font-size: 9.5px; }
+    .card { padding: 20px 13px; }
+    button { padding: 9px 14px; font-size: 13px; }
+    .ht-row { gap: 9px; padding: 9px 10px; flex-direction: column; align-items: flex-start; }
+    .ht-content { font-size: 13px; }
+    .subseg { font-size: 12px; padding: 10px 2px; }
+    .fc-main { font-size: 21px; }
+    .flip-card.back .fc-main { font-size: 17px; }
+    .q-prompt { font-size: 19px; }
+    .q-prompt.long { font-size: 15.5px; }
+    .opt { font-size: 13px; padding: 11px 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="hero">
+  <a class="home-btn" href="index.html">🏠 홈</a>
+  <div class="hero-text">
+    <h1>사회 마스터</h1>
+    <p class="tagline">초등 사회부터 통합사회까지 핵심 개념 <b id="totCnt">—</b>개 — 외우고, 카드로 익히고, 테스트!</p>
+    <div class="hero-stats">
+      <span class="hstat">🎯 정답률 <b id="hAcc">0%</b></span>
+      <span class="hstat">🔥 최고 연속 <b id="hStreak">0</b></span>
+      <span class="hstat">📚 푼 문제 <b id="hAnswered">0</b></span>
+    </div>
+  </div>
+  <div class="hero-art">
+    <svg width="140" height="115" viewBox="0 0 140 115" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g transform="rotate(-8 32 32)">
+        <rect x="12" y="14" width="40" height="40" rx="10" fill="#ffffff"/>
+        <text x="32" y="43" text-anchor="middle" font-size="22" font-weight="700" fill="#0284c7" font-family="sans-serif">사</text>
+      </g>
+      <g transform="rotate(7 105 28)">
+        <rect x="85" y="8" width="40" height="40" rx="10" fill="#bae6fd"/>
+        <text x="105" y="37" text-anchor="middle" font-size="22" font-weight="700" fill="#075985" font-family="sans-serif">회</text>
+      </g>
+      <g transform="rotate(-4 70 88)">
+        <circle cx="70" cy="88" r="21" fill="#ffffff"/>
+        <path d="M 49 88 A 21 21 0 0 1 91 88 A 10.5 10.5 0 0 1 70 88 A 10.5 10.5 0 0 0 49 88 Z" fill="#22c55e"/>
+        <path d="M 91 88 A 21 21 0 0 1 49 88 A 10.5 10.5 0 0 1 70 88 A 10.5 10.5 0 0 0 91 88 Z" fill="#2563eb"/>
+      </g>
+      <circle cx="22" cy="78" r="3" fill="#bae6fd"/>
+      <circle cx="124" cy="62" r="4" fill="#e0f2fe"/>
+      <circle cx="130" cy="98" r="2.5" fill="#bae6fd"/>
+    </svg>
+  </div>
+</div>
+
+<div class="level-bar">
+  <div class="level-label">🏫 과정 선택 — 골라서 공부해요</div>
+  <select id="eraSel"></select>
+  <div class="level-desc" id="eraDesc"></div>
+</div>
+
+<div class="tabs" id="modeTabs">
+  <div class="tab active" data-mode="table"><span class="ti">📖</span><span class="tl">정리표</span></div>
+  <div class="tab" data-mode="cards"><span class="ti">🃏</span><span class="tl">카드</span></div>
+  <div class="tab" data-mode="test"><span class="ti">✏️</span><span class="tl">테스트</span></div>
+  <div class="tab" data-mode="review"><span class="ti">🔄</span><span class="tl">복습 <span id="reviewCount">0</span></span></div>
+  <div class="tab" data-mode="search"><span class="ti">🔍</span><span class="tl">검색</span></div>
+</div>
+
+<!-- 정리표 -->
+<div class="card" id="tableView">
+  <div class="hide-toggles">
+    <button class="chip" id="hideContentBtn">🙈 설명 가리기</button>
+    <button class="chip" id="hideNameBtn">🙈 이름 가리기</button>
+  </div>
+  <div id="tableBody"></div>
+  <div class="table-hint">가린 부분은 눌러서 확인할 수 있어요</div>
+</div>
+
+<!-- 카드 -->
+<div class="card" id="cardsView" style="display:none;">
+  <select id="cardCatSel"></select>
+  <div class="flip-card" id="flipCard">
+    <div class="fc-cat" id="fcCat">&nbsp;</div>
+    <div class="fc-main" id="fcMain">&nbsp;</div>
+    <div class="fc-sub" id="fcSub">&nbsp;</div>
+  </div>
+  <div class="actions">
+    <button id="cardPrev" class="secondary">◀ 이전</button>
+    <button id="cardFlipBtn">뒤집기</button>
+    <button id="cardNext" class="secondary">다음 ▶</button>
+    <button id="cardShuffle" class="secondary">🔀 섞기</button>
+  </div>
+  <div class="footer" style="justify-content:center;">진행:&nbsp;<span id="cardProgress">1 / —</span></div>
+</div>
+
+<!-- 테스트 / 복습 -->
+<div class="card" id="quizCard" style="display:none;">
+  <div class="sub-toggle" id="dirToggle">
+    <button class="subseg on" data-d="mix">🔀 랜덤</button>
+    <button class="subseg" data-d="n2c">이름 → 설명</button>
+    <button class="subseg" data-d="c2n">설명 → 이름</button>
+  </div>
+  <select id="quizCatSel"></select>
+  <div class="q-label" id="qLabel">알맞은 설명을 고르세요</div>
+  <div class="q-prompt" id="qPrompt">&nbsp;</div>
+  <div class="q-desc" id="qDesc">&nbsp;</div>
+  <div class="opts" id="optsBox"></div>
+  <div class="feedback" id="feedback">&nbsp;</div>
+  <div class="footer">
+    <div>점수: <span id="score">0</span></div>
+    <div>🔥 연속: <span id="streak">0</span></div>
+    <div>진행: <span id="progress">1 / —</span></div>
+  </div>
+  <div class="life-stats" id="lifeStats">누적 정답률 0%  ·  최고 연속 0  ·  푼 문제 0</div>
+</div>
+
+<!-- 검색 -->
+<div class="card" id="searchView" style="display:none;">
+  <input type="text" id="searchInput" placeholder="🔍 개념, 용어 검색 (예: 삼권분립, 수요, 기후)" autocomplete="off">
+  <div id="searchBody" class="search-hint">개념, 용어, 기관 등 무엇이든 검색해 보세요</div>
+</div>
+
+<div class="info">
+  네 개의 보기 중에서 알맞은 설명이나 이름을 고르세요. 틀린 문제는 복습 탭에 모여요.<br>
+  © 2026 Mina &amp; Juho. All rights reserved. 무단 복제·배포 금지
+</div>
+
+<script src="social-studies-data.js?v=1"></script>
+<script>
+// === 데이터 펼치기 ===
+const ERAS = Object.keys(S_RAW);
+const ALL = [];
+const ITEM_INDEX = {};
+ERAS.forEach(era => {
+  S_RAW[era].forEach(([cat, items]) => {
+    items.forEach(([name, content, desc]) => {
+      const it = { era, cat, name, content, desc, key: era + '|' + name };
+      ALL.push(it);
+      ITEM_INDEX[it.key] = it;
+    });
+  });
+});
+
+// === 저장 ===
+const STORE_KEY = 'social-v1';
+function loadStore() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+  catch (e) { return {}; }
+}
+function saveStore() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {}
+}
+const saved = loadStore();
+const store = {
+  answered: saved.answered || 0,
+  correct: saved.correct || 0,
+  bestStreak: saved.bestStreak || 0,
+  wrongKeys: Array.isArray(saved.wrongKeys) ? saved.wrongKeys : [],
+  era: ERAS.includes(saved.era) ? saved.era : ERAS[0]
+};
+
+// === 상태 ===
+let mode = 'table';            // table | cards | test | review
+let era = store.era;
+let hideContent = false;
+let hideName = false;
+let cardCat = 'all';
+let cardDeck = [];
+let cardIdx = 0;
+let cardFlipped = false;
+let quizCat = 'all';
+let qDir = 'mix';              // mix | n2c | c2n
+let deck = [];
+let idx = 0;
+let score = 0;
+let streak = 0;
+let locked = false;
+let curDir = 'n2c';
+
+function eraItems() { return ALL.filter(x => x.era === era); }
+function reviewItems() { return store.wrongKeys.map(k => ITEM_INDEX[k]).filter(Boolean); }
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+function catOptions(items) {
+  const cats = [...new Set(items.map(x => x.cat))];
+  return `<option value="all">전체 (${items.length}개)</option>` +
+    cats.map(c => `<option value="${c}">${c} (${items.filter(x => x.cat === c).length}개)</option>`).join('');
+}
+
+// === 정리표 ===
+function renderTable() {
+  const items = eraItems();
+  const body = document.getElementById('tableBody');
+  let html = '<div class="history-list">';
+  let lastCat = null;
+  items.forEach(it => {
+    if (it.cat !== lastCat) {
+      lastCat = it.cat;
+      html += `<div class="ht-cat">${it.cat}</div>`;
+    }
+    html += `<div class="ht-row">` +
+      `<div class="ht-left${hideName ? ' hidden-cell' : ''}">` +
+      `<div class="ht-name">${it.name}</div>` +
+      (it.desc ? `<div class="ht-desc">${it.desc}</div>` : '') +
+      `</div>` +
+      `<div class="ht-content${hideContent ? ' hidden-cell' : ''}">${it.content}</div>` +
+      `</div>`;
+  });
+  body.innerHTML = html + '</div>';
+  body.querySelectorAll('.hidden-cell').forEach(cell =>
+    cell.addEventListener('click', () => cell.classList.remove('hidden-cell')));
+}
+
+// === 카드 ===
+function shuffleCards() {
+  const items = eraItems();
+  cardDeck = shuffle((cardCat === 'all' ? items : items.filter(x => x.cat === cardCat)).slice());
+  cardIdx = 0;
+  cardFlipped = false;
+}
+function renderCardsView() {
+  const sel = document.getElementById('cardCatSel');
+  sel.innerHTML = catOptions(eraItems());
+  sel.value = cardCat;
+  renderCard();
+}
+function renderCard() {
+  const it = cardDeck[cardIdx];
+  if (!it) return;
+  const card = document.getElementById('flipCard');
+  const main = document.getElementById('fcMain');
+  document.getElementById('fcCat').textContent = it.era + ' · ' + it.cat;
+  if (cardFlipped) {
+    card.classList.add('back');
+    main.textContent = it.content;
+    document.getElementById('fcSub').textContent = it.desc || it.name;
+  } else {
+    card.classList.remove('back');
+    main.textContent = it.name;
+    document.getElementById('fcSub').textContent = '카드를 누르면 설명이 보여요 👆';
+  }
+  document.getElementById('cardProgress').textContent = `${cardIdx + 1} / ${cardDeck.length}`;
+}
+function toggleFlip() {
+  cardFlipped = !cardFlipped;
+  renderCard();
+}
+function moveCard(d) {
+  if (!cardDeck.length) return;
+  cardIdx = (cardIdx + d + cardDeck.length) % cardDeck.length;
+  cardFlipped = false;
+  renderCard();
+}
+
+// === 테스트 / 복습 ===
+function addWrong(item) {
+  if (!store.wrongKeys.includes(item.key)) store.wrongKeys.push(item.key);
+}
+function removeWrong(item) {
+  const i = store.wrongKeys.indexOf(item.key);
+  if (i >= 0) store.wrongKeys.splice(i, 1);
+}
+function quizPool() {
+  if (mode === 'review') return reviewItems();
+  const items = eraItems();
+  return quizCat === 'all' ? items : items.filter(x => x.cat === quizCat);
+}
+function shuffleDeck() {
+  deck = shuffle(quizPool().slice());
+  idx = 0;
+}
+function distractorsFor(item) {
+  const pool = ALL.filter(x => x.era === item.era && x.key !== item.key);
+  const sameCat = shuffle(pool.filter(x => x.cat === item.cat));
+  const others = shuffle(pool.filter(x => x.cat !== item.cat));
+  return sameCat.concat(others).slice(0, 3);
+}
+function renderQuiz() {
+  const item = deck[idx];
+  if (!item) return;
+  locked = false;
+  curDir = qDir === 'mix' ? (Math.random() < 0.5 ? 'n2c' : 'c2n') : qDir;
+  const prompt = document.getElementById('qPrompt');
+  if (curDir === 'n2c') {
+    document.getElementById('qLabel').textContent = '알맞은 설명을 고르세요';
+    prompt.className = 'q-prompt';
+    prompt.textContent = item.name;
+  } else {
+    document.getElementById('qLabel').textContent = '이 설명에 해당하는 것을 고르세요';
+    prompt.className = 'q-prompt long';
+    prompt.textContent = item.content;
+  }
+  document.getElementById('qDesc').innerHTML = '&nbsp;';
+  document.getElementById('feedback').innerHTML = '&nbsp;';
+  document.getElementById('feedback').className = 'feedback';
+  const options = shuffle(distractorsFor(item).concat([item]));
+  const box = document.getElementById('optsBox');
+  box.innerHTML = options.map(o => `<button class="opt" data-k="${o.key}"></button>`).join('');
+  box.querySelectorAll('.opt').forEach(btn => {
+    const o = ITEM_INDEX[btn.dataset.k];
+    btn.textContent = curDir === 'n2c' ? o.content : o.name;
+    btn.addEventListener('click', () => answer(btn, o, item));
+  });
+  document.getElementById('progress').textContent = `${idx + 1} / ${deck.length}`;
+}
+function answer(btn, chosen, item) {
+  if (locked) return;
+  locked = true;
+  const ok = chosen.key === item.key;
+  document.querySelectorAll('#optsBox .opt').forEach(b => {
+    if (b.dataset.k === item.key) b.classList.add('right');
+    else if (b === btn) b.classList.add('bad');
+  });
+  const feedbackEl = document.getElementById('feedback');
+  store.answered++;
+  if (ok) {
+    score++;
+    streak++;
+    store.correct++;
+    if (streak > store.bestStreak) store.bestStreak = streak;
+    removeWrong(item);
+    feedbackEl.textContent = '✓ 정답!';
+    feedbackEl.className = 'feedback correct';
+  } else {
+    streak = 0;
+    addWrong(item);
+    feedbackEl.textContent = '✗ 아쉽다! 초록색이 정답이에요';
+    feedbackEl.className = 'feedback wrong';
+  }
+  if (item.desc) document.getElementById('qDesc').textContent = '💡 ' + item.desc;
+  document.getElementById('score').textContent = score;
+  saveStore();
+  updateStatsUI();
+  setTimeout(next, ok ? 1000 : 2000);
+}
+function next() {
+  idx++;
+  if (mode === 'review') {
+    if (store.wrongKeys.length === 0) { showReviewEmpty(); return; }
+    if (idx >= deck.length) shuffleDeck();
+    if (deck.length === 0) { showReviewEmpty(); return; }
+    if (idx >= deck.length) idx = 0;
+  } else if (idx >= deck.length) {
+    shuffleDeck();
+  }
+  renderQuiz();
+}
+function showReviewEmpty() {
+  document.getElementById('qLabel').textContent = '';
+  document.getElementById('qPrompt').className = 'q-prompt';
+  document.getElementById('qPrompt').textContent = '🎉';
+  document.getElementById('qDesc').textContent = '복습할 문제가 없어요! 문제를 틀리면 여기에 모여요.';
+  document.getElementById('optsBox').innerHTML = '';
+  document.getElementById('feedback').innerHTML = '&nbsp;';
+  document.getElementById('progress').textContent = '0 / 0';
+}
+function refreshQuizControls() {
+  const dt = document.getElementById('dirToggle');
+  const sel = document.getElementById('quizCatSel');
+  if (mode === 'review') {
+    dt.style.display = 'none';
+    sel.style.display = 'none';
+    return;
+  }
+  dt.style.display = 'flex';
+  dt.querySelectorAll('.subseg').forEach(b => b.classList.toggle('on', b.dataset.d === qDir));
+  sel.innerHTML = catOptions(eraItems());
+  sel.value = quizCat;
+  sel.style.display = 'block';
+}
+
+// === 통계 ===
+function updateStatsUI() {
+  const acc = store.answered ? Math.round((store.correct / store.answered) * 100) : 0;
+  document.getElementById('streak').textContent = streak;
+  document.getElementById('lifeStats').textContent =
+    `누적 정답률 ${acc}%  ·  최고 연속 ${store.bestStreak}  ·  푼 문제 ${store.answered}`;
+  document.getElementById('reviewCount').textContent = store.wrongKeys.length;
+  document.getElementById('hAcc').textContent = acc + '%';
+  document.getElementById('hStreak').textContent = store.bestStreak;
+  document.getElementById('hAnswered').textContent = store.answered;
+}
+
+// === 검색 ===
+function escReg(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function hl(text, q) {
+  if (!text || !q) return text || '';
+  return text.replace(new RegExp(escReg(q), 'gi'), m => `<mark>${m}</mark>`);
+}
+function renderSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  const body = document.getElementById('searchBody');
+  if (!q) {
+    body.className = 'search-hint';
+    body.textContent = '개념, 용어, 기관 등 무엇이든 검색해 보세요';
+    return;
+  }
+  const ql = q.toLowerCase();
+  const hits = ALL.filter(x =>
+    (x.name + ' ' + x.content + ' ' + x.desc + ' ' + x.cat + ' ' + x.era).toLowerCase().includes(ql));
+  if (!hits.length) {
+    body.className = 'search-hint';
+    body.textContent = `"${q}" 검색 결과가 없어요`;
+    return;
+  }
+  body.className = '';
+  body.innerHTML = `<div class="sr-count">${hits.length}개 찾음</div><div class="history-list">` +
+    hits.map(it =>
+      `<div class="ht-row"><div class="ht-left">` +
+      `<div class="sr-badge">${it.era} · ${it.cat}</div>` +
+      `<div class="ht-name">${hl(it.name, q)}</div>` +
+      (it.desc ? `<div class="ht-desc">${hl(it.desc, q)}</div>` : '') +
+      `</div><div class="ht-content">${hl(it.content, q)}</div></div>`).join('') + '</div>';
+}
+
+// === 뷰 전환 ===
+function applyMode(newMode) {
+  mode = newMode;
+  const isQuiz = mode === 'test' || mode === 'review';
+  document.getElementById('tableView').style.display = mode === 'table' ? 'block' : 'none';
+  document.getElementById('cardsView').style.display = mode === 'cards' ? 'block' : 'none';
+  document.getElementById('quizCard').style.display = isQuiz ? 'block' : 'none';
+  document.getElementById('searchView').style.display = mode === 'search' ? 'block' : 'none';
+  document.querySelector('.level-bar').style.display = mode === 'search' ? 'none' : 'block';
+  if (mode === 'search') { renderSearch(); document.getElementById('searchInput').focus(); return; }
+  if (mode === 'table') { renderTable(); return; }
+  if (mode === 'cards') { shuffleCards(); renderCardsView(); return; }
+  score = 0;
+  streak = 0;
+  document.getElementById('score').textContent = 0;
+  updateStatsUI();
+  refreshQuizControls();
+  if (mode === 'review' && store.wrongKeys.length === 0) {
+    deck = [];
+    idx = 0;
+    showReviewEmpty();
+    return;
+  }
+  shuffleDeck();
+  renderQuiz();
+}
+
+// === 이벤트 ===
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    applyMode(t.dataset.mode);
+  });
+});
+document.getElementById('eraSel').addEventListener('change', e => {
+  era = e.target.value;
+  store.era = era;
+  saveStore();
+  document.getElementById('eraDesc').textContent = S_ERA_DESC[era] || '';
+  cardCat = 'all';
+  quizCat = 'all';
+  applyMode(mode);
+});
+document.getElementById('hideContentBtn').addEventListener('click', () => {
+  hideContent = !hideContent;
+  document.getElementById('hideContentBtn').classList.toggle('on', hideContent);
+  renderTable();
+});
+document.getElementById('hideNameBtn').addEventListener('click', () => {
+  hideName = !hideName;
+  document.getElementById('hideNameBtn').classList.toggle('on', hideName);
+  renderTable();
+});
+document.getElementById('cardCatSel').addEventListener('change', e => {
+  cardCat = e.target.value;
+  shuffleCards();
+  renderCard();
+});
+document.getElementById('flipCard').addEventListener('click', toggleFlip);
+document.getElementById('cardFlipBtn').addEventListener('click', toggleFlip);
+document.getElementById('cardPrev').addEventListener('click', () => moveCard(-1));
+document.getElementById('cardNext').addEventListener('click', () => moveCard(1));
+document.getElementById('cardShuffle').addEventListener('click', () => { shuffleCards(); renderCard(); });
+document.getElementById('quizCatSel').addEventListener('change', e => {
+  quizCat = e.target.value;
+  score = 0;
+  document.getElementById('score').textContent = 0;
+  shuffleDeck();
+  renderQuiz();
+});
+document.querySelectorAll('#dirToggle .subseg').forEach(b => b.addEventListener('click', () => {
+  if (qDir === b.dataset.d) return;
+  qDir = b.dataset.d;
+  document.querySelectorAll('#dirToggle .subseg').forEach(x => x.classList.toggle('on', x.dataset.d === qDir));
+  renderQuiz();
+}));
+document.getElementById('searchInput').addEventListener('input', renderSearch);
+
+// === 초기화 ===
+const eraSel = document.getElementById('eraSel');
+let eraNum = 0;
+eraSel.innerHTML = ERAS.map(e2 => {
+  const label = S_THEMES.includes(e2) ? `⭐ ${e2}` : `${++eraNum}. ${e2}`;
+  return `<option value="${e2}">${label} (${ALL.filter(x => x.era === e2).length}개)</option>`;
+}).join('');
+eraSel.value = era;
+document.getElementById('eraDesc').textContent = S_ERA_DESC[era] || '';
+document.getElementById('totCnt').textContent = ALL.length;
+updateStatsUI();
+applyMode('table');
+</script>
+</body>
+</html>
