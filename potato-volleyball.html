@@ -69,6 +69,12 @@
     box-shadow: 0 2px 6px rgba(0,0,0,0.12);
   }
   .tbtn.pressed { background: #ffd17a; }
+  .tb-hint {
+    pointer-events: none; align-self: center;
+    font-size: 13px; font-weight: 700; color: #7a3f0a;
+    background: rgba(255,255,255,0.75); border: 1.5px solid rgba(122,63,10,0.3);
+    padding: 7px 14px; border-radius: 999px; white-space: nowrap;
+  }
   .tbtn.pbtn1 { border-color: rgba(231,76,60,0.6); }
   .tbtn.pbtn2 { border-color: rgba(52,152,219,0.6); }
   /* 1인 모드: P2 버튼 숨기고 점프만 오른쪽에 크게 (양손 엄지) */
@@ -134,6 +140,7 @@
     <button class="tbtn pbtn1" id="tP1R">▶</button>
     <button class="tbtn pbtn1" id="tP1J">⬆</button>
   </div>
+  <div class="tb-hint" id="tbHint">⬆ 점프를 누르면 시작!</div>
   <div class="tc-group" id="tcRight">
     <button class="tbtn pbtn2" id="tP2J">⬆</button>
     <button class="tbtn pbtn2" id="tP2L">◀</button>
@@ -144,7 +151,7 @@
 <div class="info">
   <span class="p1">P1: A(좌) · D(우) · W(점프/서브)</span> &nbsp;|&nbsp;
   <span class="p2">P2: ← · → · ↑(점프/서브)</span><br>
-  R: 점수 리셋<br>
+  자기 서브 차례에 점프 키(W / ↑)를 누르면 경기 시작! · R: 점수 리셋<br>
   © 2026 Mina &amp; Juho. All rights reserved. 무단 복제·배포 금지
 </div>
 
@@ -1474,6 +1481,10 @@ const tcRight = document.getElementById('tcRight');
 function syncTouchUI() {
   touchBar.classList.toggle('show', TOUCH && state.phase === 'play');
   touchBar.classList.toggle('mode-1p', state.gameMode === '1p');
+  // 서브 대기 중에만 시작 안내 표시 (AI 서브 차례면 숨김)
+  const myServe = state.paused && !state.celebrating
+    && !(state.gameMode === '1p' && state.pendingServer === 'p2');
+  document.getElementById('tbHint').style.visibility = myServe ? 'visible' : 'hidden';
   // 1인: 점프 버튼을 오른쪽 그룹으로(오른손 엄지), 2인: P1 묶음으로 복귀
   const j = document.getElementById('tP1J');
   if (state.gameMode === '1p') {
