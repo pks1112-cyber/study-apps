@@ -41,8 +41,43 @@
     display: block;
     box-shadow: 0 8px 24px rgba(0,0,0,0.15);
     max-width: 100%;
+    max-height: calc(100vh - 110px);
+    max-height: calc(100dvh - 110px);
+    width: auto;
     height: auto;
   }
+  .game-wrap { position: relative; max-width: 100%; }
+
+  /* ===== 터치 컨트롤 (가상 버튼) ===== */
+  .touch-controls { display: none; position: absolute; inset: 0; pointer-events: none; }
+  .game-wrap.show-touch .touch-controls { display: block; }
+  .tbtn {
+    position: absolute; width: 62px; height: 62px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 700; padding: 0; font-family: inherit; cursor: pointer;
+    background: rgba(255,255,255,0.40); color: #7a3f0a;
+    border: 2.5px solid rgba(122,63,10,0.45);
+    pointer-events: auto; touch-action: none;
+    user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+  }
+  .tbtn.pressed { background: rgba(255,209,122,0.9); }
+  .tbtn.pbtn1 { border-color: rgba(231,76,60,0.6); }
+  .tbtn.pbtn2 { border-color: rgba(52,152,219,0.6); }
+  #tP1L { left: 12px; bottom: 12px; }
+  #tP1R { left: 86px; bottom: 12px; }
+  #tP1J { left: 49px; bottom: 88px; }
+  #tP2R { right: 12px; bottom: 12px; }
+  #tP2L { right: 86px; bottom: 12px; }
+  #tP2J { right: 49px; bottom: 88px; }
+  /* 1인 모드: P2 버튼 숨기고 점프를 오른쪽 엄지 위치로 (양손 조작) */
+  .mode-1p #tP2L, .mode-1p #tP2R, .mode-1p #tP2J { display: none; }
+  .mode-1p #tP1J { left: auto; right: 16px; bottom: 16px; width: 80px; height: 80px; font-size: 32px; }
+
+  .rotate-hint {
+    display: none; margin-top: 8px; font-size: 13px; font-weight: 700; color: #c2410c;
+    background: #fff; border: 1.5px solid #f3c47a; border-radius: 999px; padding: 7px 16px;
+  }
+  @media (orientation: portrait) and (pointer: coarse) { .rotate-hint { display: block; } }
   .score { font-size: 32px; margin: 8px 0; font-weight: bold; letter-spacing: 4px; }
   .info { margin-top: 12px; text-align: center; font-size: 14px; line-height: 1.8; color: #6b4423; }
   .home-btn {
@@ -55,13 +90,41 @@
   .home-btn:hover { background: #fff7ec; }
   .p1 { color: #e74c3c; }
   .p2 { color: #3498db; }
+
+  /* 반응형 — 기본 규칙을 덮어야 하므로 항상 스타일시트 맨 뒤에 둘 것 */
+  @media (max-width: 900px) {
+    body { padding: 8px; }
+    h1 { font-size: 19px; margin: 30px 0 2px; }
+    .score { font-size: 22px; margin: 4px 0; }
+    .info { display: none; }
+  }
+  /* 가로로 누운 폰: 헤더를 최소화해서 게임 화면을 최대로 */
+  @media (max-height: 480px) {
+    body { padding: 4px; }
+    h1 { font-size: 15px; margin: 2px 0 0; }
+    .score { font-size: 18px; margin: 2px 0 4px; }
+    .info { display: none; }
+    .rotate-hint { display: none; }
+    canvas { max-height: calc(100vh - 64px); max-height: calc(100dvh - 64px); }
+  }
 </style>
 </head>
 <body>
 <a class="home-btn" href="index.html">🏠 홈</a>
 <h1>🥔 감자배구 🥔</h1>
 <div class="score"><span class="p1" id="p1Score">0</span> : <span class="p2" id="p2Score">0</span></div>
-<canvas id="game" width="1100" height="620"></canvas>
+<div class="game-wrap" id="gameWrap">
+  <canvas id="game" width="1100" height="620"></canvas>
+  <div class="touch-controls">
+    <button class="tbtn pbtn1" id="tP1L">◀</button>
+    <button class="tbtn pbtn1" id="tP1R">▶</button>
+    <button class="tbtn pbtn1" id="tP1J">⬆</button>
+    <button class="tbtn pbtn2" id="tP2L">◀</button>
+    <button class="tbtn pbtn2" id="tP2R">▶</button>
+    <button class="tbtn pbtn2" id="tP2J">⬆</button>
+  </div>
+</div>
+<div class="rotate-hint">📱 폰을 가로로 돌리면 화면이 더 커져요!</div>
 <div class="info">
   <span class="p1">P1: A(좌) · D(우) · W(점프/서브)</span> &nbsp;|&nbsp;
   <span class="p2">P2: ← · → · ↑(점프/서브)</span><br>
@@ -73,6 +136,9 @@
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
+
+// 터치 기기 감지 — 가상 버튼 표시 여부
+const TOUCH = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
 
 const GROUND_Y = H - 40;
 const NET_W = 6, NET_H = 160;
@@ -122,6 +188,8 @@ const state = {
   netCooldown: 0,
   p1CharIdx: 0,
   p2CharIdx: 1,
+  gameMode: '2p',   // '1p' = 혼자 (vs 컴퓨터), '2p' = 둘이서
+  aiLevel: 1,       // AI_LEVELS 인덱스 (0 쉬움 / 1 보통 / 2 어려움)
   spikePopTimer: 0,
   spikePopX: 0,
   spikePopY: 0
@@ -158,7 +226,8 @@ window.addEventListener('keydown', e => {
   if (state.paused) {
     const k = e.key.toLowerCase();
     const serveKey = state.pendingServer === 'p1' ? 'w' : 'arrowup';
-    if (k === serveKey) {
+    const aiServes = state.gameMode === '1p' && state.pendingServer === 'p2';
+    if (!aiServes && k === serveKey) {
       state.paused = false;
       state.message = '';
     }
@@ -180,6 +249,22 @@ canvas.addEventListener('click', e => {
   const x = (e.clientX - rect.left) * (canvas.width / rect.width);
   const y = (e.clientY - rect.top) * (canvas.height / rect.height);
   if (state.phase === 'menu') {
+    for (const mb of getModeButtons()) {
+      if (x >= mb.x && x <= mb.x + mb.w && y >= mb.y && y <= mb.y + mb.h) {
+        state.gameMode = mb.mode;
+        playTone({ freq: 700, duration: 0.07, type: 'triangle', volume: 0.18 });
+        return;
+      }
+    }
+    if (state.gameMode === '1p') {
+      for (const db of getDiffButtons()) {
+        if (x >= db.x && x <= db.x + db.w && y >= db.y && y <= db.y + db.h) {
+          state.aiLevel = db.level;
+          playTone({ freq: 800, duration: 0.07, type: 'triangle', volume: 0.18 });
+          return;
+        }
+      }
+    }
     for (const cb of getCharButtons()) {
       if (x >= cb.x && x <= cb.x + cb.w && y >= cb.y && y <= cb.y + cb.h) {
         const playerKey = cb.kind.startsWith('p1') ? 'p1' : 'p2';
@@ -368,7 +453,9 @@ function startCelebration(winner) {
   spawnSandSplash(state.ball.x, GROUND_Y);
   sfxSand();
   setTimeout(sfxScore, 180);
-  state.message = winner === 'p1' ? '🥔 P1 득점! 🥔' : '🥔 P2 득점! 🥔';
+  state.message = winner === 'p1' ? '🥔 P1 득점! 🥔'
+    : state.gameMode === '1p' ? '🤖 컴퓨터 득점!'
+    : '🥔 P2 득점! 🥔';
   state.ball.vx = 0;
   state.ball.vy = 0;
   state.ball.y = GROUND_Y - BALL_R;
@@ -523,6 +610,7 @@ function startMatch(target) {
 }
 
 function returnToMenu() {
+  for (const k in keys) keys[k] = false;
   state.phase = 'menu';
   state.matchWinner = null;
   state.lastWinner = null;
@@ -548,7 +636,80 @@ function resetPositions(server) {
   state.ball.vx = 0; state.ball.vy = 0;
   state.pendingServer = server;
   state.paused = true;
-  state.message = server === 'p1' ? 'P1 서브 — W 키' : 'P2 서브 — ↑ 키';
+  if (server === 'p1') {
+    state.message = TOUCH ? 'P1 서브 — ⬆ 버튼' : 'P1 서브 — W 키';
+  } else if (state.gameMode === '1p') {
+    state.message = '🤖 컴퓨터 서브!';
+  } else {
+    state.message = TOUCH ? 'P2 서브 — ⬆ 버튼' : 'P2 서브 — ↑ 키';
+  }
+  aiState.serveTimer = 0;
+}
+
+// --- 1인 모드 AI (컴퓨터 상대) ---
+// 완벽한 AI는 재미없으니 난이도별로 일부러 못하게 만든다:
+// react = 반응 주기(프레임), err = 낙하 지점 예측 오차(px), jumpSkip = 점프를 빼먹을 확률
+const AI_LEVELS = [
+  { name: '쉬움',   speed: 2.2, react: 30, err: 85, jumpSkip: 0.40 },
+  { name: '보통',   speed: 3.0, react: 16, err: 42, jumpSkip: 0.18 },
+  { name: '어려움', speed: 3.6, react: 8,  err: 12, jumpSkip: 0.05 }
+];
+const aiState = { targetX: W * 0.75, think: 0, errOffset: 0, willJump: true, serveTimer: 0 };
+
+// 공 궤적을 실제 물리 그대로 미리 굴려서 떨어질 x좌표를 예측 (네트 반동은 오차 요소로 흡수)
+function predictLandingX() {
+  let x = state.ball.x, y = state.ball.y, vx = state.ball.vx, vy = state.ball.vy;
+  for (let i = 0; i < 600; i++) {
+    vy += GRAVITY_B;
+    x += vx;
+    y += vy;
+    if (x - BALL_R < 0) { x = BALL_R; vx = -vx; }
+    if (x + BALL_R > W) { x = W - BALL_R; vx = -vx; }
+    if (y - BALL_R < 0) { y = BALL_R; vy = -vy; }
+    if (vy > 0 && y >= GROUND_Y - PLAYER_R * 1.6) return x;
+  }
+  return x;
+}
+
+function updateAI() {
+  const lvl = AI_LEVELS[state.aiLevel];
+  const p2 = state.p2, ball = state.ball;
+  p2.vx = 0;
+
+  // 서브 차례면 사람처럼 잠깐 뜸 들였다가 서브
+  if (state.paused) {
+    if (state.pendingServer === 'p2') {
+      aiState.serveTimer++;
+      if (aiState.serveTimer > 55) {
+        aiState.serveTimer = 0;
+        state.paused = false;
+        state.message = '';
+      }
+    }
+    return;
+  }
+
+  // 반응 주기마다 목표 재계산 — 한 박자 늦게 + 오차 섞기 + 점프 빼먹기 결정
+  aiState.think--;
+  if (aiState.think <= 0) {
+    aiState.think = lvl.react;
+    aiState.errOffset = (Math.random() * 2 - 1) * lvl.err;
+    aiState.willJump = Math.random() > lvl.jumpSkip;
+    const headingMySide = ball.x > W / 2 || ball.vx > 0.3;
+    aiState.targetX = headingMySide
+      ? predictLandingX() + aiState.errOffset
+      : W * 0.74;   // 공이 상대 쪽이면 홈 포지션 복귀
+  }
+
+  const tx = Math.max(NET_RIGHT + PLAYER_R, Math.min(W - PLAYER_R, aiState.targetX));
+  if (Math.abs(p2.x - tx) > 8) p2.vx = (tx > p2.x ? 1 : -1) * lvl.speed;
+
+  // 점프: 공이 내 쪽 + 머리 위 근처일 때 (willJump가 false면 일부러 안 뜀)
+  const nearX = Math.abs(ball.x - p2.x) < PLAYER_R + BALL_R * 0.9;
+  const aboveMe = ball.y < p2.y - 30 && ball.y > 120;
+  if (aiState.willJump && nearX && aboveMe && ball.x > W / 2 && p2.y >= GROUND_Y) {
+    p2.vy = JUMP_V;
+  }
 }
 
 function update() {
@@ -593,10 +754,14 @@ function update() {
   if (keys['d']) p1.vx = MOVE_SPEED;
   if (keys['w'] && p1.y >= GROUND_Y) p1.vy = JUMP_V;
 
-  p2.vx = 0;
-  if (keys['arrowleft']) p2.vx = -MOVE_SPEED;
-  if (keys['arrowright']) p2.vx = MOVE_SPEED;
-  if (keys['arrowup'] && p2.y >= GROUND_Y) p2.vy = JUMP_V;
+  if (state.gameMode === '1p') {
+    updateAI();
+  } else {
+    p2.vx = 0;
+    if (keys['arrowleft']) p2.vx = -MOVE_SPEED;
+    if (keys['arrowright']) p2.vx = MOVE_SPEED;
+    if (keys['arrowup'] && p2.y >= GROUND_Y) p2.vy = JUMP_V;
+  }
 
   // Player physics
   for (const p of [p1, p2]) {
@@ -1029,10 +1194,10 @@ function drawRally() {
 
 function getMenuButtons() {
   const targets = [5, 11, 21];
-  const btnW = 130, btnH = 65, gap = 35;
+  const btnW = 130, btnH = 54, gap = 35;
   const totalW = btnW * targets.length + gap * (targets.length - 1);
   const startX = (W - totalW) / 2;
-  const y = 365;
+  const y = 420;
   return targets.map((s, i) => ({
     x: startX + i * (btnW + gap),
     y, w: btnW, h: btnH,
@@ -1041,11 +1206,26 @@ function getMenuButtons() {
   }));
 }
 
+function getModeButtons() {
+  const bw = 250, bh = 46, gap = 26, y = 86;
+  const startX = (W - bw * 2 - gap) / 2;
+  return [
+    { x: startX, y, w: bw, h: bh, mode: '1p', label: '🤖 혼자 (컴퓨터와)' },
+    { x: startX + bw + gap, y, w: bw, h: bh, mode: '2p', label: '👫 둘이서' }
+  ];
+}
+
+function getDiffButtons() {
+  const bw = 110, bh = 36, gap = 16, y = 326;
+  const startX = (W - bw * 3 - gap * 2) / 2;
+  return AI_LEVELS.map((l, i) => ({ x: startX + i * (bw + gap), y, w: bw, h: bh, level: i, label: l.name }));
+}
+
 function getCharButtons() {
   const p1X = W * 0.25;
   const p2X = W * 0.75;
   const aw = 32, ah = 32;
-  const ay = 165 - ah / 2;
+  const ay = 224 - ah / 2;
   return [
     { kind: 'p1Prev', x: p1X - 75, y: ay, w: aw, h: ah },
     { kind: 'p1Next', x: p1X + 43, y: ay, w: aw, h: ah },
@@ -1054,16 +1234,32 @@ function getCharButtons() {
   ];
 }
 
+function drawBtnRect(b, active, fontSize) {
+  ctx.fillStyle = active ? '#ffd17a' : 'rgba(255,255,255,0.16)';
+  ctx.fillRect(b.x, b.y, b.w, b.h);
+  ctx.strokeStyle = active ? '#7a3f0a' : 'rgba(255,255,255,0.55)';
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(b.x, b.y, b.w, b.h);
+  ctx.fillStyle = active ? '#7a3f0a' : '#fff';
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.fillText(b.label, b.x + b.w / 2, b.y + b.h / 2);
+}
+
 function drawMenu() {
   ctx.fillStyle = 'rgba(0,0,0,0.6)';
   ctx.fillRect(0, 0, W, H);
 
   // Title
   ctx.fillStyle = '#fff';
-  ctx.font = 'bold 34px sans-serif';
+  ctx.font = 'bold 32px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('🥔 감자배구 🥔', W / 2, 65);
+  ctx.fillText('🥔 감자배구 🥔', W / 2, 48);
+
+  // Mode buttons (혼자 / 둘이서)
+  for (const mb of getModeButtons()) {
+    drawBtnRect(mb, state.gameMode === mb.mode, 19);
+  }
 
   // Character selectors
   for (const [pKey, x, labelColor] of [['p1', W * 0.25, '#ff8a7a'], ['p2', W * 0.75, '#7ad0ff']]) {
@@ -1072,13 +1268,14 @@ function drawMenu() {
 
     ctx.fillStyle = labelColor;
     ctx.font = 'bold 22px sans-serif';
-    ctx.fillText(pKey.toUpperCase(), x, 115);
+    const label = pKey === 'p2' && state.gameMode === '1p' ? '🤖 컴퓨터' : pKey.toUpperCase();
+    ctx.fillText(label, x, 176);
 
-    drawCharPreview(x, 165, idx);
+    drawCharPreview(x, 224, idx);
 
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 16px sans-serif';
-    ctx.fillText(c.name, x, 220);
+    ctx.fillText(c.name, x, 278);
   }
 
   // Character arrows
@@ -1093,13 +1290,22 @@ function drawMenu() {
     ctx.fillText(cb.kind.endsWith('Next') ? '▶' : '◀', cb.x + cb.w / 2, cb.y + cb.h / 2);
   }
 
+  // Difficulty (1인 모드만)
+  if (state.gameMode === '1p') {
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('컴퓨터 난이도', W / 2, 310);
+    for (const db of getDiffButtons()) {
+      drawBtnRect(db, state.aiLevel === db.level, 16);
+    }
+  }
+
   // Score prompt
   ctx.fillStyle = '#fff';
-  ctx.font = 'bold 26px sans-serif';
-  ctx.fillText('몇 점 내기?', W / 2, 320);
+  ctx.font = 'bold 24px sans-serif';
+  ctx.fillText('몇 점 내기?', W / 2, 396);
 
   // Score buttons
-  ctx.font = 'bold 24px sans-serif';
   for (const btn of getMenuButtons()) {
     ctx.fillStyle = '#ffd17a';
     ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
@@ -1107,13 +1313,17 @@ function drawMenu() {
     ctx.lineWidth = 3;
     ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
     ctx.fillStyle = '#7a3f0a';
+    ctx.font = 'bold 24px sans-serif';
     ctx.fillText(btn.label, btn.x + btn.w / 2, btn.y + btn.h / 2);
   }
 
   // Hint
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
   ctx.font = '16px sans-serif';
-  ctx.fillText('숫자 1 / 2 / 3 으로 시작 · P1 캐릭: A/D · P2 캐릭: ← →  (또는 클릭)', W / 2, H - 50);
+  const hint = TOUCH
+    ? '모드와 캐릭터를 고르고, 점수 버튼을 누르면 시작!'
+    : '숫자 1 / 2 / 3 으로 시작 · P1 캐릭: A/D · P2 캐릭: ← →  (또는 클릭)';
+  ctx.fillText(hint, W / 2, H - 42);
 }
 
 function drawMatchEnd() {
@@ -1124,13 +1334,16 @@ function drawMatchEnd() {
   ctx.font = 'bold 52px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('🏆 ' + (winner === 'p1' ? 'P1' : 'P2') + ' 승리! 🏆', W / 2, H / 2 - 30);
+  const title = winner === 'p1' ? '🏆 P1 승리! 🏆'
+    : state.gameMode === '1p' ? '🤖 컴퓨터 승리! 다시 도전!'
+    : '🏆 P2 승리! 🏆';
+  ctx.fillText(title, W / 2, H / 2 - 30);
   ctx.fillStyle = '#fff';
   ctx.font = 'bold 28px sans-serif';
   ctx.fillText(state.score.p1 + ' : ' + state.score.p2, W / 2, H / 2 + 30);
   ctx.font = '17px sans-serif';
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.fillText('SPACE / R / 클릭 → 메뉴로', W / 2, H / 2 + 75);
+  ctx.fillText(TOUCH ? '화면을 누르면 메뉴로' : 'SPACE / R / 클릭 → 메뉴로', W / 2, H / 2 + 75);
 }
 
 function draw() {
@@ -1192,9 +1405,49 @@ function draw() {
   }
 }
 
+// --- 터치 컨트롤 (가상 버튼) ---
+if (TOUCH) document.body.classList.add('touch');
+
+function virtualDown(key) {
+  ensureAudio();
+  keys[key] = true;
+  if (state.phase === 'play' && state.paused) {
+    const aiServes = state.gameMode === '1p' && state.pendingServer === 'p2';
+    const serveKey = state.pendingServer === 'p1' ? 'w' : 'arrowup';
+    if (!aiServes && key === serveKey) {
+      state.paused = false;
+      state.message = '';
+    }
+  }
+}
+function bindTouchBtn(id, key) {
+  const el = document.getElementById(id);
+  const down = e => { e.preventDefault(); el.classList.add('pressed'); virtualDown(key); };
+  const up = e => { e.preventDefault(); el.classList.remove('pressed'); keys[key] = false; };
+  el.addEventListener('touchstart', down, { passive: false });
+  el.addEventListener('touchend', up, { passive: false });
+  el.addEventListener('touchcancel', up, { passive: false });
+  el.addEventListener('mousedown', down);
+  el.addEventListener('mouseup', up);
+  el.addEventListener('mouseleave', up);
+}
+bindTouchBtn('tP1L', 'a');
+bindTouchBtn('tP1R', 'd');
+bindTouchBtn('tP1J', 'w');
+bindTouchBtn('tP2L', 'arrowleft');
+bindTouchBtn('tP2R', 'arrowright');
+bindTouchBtn('tP2J', 'arrowup');
+
+const gameWrap = document.getElementById('gameWrap');
+function syncTouchUI() {
+  gameWrap.classList.toggle('show-touch', TOUCH && state.phase === 'play');
+  gameWrap.classList.toggle('mode-1p', state.gameMode === '1p');
+}
+
 function loop() {
   update();
   draw();
+  syncTouchUI();
   requestAnimationFrame(loop);
 }
 
