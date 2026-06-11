@@ -64,11 +64,19 @@
 
   /* ===== era bar ===== */
   .level-bar { width: 700px; max-width: 100%; margin-bottom: 12px; }
+  .level-label { font-size: 13px; font-weight: 800; color: var(--primary); margin: 0 4px 6px; }
   #eraSel, #cardCatSel, #quizCatSel {
     width: 100%; padding: 10px 12px;
     border: 1px solid var(--line); border-radius: 12px;
     font-family: inherit; font-size: 14px; font-weight: 600; color: var(--ink);
     background: #fff; outline: none; cursor: pointer;
+  }
+  #eraSel {
+    border: 2px solid #e8a468; border-radius: 14px;
+    background: linear-gradient(180deg, #fff 0%, #fff3e8 100%);
+    font-size: 16px; font-weight: 800; color: #7c2d12;
+    padding: 13px 14px;
+    box-shadow: 0 4px 14px rgba(194, 65, 12, 0.14);
   }
   #cardCatSel, #quizCatSel { background: #fdf6ef; margin-bottom: 14px; }
   #eraSel:focus, #cardCatSel:focus, #quizCatSel:focus { border-color: #f0a878; }
@@ -262,6 +270,7 @@
 </div>
 
 <div class="level-bar">
+  <div class="level-label">🗓️ 시대 선택 — 골라서 공부해요</div>
   <select id="eraSel"></select>
   <div class="level-desc" id="eraDesc"></div>
 </div>
@@ -326,7 +335,7 @@
   © 2026 Mina &amp; Juho. All rights reserved. 무단 복제·배포 금지
 </div>
 
-<script src="korean-history-data.js?v=1"></script>
+<script src="korean-history-data.js?v=2"></script>
 <script>
 // === 데이터 펼치기 ===
 const ERAS = Object.keys(H_RAW);
@@ -665,8 +674,11 @@ document.querySelectorAll('#dirToggle .subseg').forEach(b => b.addEventListener(
 
 // === 초기화 ===
 const eraSel = document.getElementById('eraSel');
-eraSel.innerHTML = ERAS.map(e2 =>
-  `<option value="${e2}">${e2} (${ALL.filter(x => x.era === e2).length}개)</option>`).join('');
+let eraNum = 0;
+eraSel.innerHTML = ERAS.map(e2 => {
+  const label = H_THEMES.includes(e2) ? `⭐ ${e2}` : `${++eraNum}. ${e2}`;
+  return `<option value="${e2}">${label} (${ALL.filter(x => x.era === e2).length}개)</option>`;
+}).join('');
 eraSel.value = era;
 document.getElementById('eraDesc').textContent = H_ERA_DESC[era] || '';
 document.getElementById('totCnt').textContent = ALL.length;
