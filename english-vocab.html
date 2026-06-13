@@ -370,6 +370,54 @@
   }
   .jump-btn { padding: 6px 11px; font-size: 12px; }
 
+  /* ===== 내 단어 / 그룹 ===== */
+  .my-section { margin-bottom: 24px; }
+  .my-h { font-size: 15px; font-weight: 800; color: #312e81; margin: 0 0 11px; }
+  .my-sub { font-size: 12px; color: #94a3b8; font-weight: 600; }
+  .add-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .add-form input, .add-form select { padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; font-family: inherit; font-size: 14px; outline: none; background: #fff; color: var(--ink); }
+  .add-form input:focus, .add-form select:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+  .add-form .full { grid-column: 1 / -1; }
+  .add-msg { font-size: 12.5px; font-weight: 700; min-height: 18px; margin-top: 9px; }
+  .add-msg.ok { color: #0d9466; } .add-msg.warn { color: #d97706; } .add-msg.err { color: #dc2626; }
+  .add-grp-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .add-grp-row input { flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; font-family: inherit; font-size: 14px; outline: none; }
+  .add-grp-row input:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+  .grp-card { background: #f8fafc; border: 1px solid #eef2f7; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px; }
+  .grp-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .grp-name { font-weight: 800; font-size: 15px; color: #1e293b; word-break: break-all; }
+  .grp-cnt { font-size: 12px; color: #64748b; font-weight: 700; flex-shrink: 0; }
+  .grp-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .grp-actions button { padding: 8px 12px; font-size: 12.5px; border-radius: 9px; }
+  .mini { background: #eef2ff; color: #4338ca; box-shadow: none; }
+  .mini:hover { background: #e0e7ff; box-shadow: none; transform: none; }
+  .danger { background: #fef2f2; color: #dc2626; box-shadow: none; }
+  .danger:hover { background: #fee2e2; box-shadow: none; transform: none; }
+  .icon-btn { background: #f1f5f9; color: #475569; box-shadow: none; padding: 7px 9px; font-size: 13px; border-radius: 8px; }
+  .icon-btn:hover { background: #e2e8f0; box-shadow: none; transform: none; }
+  .mw-row { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px solid #f1f5f9; }
+  .mw-main { flex: 1; min-width: 0; }
+  .mw-w { font-weight: 700; color: #1e293b; }
+  .mw-w .ipa { color: #94a3b8; font-weight: 500; font-size: 12.5px; }
+  .mw-m { font-size: 13px; color: #475569; margin-top: 1px; }
+  .mw-btns { display: flex; gap: 4px; flex-shrink: 0; }
+  .group-banner { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: linear-gradient(135deg, #eef2ff, #e0e7ff); border: 1px solid #c7d2fe; border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; font-size: 13.5px; }
+  .group-banner b { color: #4338ca; }
+  .chip-btn { padding: 6px 11px; font-size: 12px; border-radius: 999px; background: rgba(255,255,255,0.8); color: #4338ca; box-shadow: none; flex-shrink: 0; }
+  .chip-btn:hover { background: #fff; box-shadow: none; transform: none; }
+  .tbl-add { background: #eef2ff; color: #4338ca; box-shadow: none; padding: 5px 9px; font-size: 11.5px; border-radius: 8px; white-space: nowrap; font-weight: 700; }
+  .tbl-add:hover { background: #e0e7ff; box-shadow: none; transform: none; }
+  .modal-back { position: fixed; inset: 0; background: rgba(15,23,42,.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .modal { background: #fff; border-radius: 18px; padding: 20px; width: 380px; max-width: 100%; max-height: 82vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+  .modal h3 { margin: 0 0 4px; font-size: 17px; color: #1e293b; }
+  .modal .m-sub { font-size: 12.5px; color: #64748b; margin-bottom: 14px; }
+  .grp-pick { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 7px; cursor: pointer; }
+  .grp-pick.on { background: #eef2ff; border-color: #a5b4fc; }
+  .grp-pick .gp-check { font-size: 15px; width: 18px; }
+  .grp-pick .gp-name { font-weight: 700; color: #1e293b; flex: 1; word-break: break-all; }
+  .grp-pick .gp-cnt { font-size: 11.5px; color: #94a3b8; flex-shrink: 0; }
+  .modal-close { width: 100%; margin-top: 12px; }
+
   /* ===== mobile ===== */
   @media (max-width: 600px) {
     .result-item { flex-wrap: wrap; }
@@ -404,6 +452,8 @@
     .subseg { font-size: 12px; padding: 10px 4px; }
     .best-badge { display: none; }
     button { padding: 9px 15px; font-size: 13px; }
+    .add-form { grid-template-columns: 1fr; }
+    .grp-actions button { padding: 8px 10px; font-size: 12px; }
   }
 </style>
 </head>
@@ -453,6 +503,7 @@
     <div class="tab" data-mode="cards"><span class="ti">🃏</span><span class="tl">카드</span></div>
     <div class="tab" data-mode="test"><span class="ti">✏️</span><span class="tl">테스트</span></div>
     <div class="tab" data-mode="review"><span class="ti">🔄</span><span class="tl">복습 <span class="cnt" id="reviewCnt">0</span></span></div>
+    <div class="tab" data-mode="my"><span class="ti">➕</span><span class="tl">내단어</span></div>
     <div class="tab" data-mode="search"><span class="ti">🔍</span><span class="tl">검색</span></div>
     <div class="tab" data-mode="stats"><span class="ti">📊</span><span class="tl">기록</span></div>
   </div>
@@ -507,7 +558,9 @@ const store = {
   srs: sv.srs || {},          // key -> { step, due: 'YYYY-MM-DD' }
   daily: sv.daily || {},      // 'YYYY-MM-DD' -> answered count
   goal: sv.goal || 20,        // daily goal (problems per day)
-  taBest: sv.taBest || {}     // level -> time attack best score
+  taBest: sv.taBest || {},    // level -> time attack best score
+  myWords: Array.isArray(sv.myWords) ? sv.myWords : [],   // [{w,m,p,ipa,ex,exk}] 직접 추가한 단어
+  groups: (sv.groups && typeof sv.groups === 'object') ? sv.groups : {}  // {그룹명: [key, ...]}
 };
 function saveStore() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {}
@@ -551,16 +604,315 @@ function levelWords(level) {
   return RAW[level].flatMap((unit, u) => unitWords(level, u));
 }
 function allWords() {
-  return LEVEL_NAMES.flatMap(lv => levelWords(lv));
+  return LEVEL_NAMES.flatMap(lv => levelWords(lv)).concat(store.myWords.map(myWordObj));
 }
 function findByKey(key) {
   const [lv, w] = key.split('|');
+  if (lv === MY) {
+    const o = store.myWords.find(x => x.w === w);
+    return o ? myWordObj(o) : null;
+  }
   if (!RAW[lv]) return null;
   for (const [, list] of RAW[lv]) {
     const hit = list.find(([ww]) => ww === w);
     if (hit) return { w: hit[0], m: hit[1], p: hit[2], ipa: hit[3] || '', ex: hit[4] || '', exk: hit[5] || '', key, level: lv };
   }
   return null;
+}
+
+// ===== 내 단어 / 그룹 (학원·시험 대비 커스텀 단어장) =====
+const MY = '내단어';                                   // 커스텀 단어용 가상 레벨
+let studyGroup = null;                                 // 그룹 학습 중이면 그룹명
+function normW(w) { return (w || '').trim().toLowerCase(); }
+function myKey(w) { return MY + '|' + w; }
+function myWordObj(o) {
+  return { w: o.w, m: o.m, p: o.p || '', ipa: o.ipa || '', ex: o.ex || '', exk: o.exk || '', key: myKey(o.w), level: MY };
+}
+function findMyWord(w) { return store.myWords.find(x => normW(x.w) === normW(w)); }
+function findExisting(w) {                             // 기존 2000개에 같은 철자 있는지
+  const nw = normW(w);
+  for (const lv of LEVEL_NAMES) {
+    for (const [, list] of RAW[lv]) {
+      const hit = list.find(([ww]) => normW(ww) === nw);
+      if (hit) return { level: lv, w: hit[0], key: lv + '|' + hit[0] };
+    }
+  }
+  return null;
+}
+function groupWords(name) { return (store.groups[name] || []).map(findByKey).filter(Boolean); }
+function groupCount(name) { return (store.groups[name] || []).filter(findByKey).length; }
+function currentWords() { return studyGroup ? groupWords(studyGroup) : unitWords(curLevel, curUnit); }
+function exitGroup() { studyGroup = null; resetModeStates(); renderAll(); }
+
+// 그룹 학습 시작 — 단어표/카드/테스트로 진입
+function studyGroupStart(name, m) {
+  if (groupCount(name) === 0) { alert('이 단어장은 비어 있어.\n단어표나 검색에서 ＋담기로 단어를 넣어 줘.'); return; }
+  studyGroup = name;
+  switchMode(m);
+}
+
+// 단어 하나를 단어장(그룹)에 담는 모달 — 단어표·검색·내단어 목록 어디서든 호출
+function openGroupPicker(key) {
+  const w = findByKey(key);
+  if (!w) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-back';
+  function close() { if (overlay.parentNode) document.body.removeChild(overlay); if (mode === 'my') renderMy(); else if (mode === 'table') renderTable(); }
+  function rowsHtml() {
+    const names = Object.keys(store.groups);
+    if (!names.length) return '<div class="m-sub">아직 단어장이 없어요. 아래에서 새로 만들어 줘.</div>';
+    return names.map(n => {
+      const on = (store.groups[n] || []).includes(key);
+      return `<div class="grp-pick ${on ? 'on' : ''}" data-n="${esc(n)}"><span class="gp-check">${on ? '✅' : '⬜'}</span><span class="gp-name">${esc(n)}</span><span class="gp-cnt">${groupCount(n)}단어</span></div>`;
+    }).join('');
+  }
+  overlay.innerHTML = `<div class="modal">
+    <h3>📚 단어장에 담기</h3>
+    <div class="m-sub"><b>${esc(w.w)}</b> · ${esc(w.m)}</div>
+    <div id="gpList">${rowsHtml()}</div>
+    <div class="add-grp-row" style="margin-top:12px">
+      <input id="gpNew" placeholder="새 단어장 (예: 중간고사 3과)" maxlength="20">
+      <button id="gpAdd">만들기</button>
+    </div>
+    <button class="secondary modal-close" id="gpDone">완료</button>
+  </div>`;
+  document.body.appendChild(overlay);
+  function bindRows() {
+    overlay.querySelectorAll('.grp-pick').forEach(r => r.addEventListener('click', () => {
+      const n = r.dataset.n, arr = store.groups[n];
+      const i = arr.indexOf(key);
+      if (i >= 0) arr.splice(i, 1); else arr.push(key);
+      saveStore();
+      overlay.querySelector('#gpList').innerHTML = rowsHtml();
+      bindRows();
+    }));
+  }
+  bindRows();
+  overlay.querySelector('#gpAdd').addEventListener('click', () => {
+    const inp = overlay.querySelector('#gpNew');
+    const v = inp.value.trim();
+    if (!v) return;
+    if (store.groups[v]) { inp.value = ''; return; }
+    store.groups[v] = [key];
+    saveStore();
+    inp.value = '';
+    overlay.querySelector('#gpList').innerHTML = rowsHtml();
+    bindRows();
+  });
+  overlay.querySelector('#gpDone').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+}
+
+// 백업 — 내보내기 / 가져오기 (기기 간 이동·복구)
+function exportBackup() {
+  const data = JSON.stringify({ app: 'en-vocab', v: 1, myWords: store.myWords, groups: store.groups }, null, 2);
+  const blob = new Blob([data], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '내단어장-' + todayStr() + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  const msg = document.getElementById('bkMsg');
+  if (msg) { msg.textContent = '내보내기 완료! 파일을 안전한 곳에 보관해 줘.'; msg.className = 'add-msg ok'; }
+}
+function importBackup() {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'application/json,.json';
+  inp.addEventListener('change', () => {
+    const f = inp.files[0];
+    if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      const msg = document.getElementById('bkMsg');
+      try {
+        const d = JSON.parse(rd.result);
+        if (!d || !Array.isArray(d.myWords)) throw 0;
+        let added = 0;
+        for (const o of d.myWords) {
+          if (o && o.w && !findMyWord(o.w)) {
+            store.myWords.push({ w: o.w, m: o.m || '', p: o.p || '', ipa: o.ipa || '', ex: o.ex || '', exk: o.exk || '' });
+            added++;
+          }
+        }
+        if (d.groups && typeof d.groups === 'object') {
+          for (const n in d.groups) {
+            const incoming = Array.isArray(d.groups[n]) ? d.groups[n] : [];
+            if (!store.groups[n]) store.groups[n] = [];
+            for (const k of incoming) if (!store.groups[n].includes(k)) store.groups[n].push(k);
+          }
+        }
+        saveStore();
+        renderMy();
+        const m2 = document.getElementById('bkMsg');
+        if (m2) { m2.textContent = '가져오기 완료! 단어 ' + added + '개 추가, 단어장은 합쳐졌어.'; m2.className = 'add-msg ok'; }
+      } catch (e) {
+        if (msg) { msg.textContent = '파일을 읽을 수 없어. 올바른 백업 파일인지 확인해 줘.'; msg.className = 'add-msg err'; }
+      }
+    };
+    rd.readAsText(f);
+  });
+  inp.click();
+}
+
+// ===== Mode: 내 단어 (직접 추가 + 단어장 + 백업) =====
+function tryAddMyWord() {
+  const w = document.getElementById('awWord').value.trim();
+  const m = document.getElementById('awMean').value.trim();
+  const msg = document.getElementById('awMsg');
+  if (!w || !m) { msg.textContent = '영단어와 뜻은 꼭 입력해 줘.'; msg.className = 'add-msg err'; return; }
+  if (!/^[a-zA-Z][a-zA-Z '.\-]*$/.test(w)) { msg.textContent = '영단어는 영문으로 입력해 줘.'; msg.className = 'add-msg err'; return; }
+  if (findMyWord(w)) { msg.textContent = '"' + w + '"는 이미 내 단어장에 있어.'; msg.className = 'add-msg warn'; return; }
+  const ex = findExisting(w);
+  if (ex) {
+    msg.textContent = '"' + w + '"는 이미 ' + ex.level + '에 있는 단어야. 새로 만들 필요 없이 단어장에 담아 줄게!';
+    msg.className = 'add-msg warn';
+    openGroupPicker(ex.key);
+    return;
+  }
+  store.myWords.unshift({
+    w: w, m: m,
+    p: document.getElementById('awPos').value,
+    ipa: document.getElementById('awIpa').value.trim(),
+    ex: document.getElementById('awEx').value.trim(),
+    exk: document.getElementById('awExk').value.trim()
+  });
+  saveStore();
+  renderMy();
+  const m2 = document.getElementById('awMsg');
+  if (m2) { m2.textContent = '"' + w + '" 추가 완료! 📚 버튼으로 단어장에 담을 수 있어.'; m2.className = 'add-msg ok'; }
+}
+function renderMy() {
+  const el = document.getElementById('content');
+  const groups = Object.keys(store.groups);
+  let html = '';
+
+  // A. 단어 직접 추가
+  html += `<div class="my-section">
+    <div class="my-h">➕ 단어 직접 추가 <span class="my-sub">학원 프린트·교재 단어를 넣어 보세요</span></div>
+    <div class="add-form">
+      <input id="awWord" placeholder="영단어 *" autocomplete="off" spellcheck="false">
+      <input id="awMean" placeholder="뜻 *">
+      <select id="awPos"><option value="">품사 (선택)</option><option value="명">명사</option><option value="동">동사</option><option value="형">형용사</option><option value="부">부사</option></select>
+      <input id="awIpa" placeholder="발음기호 (선택)">
+      <input id="awEx" class="full" placeholder="예문 (선택, 영어)">
+      <input id="awExk" class="full" placeholder="예문 뜻 (선택, 한글)">
+      <button id="awAdd" class="full">추가하기</button>
+    </div>
+    <div class="add-msg" id="awMsg"></div>
+  </div>`;
+
+  // B. 내 단어장 (그룹)
+  html += `<div class="my-section">
+    <div class="my-h">📚 내 단어장 <span class="my-sub">단어를 묶어 집중 학습 (학교/학원 대비)</span></div>
+    <div class="add-grp-row">
+      <input id="ngName" placeholder="새 단어장 이름 (예: 안 외워지는 단어)" maxlength="20">
+      <button id="ngAdd">만들기</button>
+    </div>`;
+  if (!groups.length) {
+    html += `<div class="m-sub" style="color:#94a3b8;font-size:13px;padding:4px 2px">아직 단어장이 없어요. 위에서 만들거나, 단어표·검색에서 <b>＋담기</b>로 모아 보세요.</div>`;
+  }
+  for (const n of groups) {
+    html += `<div class="grp-card">
+      <div class="grp-top"><span class="grp-name">📒 ${esc(n)}</span><span class="grp-cnt">${groupCount(n)}단어</span></div>
+      <div class="grp-actions">
+        <button class="mini study-g" data-n="${esc(n)}" data-m="table">📖 단어표</button>
+        <button class="mini study-g" data-n="${esc(n)}" data-m="cards">🃏 카드</button>
+        <button class="mini study-g" data-n="${esc(n)}" data-m="test">✏️ 테스트</button>
+        <button class="icon-btn ren-g" data-n="${esc(n)}">✏️ 이름</button>
+        <button class="danger del-g" data-n="${esc(n)}">🗑 삭제</button>
+      </div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  // C. 내가 추가한 단어 모아보기
+  html += `<div class="my-section">
+    <div class="my-h">📝 내가 추가한 단어 <span class="my-sub">${store.myWords.length}개</span></div>`;
+  if (!store.myWords.length) {
+    html += `<div class="m-sub" style="color:#94a3b8;font-size:13px;padding:4px 2px">아직 추가한 단어가 없어요.</div>`;
+  } else {
+    for (const o of store.myWords) {
+      const key = myKey(o.w);
+      html += `<div class="mw-row">
+        <div class="mw-main">
+          <div class="mw-w">${esc(o.w)} <span class="ipa">${esc(o.ipa || '')}</span> ${posTag(o.p)}</div>
+          <div class="mw-m">${esc(o.m)}</div>
+        </div>
+        <div class="mw-btns">
+          <button class="icon-btn say-w" data-w="${esc(o.w)}">🔊</button>
+          <button class="icon-btn add-g" data-key="${esc(key)}">📚</button>
+          <button class="icon-btn del-w" data-w="${esc(o.w)}">🗑</button>
+        </div>
+      </div>`;
+    }
+  }
+  html += `</div>`;
+
+  // D. 백업
+  html += `<div class="my-section">
+    <div class="my-h">💾 백업 <span class="my-sub">단어는 이 기기 브라우저에만 저장돼요</span></div>
+    <div class="grp-actions">
+      <button class="mini" id="expBtn">⬇ 내보내기 (파일 저장)</button>
+      <button class="mini" id="impBtn">⬆ 가져오기 (파일 불러오기)</button>
+    </div>
+    <div class="add-msg" id="bkMsg"></div>
+  </div>`;
+
+  el.innerHTML = html;
+
+  // ----- 이벤트 -----
+  el.querySelector('#awAdd').addEventListener('click', tryAddMyWord);
+  el.querySelector('#awWord').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('awMean').focus(); });
+  el.querySelector('#awMean').addEventListener('keydown', e => { if (e.key === 'Enter') tryAddMyWord(); });
+  el.querySelector('#ngAdd').addEventListener('click', () => {
+    const inp = el.querySelector('#ngName');
+    const v = inp.value.trim();
+    if (!v) return;
+    if (store.groups[v]) { inp.value = ''; return; }
+    store.groups[v] = [];
+    saveStore();
+    renderMy();
+  });
+  el.querySelector('#ngName').addEventListener('keydown', e => { if (e.key === 'Enter') el.querySelector('#ngAdd').click(); });
+  el.querySelectorAll('.study-g').forEach(b => b.addEventListener('click', () => studyGroupStart(b.dataset.n, b.dataset.m)));
+  el.querySelectorAll('.ren-g').forEach(b => b.addEventListener('click', () => {
+    const old = b.dataset.n;
+    const nn = prompt('단어장 새 이름', old);
+    if (nn === null) return;
+    const v = nn.trim();
+    if (!v || v === old) return;
+    if (store.groups[v]) { alert('같은 이름의 단어장이 이미 있어.'); return; }
+    store.groups[v] = store.groups[old];
+    delete store.groups[old];
+    saveStore();
+    renderMy();
+  }));
+  el.querySelectorAll('.del-g').forEach(b => b.addEventListener('click', () => {
+    const n = b.dataset.n;
+    if (!confirm('"' + n + '" 단어장을 삭제할까요?\n(담긴 단어 자체는 사라지지 않아요)')) return;
+    delete store.groups[n];
+    saveStore();
+    renderMy();
+  }));
+  el.querySelectorAll('.say-w').forEach(b => b.addEventListener('click', () => speak(b.dataset.w)));
+  el.querySelectorAll('.add-g').forEach(b => b.addEventListener('click', () => openGroupPicker(b.dataset.key)));
+  el.querySelectorAll('.del-w').forEach(b => b.addEventListener('click', () => {
+    const w = b.dataset.w;
+    if (!confirm('"' + w + '" 단어를 삭제할까요?')) return;
+    const key = myKey(w);
+    store.myWords = store.myWords.filter(x => x.w !== w);
+    for (const n in store.groups) store.groups[n] = store.groups[n].filter(k => k !== key);
+    delete store.wordStats[key];
+    delete store.srs[key];
+    store.wrongKeys = store.wrongKeys.filter(k => k !== key);
+    saveStore();
+    updateWrongCnt();
+    renderMy();
+  }));
+  el.querySelector('#expBtn').addEventListener('click', exportBackup);
+  el.querySelector('#impBtn').addEventListener('click', importBackup);
 }
 function stat(key) { return store.wordStats[key] || { c: 0, w: 0 }; }
 function bumpStat(key, ok) {
@@ -787,6 +1139,7 @@ function renderLevelBar() {
 }
 document.getElementById('levelSel').addEventListener('change', e => {
   stopSpeakAll();
+  studyGroup = null;
   curLevel = e.target.value;
   curUnit = 0;
   resetModeStates();
@@ -813,8 +1166,8 @@ function renderUnitBar() {
   const badge = document.getElementById('unitBestBadge');
   badge.textContent = best !== undefined ? '최고 ' + best + '점' : '기록 없음';
   badge.className = 'best-badge' + (best !== undefined ? ' has' : '');
-  // unit picker only matters for unit-scoped modes
-  const unitScoped = !(mode === 'review' || mode === 'stats' || mode === 'search');
+  // unit picker only matters for unit-scoped modes (그룹 학습·내단어 탭에선 숨김)
+  const unitScoped = !(mode === 'review' || mode === 'stats' || mode === 'search' || mode === 'my') && !studyGroup;
   document.getElementById('unitPicker').style.display = unitScoped ? 'flex' : 'none';
   const desc = document.getElementById('levelDesc');
   desc.textContent = LEVEL_DESC[curLevel] || '';
@@ -822,6 +1175,7 @@ function renderUnitBar() {
 }
 function gotoUnit(u) {
   stopSpeakAll();
+  studyGroup = null;
   curUnit = (u + RAW[curLevel].length) % RAW[curLevel].length;
   resetModeStates();
   renderAll();
@@ -838,9 +1192,16 @@ function resetModeStates() {
 
 // ===== Mode: word table =====
 function renderTable() {
-  const words = unitWords(curLevel, curUnit);
-  const title = RAW[curLevel][curUnit][0];
-  let html = `<div class="unit-title">${curLevel} · ${curUnit + 1}단원 「${title}」</div>
+  const words = currentWords();
+  const head = studyGroup ? `📚 단어장 「${esc(studyGroup)}」` : `${curLevel} · ${curUnit + 1}단원 「${esc(RAW[curLevel][curUnit][0])}」`;
+  const banner = studyGroup ? `<div class="group-banner"><span>📚 단어장 <b>${esc(studyGroup)}</b> · ${words.length}단어 학습 중</span><button class="chip-btn" id="exitGroup">✕ 전체로</button></div>` : '';
+  if (words.length === 0) {
+    const el0 = document.getElementById('content');
+    el0.innerHTML = banner + `<div class="unit-title">${head}</div><div class="search-empty">단어가 없어요. 단어표·검색에서 ＋담기로 단어를 모아 보세요.</div>`;
+    if (studyGroup) el0.querySelector('#exitGroup').addEventListener('click', exitGroup);
+    return;
+  }
+  let html = banner + `<div class="unit-title">${head}</div>
     <div class="toolbar">
       <button class="secondary ${hideMode === 'eng' ? 'on' : ''}" id="hideEng">단어 가리기</button>
       <button class="secondary ${hideMode === 'kor' ? 'on' : ''}" id="hideKor">뜻 가리기</button>
@@ -853,7 +1214,7 @@ function renderTable() {
       <td class="eng ${hideMode === 'eng' ? 'm-hidden' : ''}">${esc(it.w)} <span class="ipa">${esc(it.ipa)}</span></td>
       <td class="pos-td">${posTag(it.p)}</td>
       <td class="kor ${hideMode === 'kor' ? 'm-hidden' : ''}">${esc(it.m)}</td>
-      <td class="star">${mastered ? '⭐' : ''}</td></tr>`;
+      <td class="star">${mastered ? '⭐ ' : ''}<button class="tbl-add gp-open" data-key="${esc(it.key)}">＋담기</button></td></tr>`;
     if (it.ex) {
       html += `<tr class="ex-row"><td colspan="4">
         <span class="ex-en ${hideMode === 'eng' ? 'm-hidden' : ''}" data-s="${esc(it.ex)}">${esc(it.ex)}</span>
@@ -864,6 +1225,8 @@ function renderTable() {
   const el = document.getElementById('content');
   el.innerHTML = html;
 
+  if (studyGroup) el.querySelector('#exitGroup').addEventListener('click', exitGroup);
+  el.querySelectorAll('.gp-open').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openGroupPicker(b.dataset.key); }));
   el.querySelectorAll('tr.wrow').forEach(tr => {
     const eng = tr.querySelector('.eng');
     const kor = tr.querySelector('.kor');
@@ -918,7 +1281,7 @@ function renderTable() {
 
 // ===== Mode: flashcards =====
 function startCards() {
-  cardQueue = shuffle(unitWords(curLevel, curUnit).slice());
+  cardQueue = shuffle(currentWords().slice());
   cardTotal = cardQueue.length;
   cardDone = 0;
   cardFlipped = false;
@@ -966,14 +1329,16 @@ function renderCards() {
 // ===== Mode: test =====
 function startTest(type) {
   testType = type;
-  let pool = unitWords(curLevel, curUnit).slice();
+  let pool = currentWords().slice();
   if (type === 'cloze') pool = pool.filter(x => x.ex);
   testQs = shuffle(pool);
   testIdx = 0; testScore = 0; testLocked = false; testOver = false;
   renderTest();
 }
 function mcOptions(correct) {
-  const pool = levelWords(curLevel).filter(x => x.w !== correct.w && x.m !== correct.m);
+  // 그룹 학습 땐 학년 풀 대신 전체에서 오답 보기를 뽑는다
+  const base = studyGroup ? allWords() : levelWords(curLevel);
+  const pool = base.filter(x => x.w !== correct.w && x.m !== correct.m);
   const picks = shuffle(pool.slice()).slice(0, 3).map(x => x.m);
   return shuffle([correct.m, ...picks]);
 }
@@ -981,28 +1346,32 @@ function renderTest() {
   const el = document.getElementById('content');
   if (testType === null) {
     const taBest = store.taBest[curLevel];
-    const hasEx = unitWords(curLevel, curUnit).some(x => x.ex);
-    el.innerHTML = `
-      <div class="unit-title">✏️ ${curLevel} · ${curUnit + 1}단원 테스트</div>
+    const cw = currentWords();
+    const hasEx = cw.some(x => x.ex);
+    const banner = studyGroup ? `<div class="group-banner"><span>📚 단어장 <b>${esc(studyGroup)}</b> · ${cw.length}단어</span><button class="chip-btn" id="exitGroup">✕ 전체로</button></div>` : '';
+    const ttitle = studyGroup ? `✏️ 「${esc(studyGroup)}」 테스트` : `✏️ ${curLevel} · ${curUnit + 1}단원 테스트`;
+    el.innerHTML = banner + `
+      <div class="unit-title">${ttitle}</div>
       <div class="test-grid">
-        <div class="test-opt" id="mcBtn"><div class="to-icon">🅰️</div><b>4지선다</b><span>영어 보고 뜻 고르기 · 10문제</span></div>
-        <div class="test-opt" id="typeBtn"><div class="to-icon">⌨️</div><b>직접 입력</b><span>뜻 보고 영어 쓰기 · 10문제</span></div>
-        <div class="test-opt" id="dictBtn"><div class="to-icon">🎧</div><b>듣고 쓰기</b><span>발음 듣고 철자 입력 · 10문제</span></div>
-        ${hasEx ? `<div class="test-opt" id="clozeBtn"><div class="to-icon">📝</div><b>빈칸 채우기</b><span>예문 속 빈칸 단어 입력 · 10문제</span></div>` : ''}
-        <div class="test-opt ta" id="taBtn"><div class="to-icon">⚡</div><b>타임어택 60초</b><span>${curLevel} 전체 · 최고 ${taBest !== undefined ? taBest + '점' : '기록 없음'}</span></div>
+        <div class="test-opt" id="mcBtn"><div class="to-icon">🅰️</div><b>4지선다</b><span>영어 보고 뜻 고르기 · ${Math.min(10, cw.length)}문제</span></div>
+        <div class="test-opt" id="typeBtn"><div class="to-icon">⌨️</div><b>직접 입력</b><span>뜻 보고 영어 쓰기</span></div>
+        <div class="test-opt" id="dictBtn"><div class="to-icon">🎧</div><b>듣고 쓰기</b><span>발음 듣고 철자 입력</span></div>
+        ${hasEx ? `<div class="test-opt" id="clozeBtn"><div class="to-icon">📝</div><b>빈칸 채우기</b><span>예문 속 빈칸 단어 입력</span></div>` : ''}
+        ${studyGroup ? '' : `<div class="test-opt ta" id="taBtn"><div class="to-icon">⚡</div><b>타임어택 60초</b><span>${curLevel} 전체 · 최고 ${taBest !== undefined ? taBest + '점' : '기록 없음'}</span></div>`}
       </div>`;
+    if (studyGroup) el.querySelector('#exitGroup').addEventListener('click', exitGroup);
     el.querySelector('#mcBtn').addEventListener('click', () => startTest('mc'));
     el.querySelector('#typeBtn').addEventListener('click', () => startTest('type'));
     el.querySelector('#dictBtn').addEventListener('click', () => startTest('dict'));
     if (hasEx) el.querySelector('#clozeBtn').addEventListener('click', () => startTest('cloze'));
-    el.querySelector('#taBtn').addEventListener('click', startTimeAttack);
+    if (!studyGroup) el.querySelector('#taBtn').addEventListener('click', startTimeAttack);
     return;
   }
   if (testOver) {
     const pct = Math.round(testScore / testQs.length * 100);
     const bk = curLevel + '|' + curUnit;
-    const prevBest = store.unitBest[bk];
-    const isNewBest = prevBest === undefined || pct > prevBest;
+    const prevBest = studyGroup ? undefined : store.unitBest[bk];
+    const isNewBest = !studyGroup && (prevBest === undefined || pct > prevBest);
     if (isNewBest) { store.unitBest[bk] = pct; saveStore(); }
     el.innerHTML = `<div class="center" style="padding:30px 0">
       <div style="font-size:56px">${pct === 100 ? '🏆' : pct >= 70 ? '😊' : '💪'}</div>
@@ -1343,6 +1712,15 @@ function searchWords(q) {
       }
     });
   }
+  store.myWords.forEach(o => {                 // 직접 추가한 단어도 검색에 포함
+    const wl = o.w.toLowerCase();
+    let rank = -1;
+    if (wl === ql) rank = 0;
+    else if (wl.startsWith(ql)) rank = 1;
+    else if (wl.includes(ql)) rank = 2;
+    else if ((o.m || '').includes(q)) rank = 3;
+    if (rank >= 0) out.push({ w: o.w, m: o.m, p: o.p || '', ipa: o.ipa || '', level: MY, unit: -1, key: myKey(o.w), rank });
+  });
   out.sort((a, b) => a.rank - b.rank || a.w.localeCompare(b.w));
   return { total: out.length, list: out.slice(0, 50) };
 }
@@ -1371,7 +1749,7 @@ function renderSearchResults() {
   const wrap = document.getElementById('searchResults');
   const q = searchQuery.trim();
   if (!q) {
-    wrap.innerHTML = '<div class="search-empty">2,000개 단어를 영어 철자나 한글 뜻으로 검색할 수 있어요</div>';
+    wrap.innerHTML = '<div class="search-empty">2,000개 단어 + 내가 추가한 단어를 영어 철자나 한글 뜻으로 검색할 수 있어요</div>';
     return;
   }
   const rs = searchWords(q);
@@ -1388,14 +1766,17 @@ function renderSearchResults() {
         <div class="result-meaning">${esc(r.m)}</div>
       </div>
       <div class="result-side">
-        <span class="lv-tag">${r.level} ${r.unit + 1}단원</span>
-        <button class="secondary jump-btn" data-lv="${r.level}" data-u="${r.unit}">단어표 보기</button>
+        <span class="lv-tag">${r.level === MY ? '📒 내 단어' : esc(r.level) + ' ' + (r.unit + 1) + '단원'}</span>
+        <button class="secondary tbl-add gp-open" data-key="${esc(r.key)}">＋담기</button>
+        ${r.level === MY ? '' : `<button class="secondary jump-btn" data-lv="${esc(r.level)}" data-u="${r.unit}">단어표</button>`}
       </div>
     </div>`;
   }
   wrap.innerHTML = html;
   wrap.querySelectorAll('.say-w').forEach(b => b.addEventListener('click', () => speak(b.dataset.w)));
+  wrap.querySelectorAll('.gp-open').forEach(b => b.addEventListener('click', () => openGroupPicker(b.dataset.key)));
   wrap.querySelectorAll('.jump-btn').forEach(b => b.addEventListener('click', () => {
+    studyGroup = null;
     curLevel = b.dataset.lv;
     curUnit = parseInt(b.dataset.u);
     switchMode('table');
@@ -1464,11 +1845,11 @@ function renderStats() {
     renderStats();
   });
   el.querySelector('#resetBtn').addEventListener('click', () => {
-    if (!confirm('정말 모든 학습 기록을 지울까요?')) return;
-    localStorage.removeItem(STORE_KEY);
+    if (!confirm('학습 기록(통계·오답·출석)을 지울까요?\n직접 추가한 단어와 단어장은 그대로 보존돼요.')) return;
     store.wordStats = {}; store.unitBest = {}; store.wrongKeys = [];
     store.answered = 0; store.correct = 0; store.streak = 0; store.bestStreak = 0;
     store.srs = {}; store.daily = {}; store.taBest = {};
+    saveStore();   // myWords·groups는 store에 남아 있으므로 함께 보존 저장
     updateWrongCnt();
     renderAll();
   });
@@ -1481,6 +1862,7 @@ function renderContent() {
   else if (mode === 'test') renderTest();
   else if (mode === 'review') renderReview();
   else if (mode === 'search') renderSearch();
+  else if (mode === 'my') renderMy();
   else renderStats();
 }
 function renderAll() {
