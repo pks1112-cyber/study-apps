@@ -380,6 +380,8 @@
   .add-form .full { grid-column: 1 / -1; }
   .add-msg { font-size: 12.5px; font-weight: 700; min-height: 18px; margin-top: 9px; }
   .add-msg.ok { color: #0d9466; } .add-msg.warn { color: #d97706; } .add-msg.err { color: #dc2626; }
+  .help-box { background: #f1f5ff; border: 1px solid #dbe4ff; border-radius: 11px; padding: 11px 13px; margin-top: 11px; font-size: 12.5px; line-height: 1.75; color: #475569; }
+  .help-box b { color: #4338ca; }
   .add-grp-row { display: flex; gap: 8px; margin-bottom: 12px; }
   .add-grp-row input { flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; font-family: inherit; font-size: 14px; outline: none; }
   .add-grp-row input:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
@@ -766,7 +768,8 @@ function tryAddMyWord() {
   if (findMyWord(w)) { msg.textContent = '"' + w + '"는 이미 내 단어장에 있어.'; msg.className = 'add-msg warn'; return; }
   const ex = findExisting(w);
   if (ex) {
-    msg.textContent = '"' + w + '"는 이미 ' + ex.level + '에 있는 단어야. 새로 만들 필요 없이 단어장에 담아 줄게!';
+    const exObj = findByKey(ex.key);
+    msg.textContent = '"' + w + '"는 이미 ' + ex.level + '에 「' + (exObj ? exObj.m : '') + '」(으)로 있는 단어야. 원래 뜻 그대로 단어장에 담아 줄게!';
     msg.className = 'add-msg warn';
     openGroupPicker(ex.key);
     return;
@@ -801,6 +804,11 @@ function renderMy() {
       <button id="awAdd" class="full">추가하기</button>
     </div>
     <div class="add-msg" id="awMsg"></div>
+    <div class="help-box">
+      💡 <b>처음 보는 새 단어</b>(2,000단어에 없는 단어)는 아래 <b>「내가 추가한 단어」</b>에 저장돼요.<br>
+      💡 이미 교과서 <b>2,000단어에 있는 단어</b>면, 직접 쓴 뜻 대신 <b>원래 뜻 그대로</b> 단어장에 담겨요 (중복으로 안 만들어져요).<br>
+      💡 단어를 묶고 싶으면 아래에서 <b>단어장</b>을 만들고, 단어표·검색의 <b>＋담기</b>로 모으면 돼요. 한 단어를 여러 단어장에 담아도 OK.
+    </div>
   </div>`;
 
   // B. 내 단어장 (그룹)
