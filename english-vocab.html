@@ -405,6 +405,15 @@
   .answer-row { display: flex; gap: 8px; align-items: stretch; margin-top: 4px; }
   .answer-row .answer { flex: 1; min-width: 0; margin: 0; }
   .answer-row #ansBtn { flex-shrink: 0; padding: 0 24px; font-size: 16px; }
+  /* 커스텀 다이얼로그 */
+  .modal-sm { width: 340px; }
+  .dlg-msg { font-size: 13.5px; color: #475569; line-height: 1.65; white-space: pre-line; margin: 4px 0 18px; }
+  .dlg-input { width: 100%; padding: 12px 13px; border: 1.5px solid var(--line); border-radius: 11px; font-family: inherit; font-size: 15px; outline: none; color: var(--ink); }
+  .dlg-input:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+  .dlg-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .dlg-actions button { flex: 1; }
+  .danger-solid { background: linear-gradient(135deg, #ef4444, #dc2626); }
+  .danger-solid:hover { background: linear-gradient(135deg, #dc2626, #b91c1c); }
   .add-grp-row { display: flex; gap: 8px; margin-bottom: 12px; }
   .add-grp-row input { flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; font-family: inherit; font-size: 14px; outline: none; }
   .add-grp-row input:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
@@ -681,6 +690,55 @@ function renderTarget() {
 let myList = null;        // 현재 선택된 단어장
 let mySub = 'table';      // 내단어 안의 서브뷰: table | cards | test | add
 
+// ===== 커스텀 다이얼로그 (브라우저 prompt/confirm/alert 대체) =====
+function uiConfirm(opts) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-back';
+  overlay.innerHTML = `<div class="modal modal-sm">
+    <h3>${esc(opts.title || '확인')}</h3>
+    ${opts.message ? `<div class="dlg-msg">${esc(opts.message)}</div>` : ''}
+    <div class="dlg-actions">
+      <button class="secondary" id="dlgCancel">${esc(opts.cancelText || '취소')}</button>
+      <button id="dlgOk" class="${opts.danger ? 'danger-solid' : ''}">${esc(opts.okText || '확인')}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
+  overlay.querySelector('#dlgCancel').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('#dlgOk').addEventListener('click', () => { close(); if (opts.onOk) opts.onOk(); });
+  overlay.querySelector('#dlgOk').focus();
+}
+function uiPrompt(opts) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-back';
+  overlay.innerHTML = `<div class="modal modal-sm">
+    <h3>${esc(opts.title || '입력')}</h3>
+    <input id="dlgInput" class="dlg-input" value="${esc(opts.value || '')}" placeholder="${esc(opts.placeholder || '')}" maxlength="${opts.maxlength || 30}" autocomplete="off" spellcheck="false">
+    <div class="add-msg" id="dlgMsg"></div>
+    <div class="dlg-actions">
+      <button class="secondary" id="dlgCancel">취소</button>
+      <button id="dlgOk">${esc(opts.okText || '확인')}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const inp = overlay.querySelector('#dlgInput');
+  const msg = overlay.querySelector('#dlgMsg');
+  inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length);
+  const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
+  const submit = () => {
+    const v = inp.value.trim();
+    const err = opts.validate ? opts.validate(v) : (v ? null : '입력해 주세요.');
+    if (err) { msg.textContent = err; msg.className = 'add-msg err'; return; }
+    close();
+    if (opts.onOk) opts.onOk(v);
+  };
+  overlay.querySelector('#dlgCancel').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('#dlgOk').addEventListener('click', submit);
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+}
+
 // 단어 하나를 단어장(그룹)에 담는 모달 — 단어표·검색·내단어 목록 어디서든 호출
 function openGroupPicker(key) {
   const w = findByKey(key);
@@ -881,28 +939,31 @@ function renderMy() {
     renderMy();
   });
   el.querySelector('#mlNew').addEventListener('click', () => {
-    const nn = prompt('새 단어장 이름');
-    if (nn === null) return;
-    if (!nn.trim()) return;
-    if (store.groups[nn.trim()]) { alert('같은 이름의 단어장이 이미 있어.'); return; }
-    if (createList(nn)) { mySub = 'add'; renderMy(); }
+    uiPrompt({
+      title: '새 단어장', placeholder: '단어장 이름 (예: 중간고사 3과)', okText: '만들기',
+      validate: v => !v ? '이름을 입력해 줘.' : (store.groups[v] ? '같은 이름의 단어장이 이미 있어.' : null),
+      onOk: v => { createList(v); mySub = 'add'; renderMy(); }
+    });
   });
   el.querySelector('#mlRen').addEventListener('click', () => {
-    const nn = prompt('단어장 새 이름', myList);
-    if (nn === null) return;
-    const v = nn.trim();
-    if (!v || v === myList) return;
-    if (store.groups[v]) { alert('같은 이름의 단어장이 이미 있어.'); return; }
-    store.groups[v] = store.groups[myList];
-    delete store.groups[myList];
-    if (store.lastGroup === myList) store.lastGroup = v;
-    myList = v; saveStore(); renderMy();
+    uiPrompt({
+      title: '단어장 이름 변경', value: myList, okText: '변경',
+      validate: v => !v ? '이름을 입력해 줘.' : (v !== myList && store.groups[v] ? '같은 이름의 단어장이 이미 있어.' : null),
+      onOk: v => {
+        if (v === myList) return;
+        store.groups[v] = store.groups[myList];
+        delete store.groups[myList];
+        if (store.lastGroup === myList) store.lastGroup = v;
+        myList = v; saveStore(); renderMy();
+      }
+    });
   });
   el.querySelector('#mlDel').addEventListener('click', () => {
-    if (!confirm('"' + myList + '" 단어장을 삭제할까요?\n(담긴 단어 자체는 사라지지 않아요)')) return;
-    delete store.groups[myList];
-    if (store.lastGroup === myList) store.lastGroup = null;
-    myList = null; saveStore(); renderMy();
+    uiConfirm({
+      title: '단어장 삭제', message: '"' + myList + '" 단어장을 삭제할까요?\n담긴 단어 자체는 사라지지 않아요.',
+      okText: '삭제', danger: true,
+      onOk: () => { delete store.groups[myList]; if (store.lastGroup === myList) store.lastGroup = null; myList = null; saveStore(); renderMy(); }
+    });
   });
   el.querySelectorAll('.sub-seg').forEach(b => b.addEventListener('click', () => { mySub = b.dataset.s; renderMy(); }));
 }
@@ -1014,14 +1075,19 @@ function openEditWord(w) {
   overlay.querySelector('#ewCancel').addEventListener('click', close);
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   overlay.querySelector('#ewDelete').addEventListener('click', () => {
-    if (!confirm('"' + o.w + '" 단어를 모든 단어장에서 완전히 삭제할까요?')) return;
+    uiConfirm({
+      title: '단어 삭제', message: '"' + o.w + '" 단어를 모든 단어장에서 완전히 삭제할까요?',
+      okText: '삭제', danger: true, onOk: () => doDeleteWord()
+    });
+  });
+  function doDeleteWord() {
     const key = myKey(o.w);
     store.myWords = store.myWords.filter(x => x.w !== o.w);
     for (const n in store.groups) store.groups[n] = store.groups[n].filter(k => k !== key);
     delete store.wordStats[key]; delete store.srs[key];
     store.wrongKeys = store.wrongKeys.filter(k => k !== key);
     saveStore(); updateWrongCnt(); close(); renderMy();
-  });
+  }
   overlay.querySelector('#ewSave').addEventListener('click', () => {
     const nw = overlay.querySelector('#ewWord').value.trim();
     const msg = overlay.querySelector('#ewMsg');
@@ -1985,13 +2051,18 @@ function renderStats() {
     renderStats();
   });
   el.querySelector('#resetBtn').addEventListener('click', () => {
-    if (!confirm('학습 기록(통계·오답·출석)을 지울까요?\n직접 추가한 단어와 단어장은 그대로 보존돼요.')) return;
-    store.wordStats = {}; store.unitBest = {}; store.wrongKeys = [];
-    store.answered = 0; store.correct = 0; store.streak = 0; store.bestStreak = 0;
-    store.srs = {}; store.daily = {}; store.taBest = {};
-    saveStore();   // myWords·groups는 store에 남아 있으므로 함께 보존 저장
-    updateWrongCnt();
-    renderAll();
+    uiConfirm({
+      title: '학습 기록 초기화', message: '통계·오답·출석 기록을 지울까요?\n직접 추가한 단어와 단어장은 그대로 보존돼요.',
+      okText: '초기화', danger: true,
+      onOk: () => {
+        store.wordStats = {}; store.unitBest = {}; store.wrongKeys = [];
+        store.answered = 0; store.correct = 0; store.streak = 0; store.bestStreak = 0;
+        store.srs = {}; store.daily = {}; store.taBest = {};
+        saveStore();   // myWords·groups는 store에 남아 있으므로 함께 보존 저장
+        updateWrongCnt();
+        renderAll();
+      }
+    });
   });
 }
 
