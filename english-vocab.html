@@ -894,16 +894,17 @@ function renderMy() {
       <div class="my-empty-icon">📚</div>
       <div class="my-empty-title">내 단어장이 비어 있어요</div>
       <div class="my-empty-sub">학교·학원 단어, 안 외워지는 단어를 모아서 따로 공부해요.<br>첫 단어장을 만들어 볼까요?</div>
-      <div class="add-grp-row" style="max-width:380px;margin:18px auto 0">
-        <input id="ngName" placeholder="단어장 이름 (예: 중간고사 3과)" maxlength="20">
-        <button id="ngAdd">만들기</button>
-      </div>
-      <div style="margin-top:18px"><button class="mini" id="impBtn">⬆ 백업 가져오기</button></div>
+      <div style="margin-top:20px"><button id="firstList">➕ 첫 단어장 만들기</button></div>
+      <div style="margin-top:10px"><button class="mini" id="impBtn">⬆ 백업 가져오기</button></div>
       <div class="add-msg" id="bkMsg" style="text-align:center"></div>
     </div>`;
-    const mk = () => { if (createList(el.querySelector('#ngName').value)) { mySub = 'add'; renderMy(); } };
-    el.querySelector('#ngAdd').addEventListener('click', mk);
-    el.querySelector('#ngName').addEventListener('keydown', e => { if (e.key === 'Enter') mk(); });
+    el.querySelector('#firstList').addEventListener('click', () => {
+      uiPrompt({
+        title: '새 단어장', placeholder: '단어장 이름 (예: 중간고사 3과)', okText: '만들기',
+        validate: v => !v ? '이름을 입력해 줘.' : (store.groups[v] ? '같은 이름의 단어장이 이미 있어.' : null),
+        onOk: v => { createList(v); mySub = 'add'; renderMy(); }
+      });
+    });
     el.querySelector('#impBtn').addEventListener('click', importBackup);
     return;
   }
