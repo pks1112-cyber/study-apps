@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<!-- Google Analytics — github.io에서만 집계 (localhost 테스트 제외) -->
+<script>
+  if (location.hostname.endsWith('github.io')) {
+    var gs = document.createElement('script');
+    gs.async = true;
+    gs.src = 'https://www.googletagmanager.com/gtag/js?id=G-FQ4BGDPP6D';
+    document.head.appendChild(gs);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { dataLayer.push(arguments); };
+    gtag('js', new Date());
+    gtag('config', 'G-FQ4BGDPP6D');
+  }
+</script>
+<title>🔁 불규칙동사 마스터</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --primary: #2563eb;
+    --primary-2: #1d4ed8;
+    --ink: #1e293b;
+    --muted: #64748b;
+    --line: #dbeafe;
+  }
+  body {
+    margin: 0;
+    background:
+      radial-gradient(900px 400px at 85% -50px, rgba(37, 99, 235, 0.08), transparent 60%),
+      radial-gradient(700px 350px at 10% -30px, rgba(96, 165, 250, 0.10), transparent 60%),
+      linear-gradient(180deg, #f8faff 0%, #eaf1fe 100%);
+    color: var(--ink);
+    font-family: 'Segoe UI Variable', 'Segoe UI', 'Noto Sans KR', sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 28px 16px 40px;
+    min-height: 100vh;
+  }
+  .hero {
+    width: 720px; max-width: 100%;
+    background: linear-gradient(120deg, #2563eb 0%, #1d4ed8 55%, #1e40af 100%);
+    border-radius: 24px; color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 24px 30px; margin-bottom: 16px;
+    box-shadow: 0 16px 40px rgba(37, 99, 235, 0.28);
+    position: relative; overflow: hidden;
+  }
+  .hero::after { content: ''; position: absolute; right: -50px; top: -70px; width: 220px; height: 220px; background: rgba(255,255,255,0.08); border-radius: 50%; }
+  .hero h1 { margin: 0 0 6px; font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+  .tagline { margin: 0 0 13px; font-size: 13px; opacity: 0.88; }
+  .hero-stats { display: flex; gap: 8px; flex-wrap: wrap; }
+  .hstat { background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.25); padding: 6px 12px; border-radius: 999px; font-size: 12.5px; }
+  .hstat b { font-weight: 800; }
+  .hero-art { flex-shrink: 0; margin-left: 14px; position: relative; z-index: 1; }
+  .home-btn {
+    position: absolute; top: 12px; right: 14px; z-index: 2;
+    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30);
+    color: #fff; text-decoration: none; font-size: 12px; font-weight: 700;
+    padding: 6px 12px; border-radius: 999px; transition: background 0.12s;
+  }
+  .home-btn:hover { background: rgba(255,255,255,0.32); }
+
+  .level-bar { width: 720px; max-width: 100%; margin-bottom: 12px; }
+  .level-label { font-size: 13px; font-weight: 800; color: var(--primary); margin: 0 4px 6px; }
+  #lvSel {
+    width: 100%; padding: 13px 14px; border: 2px solid #93c5fd; border-radius: 14px;
+    background: linear-gradient(180deg, #fff 0%, #eff6ff 100%);
+    font-family: inherit; font-size: 16px; font-weight: 800; color: #1e40af; outline: none; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.12);
+  }
+  #lvSel:focus { border-color: #60a5fa; }
+  .level-desc { margin: 7px 4px 0; font-size: 12.5px; color: var(--muted); }
+
+  .tabs { width: 720px; max-width: 100%; display: flex; gap: 4px; background: #e6eefb; border-radius: 14px; padding: 4px; margin-bottom: 14px; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 7px 2px; border-radius: 11px; cursor: pointer; user-select: none; color: #56708f; transition: all 0.13s ease; min-width: 0; }
+  .tab:hover { background: #fff; }
+  .tab.active { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; box-shadow: 0 3px 10px rgba(37, 99, 235, 0.30); }
+  .tab .ti { font-size: 17px; line-height: 1.2; font-weight: 700; }
+  .tab .tl { font-size: 11px; font-weight: 700; white-space: nowrap; }
+  .tab .tl span { color: #bfdbfe; }
+  .tab:not(.active) .tl span { color: #2563eb; }
+
+  .card { background: #fff; border-radius: 20px; padding: 26px; width: 720px; max-width: 100%; border: 1px solid #e6effd; box-shadow: 0 1px 2px rgba(20,60,130,.04), 0 16px 40px rgba(40,100,200,0.10); text-align: center; }
+
+  /* 정리표 */
+  .hide-toggles { display: flex; gap: 7px; justify-content: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .chip { background: #e8f0fe; color: #3a557f; box-shadow: none; padding: 8px 14px; border-radius: 999px; font-size: 12.5px; }
+  .chip:hover { box-shadow: none; transform: none; background: #dbe7fb; }
+  .chip.on { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; }
+  .chip.on:hover { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+  .pat-title { text-align: left; color: var(--primary); font-weight: 800; font-size: 14px; margin: 16px 0 7px; }
+  .pat-title:first-child { margin-top: 0; }
+  table.iv { width: 100%; border-collapse: collapse; }
+  table.iv th { font-size: 12px; color: var(--muted); font-weight: 700; padding: 6px 6px; border-bottom: 2px solid var(--line); text-align: left; }
+  table.iv td { padding: 9px 6px; border-bottom: 1px solid #eef4fd; font-size: 15px; text-align: left; vertical-align: middle; }
+  .iv-base { font-weight: 800; color: #1e293b; cursor: pointer; }
+  .iv-form { color: #1d4ed8; font-weight: 600; cursor: pointer; }
+  .iv-mean { color: var(--muted); font-size: 13.5px; }
+  td.cell-hidden { color: transparent; background: #eef2f7; border-radius: 6px; cursor: pointer; }
+  td.cell-hidden::after { content: '🙈'; color: #94a3b8; }
+  .star-td { width: 22px; text-align: center; }
+  .table-hint { margin-top: 14px; font-size: 12.5px; color: #90a4c4; }
+
+  /* 카드 */
+  .flip-card { background: linear-gradient(135deg, #eff6ff, #dbeafe); border: 2px solid #c3dafc; border-radius: 18px; min-height: 210px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px 18px; cursor: pointer; user-select: none; margin-bottom: 14px; }
+  .flip-card.back { background: linear-gradient(135deg, #2563eb, #1e40af); border-color: transparent; }
+  .fc-cat { font-size: 12px; font-weight: 700; color: #7aa0d8; }
+  .flip-card.back .fc-cat { color: #bfdbfe; }
+  .fc-main { font-size: 34px; font-weight: 800; color: #1e293b; line-height: 1.3; }
+  .flip-card.back .fc-main { color: #fff; font-size: 26px; }
+  .fc-sub { font-size: 15px; color: #7aa0d8; }
+  .flip-card.back .fc-sub { color: #dbeafe; }
+  .fc-forms { font-size: 27px; font-weight: 800; color: #fff; letter-spacing: 0.5px; line-height: 1.4; }
+  .fc-forms .arr { color: #93c5fd; font-weight: 400; margin: 0 4px; }
+
+  /* 테스트 */
+  .test-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .test-opt { background: #f3f8ff; border: 1.5px solid var(--line); border-radius: 15px; padding: 18px 10px; cursor: pointer; transition: all 0.13s; }
+  .test-opt:hover { border-color: #93c5fd; background: #e8f1ff; transform: translateY(-2px); }
+  .to-icon { font-size: 26px; }
+  .test-opt b { display: block; margin: 6px 0 2px; font-size: 15px; }
+  .test-opt span { font-size: 11.5px; color: var(--muted); }
+  .q-prompt { font-size: 30px; font-weight: 800; color: #1e293b; margin: 14px 0 4px; }
+  .q-mean { color: var(--muted); font-size: 15px; margin-bottom: 6px; }
+  .q-label { font-size: 13px; color: var(--primary); font-weight: 700; margin-bottom: 12px; }
+  .form-inputs { display: flex; flex-direction: column; gap: 9px; max-width: 360px; margin: 0 auto; }
+  .form-inputs .fi { display: flex; align-items: center; gap: 8px; }
+  .form-inputs .fi label { width: 64px; font-size: 13px; color: var(--muted); font-weight: 700; text-align: right; flex-shrink: 0; }
+  input.answer { flex: 1; min-width: 0; padding: 12px 13px; font-size: 17px; border: 1.5px solid var(--line); border-radius: 11px; outline: none; text-align: center; font-family: inherit; }
+  input.answer:focus { border-color: #60a5fa; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  .answer-row { display: flex; gap: 8px; align-items: stretch; max-width: 360px; margin: 6px auto 0; }
+  .answer-row .answer { flex: 1; }
+  .opts { display: flex; flex-direction: column; gap: 9px; max-width: 400px; margin: 0 auto; }
+  .opt { background: #f3f8ff; color: var(--ink); border: 1.5px solid var(--line); border-radius: 13px; padding: 13px; font-size: 16px; font-weight: 700; box-shadow: none; }
+  .opt:hover { background: #e8f1ff; border-color: #93c5fd; transform: none; box-shadow: none; }
+  .opt.right { background: #e7f8ef; border-color: #34c98a; color: #0b7a4e; }
+  .opt.bad { background: #fdeeee; border-color: #ef8e8e; color: #c0392b; }
+  .feedback { min-height: 28px; margin-top: 14px; font-weight: 700; font-size: 16px; }
+  .correct { color: #0d9466; } .wrong { color: #d6336c; }
+  .ans-reveal { margin-top: 6px; font-size: 15px; color: #1d4ed8; font-weight: 700; min-height: 20px; }
+  .progress-line { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+
+  button {
+    padding: 10px 20px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff;
+    font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+    box-shadow: 0 3px 10px rgba(37, 99, 235, 0.22); transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  button:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37, 99, 235, 0.28); }
+  button:active { transform: translateY(0); }
+  button.secondary { background: #e8f0fe; color: #3a557f; box-shadow: none; }
+  button.secondary:hover { background: #dbe7fb; box-shadow: none; }
+  .actions { display: flex; gap: 8px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+  .footer-bar { display: flex; justify-content: center; gap: 18px; margin-top: 16px; font-size: 13px; color: var(--muted); }
+  .footer-bar span { color: var(--primary); font-weight: 800; }
+
+  /* 검색 */
+  #searchBox { width: 100%; padding: 13px 14px; font-size: 15px; font-weight: 600; border: 2px solid #93c5fd; border-radius: 14px; outline: none; font-family: inherit; color: var(--ink); background: #fbfdff; margin-bottom: 14px; }
+  #searchBox:focus { box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
+  .sr-count { text-align: left; font-size: 12.5px; color: var(--muted); margin-bottom: 8px; }
+  mark { background: #fde68a; border-radius: 3px; padding: 0 1px; }
+  .search-empty { color: var(--muted); font-size: 13.5px; padding: 28px 0; }
+
+  .info { margin-top: 16px; font-size: 12.5px; color: #90a4c4; text-align: center; line-height: 1.7; max-width: 720px; }
+
+  @media (max-width: 600px) {
+    body { padding: 14px 10px 30px; }
+    .hero { flex-direction: column; text-align: center; padding: 20px 16px; }
+    .hero-art { margin: 10px 0 0; }
+    .hero-stats { justify-content: center; }
+    .hero h1 { font-size: 21px; }
+    .tab .ti { font-size: 15px; }
+    .tab .tl { font-size: 9.5px; }
+    .card { padding: 18px 12px; }
+    .test-grid { grid-template-columns: 1fr; }
+    .fc-main { font-size: 28px; }
+    .fc-forms { font-size: 21px; }
+    .q-prompt { font-size: 25px; }
+    table.iv td { font-size: 14px; padding: 8px 4px; }
+    .form-inputs .fi label { width: 56px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="hero">
+  <a class="home-btn" href="index.html">🏠 홈</a>
+  <div class="hero-text">
+    <h1>불규칙동사 마스터</h1>
+    <p class="tagline">원형 → 과거 → 과거분사, 패턴으로 외우자 <b id="totCnt">—</b>개</p>
+    <div class="hero-stats">
+      <span class="hstat">🎯 정답률 <b id="hAcc">0%</b></span>
+      <span class="hstat">🔥 최고 연속 <b id="hStreak">0</b></span>
+      <span class="hstat">📚 푼 문제 <b id="hAnswered">0</b></span>
+    </div>
+  </div>
+  <div class="hero-art">
+    <svg width="150" height="92" viewBox="0 0 150 92" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="28" width="40" height="34" rx="8" fill="#ffffff"/>
+      <text x="24" y="50" text-anchor="middle" font-size="13" font-weight="800" fill="#2563eb" font-family="sans-serif">go</text>
+      <rect x="55" y="28" width="40" height="34" rx="8" fill="#bfdbfe"/>
+      <text x="75" y="50" text-anchor="middle" font-size="11" font-weight="800" fill="#1e40af" font-family="sans-serif">went</text>
+      <rect x="106" y="28" width="40" height="34" rx="8" fill="#93c5fd"/>
+      <text x="126" y="50" text-anchor="middle" font-size="11" font-weight="800" fill="#1e3a8a" font-family="sans-serif">gone</text>
+      <text x="49" y="49" text-anchor="middle" font-size="14" fill="#ffffff">→</text>
+      <text x="100" y="49" text-anchor="middle" font-size="14" fill="#ffffff">→</text>
+    </svg>
+  </div>
+</div>
+
+<div class="level-bar">
+  <div class="level-label">📘 단계 선택 — 골라서 공부해요</div>
+  <select id="lvSel"></select>
+  <div class="level-desc" id="lvDesc"></div>
+</div>
+
+<div class="tabs" id="modeTabs">
+  <div class="tab active" data-mode="table"><span class="ti">📖</span><span class="tl">정리표</span></div>
+  <div class="tab" data-mode="cards"><span class="ti">🃏</span><span class="tl">카드</span></div>
+  <div class="tab" data-mode="test"><span class="ti">✏️</span><span class="tl">테스트</span></div>
+  <div class="tab" data-mode="review"><span class="ti">🔄</span><span class="tl">복습 <span id="reviewCount">0</span></span></div>
+  <div class="tab" data-mode="search"><span class="ti">🔍</span><span class="tl">검색</span></div>
+</div>
+
+<div class="card" id="view"></div>
+
+<div class="info">
+  원형(현재) → 과거 → 과거분사 순서로 외워요. 변화형이 둘이면 둘 다 정답으로 인정돼요.<br>
+  © 2026 Mina &amp; Juho. All rights reserved. 무단 복제·배포 금지
+</div>
+
+<script src="irregular-verbs-data.js?v=1"></script>
+<script>
+// ===== 데이터 펼치기 =====
+const GRADES = Object.keys(IV_RAW);
+const ALL = [];
+GRADES.forEach(g => IV_RAW[g].forEach(([b, pa, pp, m, pat]) => ALL.push({ b, pa, pp, m, pat, g, key: b })));
+const INDEX = {};
+ALL.forEach(v => INDEX[v.key] = v);
+const PAT_LV = '⭐ 패턴별';
+const LEVELS = GRADES.concat([PAT_LV]);
+
+// ===== 저장 =====
+const STORE_KEY = 'irreg-verbs-v1';
+function loadStore() { try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; } catch (e) { return {}; } }
+function saveStore() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {} }
+const sv = loadStore();
+const store = {
+  answered: sv.answered || 0,
+  correct: sv.correct || 0,
+  streak: sv.streak || 0,
+  bestStreak: sv.bestStreak || 0,
+  wrong: Array.isArray(sv.wrong) ? sv.wrong : [],   // [key]
+  stats: sv.stats || {},                            // key -> {c,w}
+  level: LEVELS.includes(sv.level) ? sv.level : LEVELS[0]
+};
+
+// ===== 상태 =====
+let level = store.level;
+let mode = 'table';
+let hidePast = false, hidePP = false, hideMean = false;
+let cardDeck = [], cardIdx = 0, cardFlipped = false;
+let testType = null, testQs = [], testIdx = 0, testScore = 0, testLocked = false, testOver = false;
+let curBlank = 'pa';
+let reviewOn = false, reviewLocked = false;
+let searchQuery = '';
+
+// ===== 헬퍼 =====
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+function levelItems() { return level === PAT_LV ? ALL.slice() : ALL.filter(v => v.g === level); }
+function byPattern(items) {
+  const out = [];
+  for (const p of IV_PAT_ORDER) {
+    const g = items.filter(v => v.pat === p);
+    if (g.length) out.push([p, g]);
+  }
+  return out;
+}
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function norm(s) { return String(s).trim().toLowerCase().replace(/\s+/g, ' '); }
+function formMatch(input, answer) { return answer.split('/').some(a => norm(a) === norm(input)); }
+function stat(key) { return store.stats[key] || { c: 0, w: 0 }; }
+function bump(key, ok) {
+  const s = store.stats[key] || { c: 0, w: 0 };
+  if (ok) s.c++; else s.w++;
+  store.stats[key] = s;
+  store.answered++;
+  if (ok) { store.correct++; store.streak++; if (store.streak > store.bestStreak) store.bestStreak = store.streak; addReviewClear(key); }
+  else { store.streak = 0; addReview(key); }
+  saveStore(); updateHero(); updateReviewCount();
+}
+function addReview(key) { if (!store.wrong.includes(key)) store.wrong.push(key); }
+function addReviewClear(key) { const i = store.wrong.indexOf(key); if (i >= 0) store.wrong.splice(i, 1); }
+function reviewItems() { return store.wrong.map(k => INDEX[k]).filter(Boolean); }
+
+// ===== 발음 =====
+const player = new Audio();
+function stopAudio() { try { player.pause(); } catch (e) {} if ('speechSynthesis' in window) { try { speechSynthesis.cancel(); } catch (e) {} } }
+function ttsUrl(t) { return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=' + encodeURIComponent(t); }
+function playUrl(url) { return new Promise(res => { let done = false; const fin = ok => { if (!done) { done = true; res(ok); } }; player.onended = () => fin(true); player.onerror = () => fin(false); player.src = url; player.play().then(() => setTimeout(() => fin(true), 8000)).catch(() => fin(false)); }); }
+function speakTTS(t) { return new Promise(res => { if (!('speechSynthesis' in window)) return res(false); const u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; u.rate = 0.9; u.onend = () => res(true); u.onerror = () => res(true); try { speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) { res(false); } }); }
+async function speak(t) { stopAudio(); if (await playUrl(ttsUrl(t))) return; await speakTTS(t); }
+function speakForm(s) { speak(s.split('/')[0]); }   // 슬래시 변형은 첫 형태만 발음
+
+// ===== Hero / 카운트 =====
+function updateHero() {
+  const acc = store.answered ? Math.round(store.correct / store.answered * 100) : 0;
+  document.getElementById('hAcc').textContent = acc + '%';
+  document.getElementById('hStreak').textContent = store.bestStreak;
+  document.getElementById('hAnswered').textContent = store.answered;
+}
+function updateReviewCount() { document.getElementById('reviewCount').textContent = store.wrong.length; }
+
+// ===== 정리표 =====
+function renderTable() {
+  const items = levelItems();
+  let html = `<div class="hide-toggles">
+    <button class="chip ${hidePast ? 'on' : ''}" id="tgPast">과거 가리기</button>
+    <button class="chip ${hidePP ? 'on' : ''}" id="tgPP">과거분사 가리기</button>
+    <button class="chip ${hideMean ? 'on' : ''}" id="tgMean">뜻 가리기</button>
+  </div>`;
+  for (const [pat, group] of byPattern(items)) {
+    html += `<div class="pat-title">${esc(IV_PAT[pat])}</div>
+      <table class="iv"><tr><th>원형</th><th>과거</th><th>과거분사</th><th>뜻</th><th></th></tr>`;
+    for (const v of group) {
+      const mastered = stat(v.key).c >= 3;
+      html += `<tr>
+        <td class="iv-base say" data-s="${esc(v.b)}">${esc(v.b)}</td>
+        <td class="iv-form say ${hidePast ? 'cell-hidden' : ''}" data-s="${esc(v.pa)}">${esc(v.pa)}</td>
+        <td class="iv-form say ${hidePP ? 'cell-hidden' : ''}" data-s="${esc(v.pp)}">${esc(v.pp)}</td>
+        <td class="iv-mean ${hideMean ? 'cell-hidden' : ''}">${esc(v.m)}</td>
+        <td class="star-td">${mastered ? '⭐' : ''}</td>
+      </tr>`;
+    }
+    html += `</table>`;
+  }
+  html += `<div class="table-hint">단어를 누르면 발음이 들려요 · 가린 칸은 눌러서 확인</div>`;
+  const el = document.getElementById('view');
+  el.innerHTML = html;
+  el.querySelector('#tgPast').addEventListener('click', () => { hidePast = !hidePast; renderTable(); });
+  el.querySelector('#tgPP').addEventListener('click', () => { hidePP = !hidePP; renderTable(); });
+  el.querySelector('#tgMean').addEventListener('click', () => { hideMean = !hideMean; renderTable(); });
+  el.querySelectorAll('td.cell-hidden').forEach(td => td.addEventListener('click', () => td.classList.remove('cell-hidden'), { once: true }));
+  el.querySelectorAll('.say').forEach(td => td.addEventListener('click', () => { if (!td.classList.contains('cell-hidden')) speakForm(td.dataset.s); }));
+}
+
+// ===== 카드 =====
+function startCards() { cardDeck = shuffle(levelItems()); cardIdx = 0; cardFlipped = false; }
+function renderCards() {
+  if (!cardDeck.length) startCards();
+  const v = cardDeck[cardIdx];
+  const el = document.getElementById('view');
+  if (!v) { el.innerHTML = '<div class="search-empty">단어가 없어요.</div>'; return; }
+  el.innerHTML = `
+    <div class="flip-card ${cardFlipped ? 'back' : ''}" id="flip">
+      ${cardFlipped
+        ? `<div class="fc-cat">${esc(IV_PAT[v.pat])}</div>
+           <div class="fc-forms">${esc(v.b)}<span class="arr">→</span>${esc(v.pa)}<span class="arr">→</span>${esc(v.pp)}</div>
+           <div class="fc-sub">${esc(v.m)}</div>`
+        : `<div class="fc-cat">원형 · 뜻</div><div class="fc-main">${esc(v.b)}</div><div class="fc-sub">${esc(v.m)} · 누르면 변화형이 보여요</div>`}
+    </div>
+    <div class="actions">
+      <button class="secondary" id="cPrev">◀ 이전</button>
+      <button id="cFlip">뒤집기</button>
+      <button class="secondary" id="cSpeak">🔊 듣기</button>
+      <button class="secondary" id="cNext">다음 ▶</button>
+      <button class="secondary" id="cShuffle">🔀 섞기</button>
+    </div>
+    <div class="footer-bar">진행 <span>${cardIdx + 1} / ${cardDeck.length}</span></div>`;
+  const flip = () => { cardFlipped = !cardFlipped; renderCards(); if (cardFlipped) speakForm(v.b); };
+  el.querySelector('#flip').addEventListener('click', flip);
+  el.querySelector('#cFlip').addEventListener('click', flip);
+  el.querySelector('#cSpeak').addEventListener('click', () => speak(v.b + ', ' + v.pa.split('/')[0] + ', ' + v.pp.split('/')[0]));
+  el.querySelector('#cPrev').addEventListener('click', () => { cardIdx = (cardIdx - 1 + cardDeck.length) % cardDeck.length; cardFlipped = false; renderCards(); });
+  el.querySelector('#cNext').addEventListener('click', () => { cardIdx = (cardIdx + 1) % cardDeck.length; cardFlipped = false; renderCards(); });
+  el.querySelector('#cShuffle').addEventListener('click', () => { startCards(); renderCards(); });
+}
+
+// ===== 테스트 =====
+function testPool() { return reviewOn ? reviewItems() : levelItems(); }
+function startTest(type) {
+  testType = type;
+  testQs = shuffle(testPool().slice()).slice(0, Math.min(10, testPool().length));
+  testIdx = 0; testScore = 0; testLocked = false; testOver = false;
+  renderTest();
+}
+function renderTestMenu() {
+  const el = document.getElementById('view');
+  el.innerHTML = `<div class="q-label" style="margin-bottom:14px">✏️ ${esc(level)} 테스트 유형</div>
+    <div class="test-grid">
+      <div class="test-opt" data-t="type"><div class="to-icon">⌨️</div><b>3단 변화 입력</b><span>과거·과거분사 직접 쓰기</span></div>
+      <div class="test-opt" data-t="cloze"><div class="to-icon">📝</div><b>빈칸 채우기</b><span>빠진 변화형 입력</span></div>
+      <div class="test-opt" data-t="mc"><div class="to-icon">🅰️</div><b>4지선다</b><span>올바른 변화 고르기</span></div>
+      <div class="test-opt" data-t="dict"><div class="to-icon">🎧</div><b>듣고 쓰기</b><span>발음 듣고 철자 입력</span></div>
+    </div>`;
+  el.querySelectorAll('.test-opt').forEach(o => o.addEventListener('click', () => startTest(o.dataset.t)));
+}
+function mcChoices(v) {
+  const pool = shuffle(ALL.filter(x => x.key !== v.key));
+  const picks = pool.slice(0, 3).map(x => x.pa.split('/')[0] + ' · ' + x.pp.split('/')[0]);
+  const correct = v.pa.split('/')[0] + ' · ' + v.pp.split('/')[0];
+  return shuffle([correct, ...picks]).map(s => ({ s, ok: s === correct }));
+}
+function afterAnswer() {
+  setTimeout(() => {
+    testIdx++; testLocked = false;
+    if (testIdx >= testQs.length) testOver = true;
+    renderTest();
+  }, 1500);
+}
+function renderTest() {
+  const el = document.getElementById('view');
+  if (testType === null) { renderTestMenu(); return; }
+  if (testOver) {
+    const pct = Math.round(testScore / testQs.length * 100);
+    el.innerHTML = `<div style="padding:24px 0">
+      <div style="font-size:52px">${pct === 100 ? '🏆' : pct >= 70 ? '😊' : '💪'}</div>
+      <div style="font-size:26px;font-weight:800;margin:8px 0">${pct}점</div>
+      <div style="color:var(--muted)">${testScore} / ${testQs.length} 정답</div>
+      <div class="actions"><button id="again">다시 풀기</button><button class="secondary" id="menu">다른 유형</button></div></div>`;
+    el.querySelector('#again').addEventListener('click', () => startTest(testType));
+    el.querySelector('#menu').addEventListener('click', () => { testType = null; renderTest(); });
+    return;
+  }
+  const v = testQs[testIdx];
+  const head = `<div class="progress-line">${testIdx + 1} / ${testQs.length} · 점수 ${testScore}${reviewOn ? ' · 🔄 복습' : ''}</div>`;
+
+  if (testType === 'type') {
+    el.innerHTML = head + `<div class="q-prompt">${esc(v.b)}</div><div class="q-mean">${esc(v.m)}</div>
+      <div class="q-label">과거형과 과거분사형을 쓰세요</div>
+      <div class="form-inputs">
+        <div class="fi"><label>과거</label><input class="answer" id="ipa" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="next"></div>
+        <div class="fi"><label>과거분사</label><input class="answer" id="ipp" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"></div>
+        <button id="ansBtn">확인</button>
+      </div>
+      <div class="feedback" id="fb">&nbsp;</div><div class="ans-reveal" id="rev">&nbsp;</div>`;
+    const ipa = el.querySelector('#ipa'), ipp = el.querySelector('#ipp');
+    ipa.focus();
+    ipa.addEventListener('keydown', e => { if (e.key === 'Enter') ipp.focus(); });
+    ipp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+    const submit = () => {
+      if (testLocked) return;
+      if (!ipa.value.trim() || !ipp.value.trim()) return;
+      testLocked = true;
+      const ok = formMatch(ipa.value, v.pa) && formMatch(ipp.value, v.pp);
+      if (ok) testScore++;
+      bump(v.key, ok);
+      el.querySelector('#fb').textContent = ok ? '✓ 정답!' : '✗ 다시 외워요';
+      el.querySelector('#fb').className = 'feedback ' + (ok ? 'correct' : 'wrong');
+      el.querySelector('#rev').textContent = v.b + ' → ' + v.pa + ' → ' + v.pp;
+      speakForm(v.pa);
+      afterAnswer();
+    };
+    el.querySelector('#ansBtn').addEventListener('click', submit);
+  } else if (testType === 'cloze') {
+    curBlank = Math.random() < 0.5 ? 'pa' : 'pp';
+    const shown = curBlank === 'pa'
+      ? `${esc(v.b)} <span class="arr">→</span> _____ <span class="arr">→</span> ${esc(v.pp)}`
+      : `${esc(v.b)} <span class="arr">→</span> ${esc(v.pa)} <span class="arr">→</span> _____`;
+    el.innerHTML = head + `<div class="q-prompt" style="font-size:24px">${shown}</div><div class="q-mean">${esc(v.m)}</div>
+      <div class="q-label">빈칸에 들어갈 ${curBlank === 'pa' ? '과거형' : '과거분사형'}을 쓰세요</div>
+      <div class="answer-row"><input class="answer" id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"><button id="ansBtn">확인</button></div>
+      <div class="feedback" id="fb">&nbsp;</div><div class="ans-reveal" id="rev">&nbsp;</div>`;
+    const inp = el.querySelector('#ans'); inp.focus();
+    const submit = () => {
+      if (testLocked) return; if (!inp.value.trim()) return;
+      testLocked = true;
+      const ans = curBlank === 'pa' ? v.pa : v.pp;
+      const ok = formMatch(inp.value, ans);
+      if (ok) testScore++;
+      bump(v.key, ok);
+      el.querySelector('#fb').textContent = ok ? '✓ 정답!' : '✗ 정답: ' + ans;
+      el.querySelector('#fb').className = 'feedback ' + (ok ? 'correct' : 'wrong');
+      el.querySelector('#rev').textContent = v.b + ' → ' + v.pa + ' → ' + v.pp;
+      speakForm(ans);
+      afterAnswer();
+    };
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+    el.querySelector('#ansBtn').addEventListener('click', submit);
+  } else if (testType === 'mc') {
+    const choices = mcChoices(v);
+    let html = head + `<div class="q-prompt">${esc(v.b)}</div><div class="q-mean">${esc(v.m)}</div>
+      <div class="q-label">과거 · 과거분사가 올바른 것은?</div><div class="opts">`;
+    choices.forEach((c, i) => { html += `<button class="opt" data-i="${i}">${esc(c.s)}</button>`; });
+    html += `</div><div class="feedback" id="fb">&nbsp;</div>`;
+    el.innerHTML = html;
+    el.querySelectorAll('.opt').forEach((btn, i) => btn.addEventListener('click', () => {
+      if (testLocked) return; testLocked = true;
+      const ok = choices[i].ok;
+      el.querySelectorAll('.opt').forEach((b, j) => { if (choices[j].ok) b.classList.add('right'); else if (j === i) b.classList.add('bad'); });
+      if (ok) testScore++;
+      bump(v.key, ok);
+      el.querySelector('#fb').textContent = ok ? '✓ 정답!' : '✗ 정답은 초록색';
+      el.querySelector('#fb').className = 'feedback ' + (ok ? 'correct' : 'wrong');
+      speakForm(v.pa);
+      afterAnswer();
+    }));
+  } else { // dict
+    const which = ['b', 'pa', 'pp'][Math.floor(Math.random() * 3)];
+    const target = which === 'b' ? v.b : which === 'pa' ? v.pa : v.pp;
+    const label = which === 'b' ? '원형' : which === 'pa' ? '과거형' : '과거분사형';
+    el.innerHTML = head + `<div class="actions" style="margin-top:8px"><button id="replay" style="font-size:20px;padding:14px 26px">🔊 다시 듣기</button></div>
+      <div class="q-mean" style="margin-top:12px">뜻: ${esc(v.m)} · <b>${label}</b>을 듣고 쓰세요</div>
+      <div class="answer-row"><input class="answer" id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"><button id="ansBtn">확인</button></div>
+      <div class="feedback" id="fb">&nbsp;</div><div class="ans-reveal" id="rev">&nbsp;</div>`;
+    const inp = el.querySelector('#ans'); inp.focus();
+    speakForm(target);
+    el.querySelector('#replay').addEventListener('click', () => speakForm(target));
+    const submit = () => {
+      if (testLocked) return; if (!inp.value.trim()) return;
+      testLocked = true;
+      const ok = formMatch(inp.value, target);
+      if (ok) testScore++;
+      bump(v.key, ok);
+      el.querySelector('#fb').textContent = ok ? '✓ 정답!' : '✗ 정답: ' + target;
+      el.querySelector('#fb').className = 'feedback ' + (ok ? 'correct' : 'wrong');
+      el.querySelector('#rev').textContent = v.b + ' → ' + v.pa + ' → ' + v.pp + ' (' + esc(v.m) + ')';
+      afterAnswer();
+    };
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+    el.querySelector('#ansBtn').addEventListener('click', submit);
+  }
+}
+
+// ===== 복습 =====
+function renderReview() {
+  const el = document.getElementById('view');
+  const items = reviewItems();
+  if (!items.length) {
+    reviewOn = false;
+    el.innerHTML = `<div style="padding:36px 0"><div style="font-size:48px">🎉</div>
+      <div style="font-size:18px;font-weight:800;margin:10px 0">복습할 동사가 없어요!</div>
+      <div style="color:var(--muted);font-size:13.5px">테스트에서 틀린 동사가 여기에 모여요.</div></div>`;
+    return;
+  }
+  if (!reviewOn) {
+    let html = `<div style="font-size:15px;font-weight:800;margin-bottom:10px">🔄 틀린 동사 ${items.length}개</div>
+      <div class="actions" style="margin-bottom:14px"><button id="startRev">복습 시작 (3단 입력)</button></div>
+      <table class="iv"><tr><th>원형</th><th>과거</th><th>과거분사</th><th>뜻</th></tr>`;
+    for (const v of items) {
+      html += `<tr><td class="iv-base say" data-s="${esc(v.b)}">${esc(v.b)}</td><td class="iv-form">${esc(v.pa)}</td><td class="iv-form">${esc(v.pp)}</td><td class="iv-mean">${esc(v.m)}</td></tr>`;
+    }
+    html += `</table>`;
+    el.innerHTML = html;
+    el.querySelector('#startRev').addEventListener('click', () => { reviewOn = true; startTest('type'); });
+    el.querySelectorAll('.say').forEach(td => td.addEventListener('click', () => speakForm(td.dataset.s)));
+    return;
+  }
+  renderTest();
+}
+
+// ===== 검색 =====
+function renderSearch() {
+  const el = document.getElementById('view');
+  el.innerHTML = `<input id="searchBox" placeholder="원형·과거·과거분사·뜻으로 검색 (예: go, went, 가다)" autocomplete="off" spellcheck="false">
+    <div id="searchResults"></div>`;
+  const box = el.querySelector('#searchBox');
+  box.value = searchQuery; box.focus();
+  box.addEventListener('input', () => { searchQuery = box.value; renderSearchResults(); });
+  renderSearchResults();
+}
+function hl(t, q) { if (!q) return esc(t); return esc(t).replace(new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig'), '<mark>$1</mark>'); }
+function renderSearchResults() {
+  const wrap = document.getElementById('searchResults');
+  const q = searchQuery.trim();
+  if (!q) { wrap.innerHTML = '<div class="search-empty">전체 ' + ALL.length + '개 동사를 검색할 수 있어요</div>'; return; }
+  const ql = q.toLowerCase();
+  const hits = ALL.filter(v => (v.b + ' ' + v.pa + ' ' + v.pp + ' ' + v.m).toLowerCase().includes(ql));
+  if (!hits.length) { wrap.innerHTML = `<div class="search-empty">"${esc(q)}" 검색 결과가 없어요</div>`; return; }
+  let html = `<div class="sr-count">${hits.length}개 · 단어를 누르면 발음이 들려요</div><table class="iv"><tr><th>원형</th><th>과거</th><th>과거분사</th><th>뜻</th><th>단계</th></tr>`;
+  for (const v of hits) {
+    html += `<tr>
+      <td class="iv-base say" data-s="${esc(v.b)}">${hl(v.b, q)}</td>
+      <td class="iv-form say" data-s="${esc(v.pa)}">${hl(v.pa, q)}</td>
+      <td class="iv-form say" data-s="${esc(v.pp)}">${hl(v.pp, q)}</td>
+      <td class="iv-mean">${hl(v.m, q)}</td>
+      <td class="iv-mean" style="font-size:11.5px">${esc(v.g)}</td></tr>`;
+  }
+  html += `</table>`;
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('.say').forEach(td => td.addEventListener('click', () => speakForm(td.dataset.s)));
+}
+
+// ===== 모드 전환 =====
+function render() {
+  if (mode === 'table') renderTable();
+  else if (mode === 'cards') { startCards(); renderCards(); }
+  else if (mode === 'test') { testType = null; testOver = false; reviewOn = false; renderTest(); }
+  else if (mode === 'review') renderReview();
+  else renderSearch();
+}
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  stopAudio();
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  t.classList.add('active');
+  mode = t.dataset.mode;
+  reviewOn = false;
+  render();
+}));
+document.getElementById('lvSel').addEventListener('change', e => {
+  level = e.target.value; store.level = level; saveStore();
+  document.getElementById('lvDesc').textContent = IV_LEVEL_DESC[level] || (level === PAT_LV ? '전체 동사를 변화 패턴(A-A-A / A-B-B / A-B-A / A-B-C)으로 모아서' : '');
+  reviewOn = false;
+  render();
+});
+
+// ===== 초기화 =====
+const lvSel = document.getElementById('lvSel');
+lvSel.innerHTML = LEVELS.map(l => `<option value="${l}">${l === PAT_LV ? l : l + ' 동사'} (${l === PAT_LV ? ALL.length : ALL.filter(v => v.g === l).length}개)</option>`).join('');
+lvSel.value = level;
+document.getElementById('lvDesc').textContent = IV_LEVEL_DESC[level] || '';
+document.getElementById('totCnt').textContent = ALL.length;
+updateHero();
+updateReviewCount();
+render();
+</script>
+</body>
+</html>
