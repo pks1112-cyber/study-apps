@@ -401,6 +401,10 @@
   .my-empty-icon { font-size: 52px; }
   .my-empty-title { font-size: 18px; font-weight: 800; color: #312e81; margin: 12px 0 6px; }
   .my-empty-sub { font-size: 13px; color: #64748b; line-height: 1.7; }
+  /* 입력형 테스트 — 모바일 엔터 대체 확인 버튼 */
+  .answer-row { display: flex; gap: 8px; align-items: stretch; margin-top: 4px; }
+  .answer-row .answer { flex: 1; min-width: 0; margin: 0; }
+  .answer-row #ansBtn { flex-shrink: 0; padding: 0 24px; font-size: 16px; }
   .add-grp-row { display: flex; gap: 8px; margin-bottom: 12px; }
   .add-grp-row input { flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; font-family: inherit; font-size: 14px; outline: none; }
   .add-grp-row input:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
@@ -907,21 +911,11 @@ function renderAddView() {
   const body = document.getElementById('myBody');
   const words = groupWords(myList);
   let html = `<div class="my-section">
-    <div class="add-form">
-      <input id="awWord" placeholder="영단어 *" autocomplete="off" spellcheck="false">
-      <input id="awMean" placeholder="뜻 (모르면 비워둬도 OK)">
-      <select id="awPos"><option value="">품사 (선택)</option><option value="명">명사</option><option value="동">동사</option><option value="형">형용사</option><option value="부">부사</option></select>
-      <input id="awIpa" placeholder="발음기호 (선택)">
-      <button id="awAdd" class="full">이 단어장에 추가</button>
-    </div>
-    <div class="add-msg" id="awMsg"></div>
-    <div class="help-box">💡 영단어만 넣어도 돼요. 추가하면 자동으로 확인해서 — <b>교과서 2,000단어에 있으면</b> 원래 뜻·발음을 채워 담고, <b>없으면 새 단어</b>로 담아요 (뜻은 나중에 ✏️로 채우면 돼요).</div>
-  </div>
-  <div class="my-section">
-    <div class="my-h">📋 여러 단어 한 번에 추가 <span class="my-sub">학원 프린트 붙여넣기</span></div>
-    <textarea id="bulkBox" class="bulk-box" placeholder="줄바꿈 또는 쉼표로 구분해서 붙여넣기&#10;예) apple&#10;banana&#10;run=달리다&#10;또는: apple, banana, run"></textarea>
-    <button id="bulkAdd" class="full" style="margin-top:8px">일괄 추가</button>
+    <div class="my-h">➕ 단어 추가 <span class="my-sub">학원 프린트·교재 단어 붙여넣기</span></div>
+    <textarea id="bulkBox" class="bulk-box" placeholder="단어를 줄바꿈·띄어쓰기·쉼표로 구분해서 넣으세요&#10;예) apple banana run&#10;또는 한 줄에 하나씩&#10;뜻도 함께: run=달리다"></textarea>
+    <button id="bulkAdd" class="full" style="margin-top:8px">단어장에 추가</button>
     <div class="add-msg" id="bulkMsg"></div>
+    <div class="help-box">💡 영단어만 넣어도 돼요. 추가하면 자동으로 확인해서 — <b>교과서 2,000단어에 있으면</b> 원래 뜻·발음을 채워 담고, <b>없으면 새 단어</b>로 담아요 (뜻은 아래 목록에서 ✏️로 채우면 돼요).</div>
   </div>
   <div class="my-section">
     <div class="my-h">📝 이 단어장의 단어 <span class="my-sub">${words.length}개</span></div>`;
@@ -950,24 +944,6 @@ function renderAddView() {
   </div>`;
   body.innerHTML = html;
 
-  const doAdd = () => {
-    const w = body.querySelector('#awWord').value.trim();
-    const m = body.querySelector('#awMean').value.trim();
-    const msg = body.querySelector('#awMsg');
-    if (!w) { msg.textContent = '영단어를 입력해 줘.'; msg.className = 'add-msg err'; return; }
-    if (!/^[a-zA-Z][a-zA-Z '.\-]*$/.test(w)) { msg.textContent = '영단어는 영문으로 입력해 줘.'; msg.className = 'add-msg err'; return; }
-    const r = addWordToCurrent(w, m, { p: body.querySelector('#awPos').value, ipa: body.querySelector('#awIpa').value });
-    saveStore();
-    renderAddView();
-    const m2 = document.getElementById('myBody').querySelector('#awMsg');
-    if (r.status === 'dupGroup') { m2.textContent = '"' + w + '"는 이미 이 단어장에 있어.'; m2.className = 'add-msg warn'; }
-    else if (r.existed) { const o = findByKey(r.key); m2.textContent = '"' + w + '" 추가! 교과서에 「' + (o ? o.m : '') + '」(으)로 있어서 원래 뜻으로 담았어.'; m2.className = 'add-msg ok'; }
-    else { m2.textContent = '"' + w + '" 새 단어로 추가!' + (m ? '' : ' 뜻은 아래 ✏️로 채우면 돼.'); m2.className = 'add-msg ok'; }
-  };
-  body.querySelector('#awAdd').addEventListener('click', doAdd);
-  body.querySelector('#awWord').addEventListener('keydown', e => { if (e.key === 'Enter') body.querySelector('#awMean').focus(); });
-  body.querySelector('#awMean').addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
-
   body.querySelector('#bulkAdd').addEventListener('click', () => {
     const raw = body.querySelector('#bulkBox').value;
     const entries = [];
@@ -975,7 +951,7 @@ function renderAddView() {
       const t = line.trim();
       if (!t) return;
       if (t.includes('=')) { const i = t.indexOf('='); entries.push([t.slice(0, i).trim(), t.slice(i + 1).trim()]); }
-      else t.split(',').forEach(tok => { const w = tok.trim(); if (w) entries.push([w, '']); });
+      else t.split(/[,\s]+/).forEach(tok => { const w = tok.trim(); if (w) entries.push([w, '']); });   // 띄어쓰기·쉼표 모두 구분자
     });
     let added = 0, existed = 0, fresh = 0, dup = 0, bad = 0, emptyMean = 0;
     for (const [w, m] of entries) {
@@ -1581,12 +1557,12 @@ function renderTest() {
     el.innerHTML = head + `
       <div class="q-meaning" style="font-size:21px;line-height:1.65;margin:22px 0 8px">${esc(blanked)}</div>
       <div class="q-ipa" style="margin:0 0 14px">${esc(q.exk)} · 힌트: ${esc(q.m)} ${posTag(q.p)}</div>
-      <input class="answer" id="ans" placeholder="빈칸에 들어갈 영어 단어 입력 후 Enter" autocomplete="off" spellcheck="false">
+      <div class="answer-row"><input class="answer" id="ans" placeholder="빈칸에 들어갈 영어 단어" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"><button id="ansBtn">확인</button></div>
       <div class="feedback" id="fb">&nbsp;</div>`;
     const inp = el.querySelector('#ans');
     inp.focus();
-    inp.addEventListener('keydown', e => {
-      if (e.key !== 'Enter' || testLocked) return;
+    const submit = () => {
+      if (testLocked) return;
       const v = inp.value.trim().toLowerCase();
       if (!v) return;
       testLocked = true;
@@ -1602,19 +1578,21 @@ function renderTest() {
         if (testIdx >= testQs.length) testOver = true;
         renderTest();
       }, ok ? 1300 : 2200);
-    });
+    };
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+    el.querySelector('#ansBtn').addEventListener('click', submit);
   } else if (testType === 'dict') {
     el.innerHTML = head + `<div class="center" style="margin:20px 0 8px">
       <button id="replay" style="font-size:22px;padding:16px 28px;background:linear-gradient(135deg,#0ea5e9,#0284c7)">🔊 다시 듣기</button>
       <div class="q-ipa" style="margin:12px 0 0">발음을 잘 듣고 영어 철자를 입력하세요</div></div>
-      <input class="answer" id="ans" placeholder="들은 단어를 입력하고 Enter" autocomplete="off" spellcheck="false">
+      <div class="answer-row"><input class="answer" id="ans" placeholder="들은 단어를 입력" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"><button id="ansBtn">확인</button></div>
       <div class="feedback" id="fb">&nbsp;</div>`;
     const inp = el.querySelector('#ans');
     inp.focus();
     el.querySelector('#replay').addEventListener('click', () => speak(q.w));
     speak(q.w);
-    inp.addEventListener('keydown', e => {
-      if (e.key !== 'Enter' || testLocked) return;
+    const submit = () => {
+      if (testLocked) return;
       const v = inp.value.trim().toLowerCase();
       if (!v) return;
       testLocked = true;
@@ -1629,15 +1607,17 @@ function renderTest() {
         if (testIdx >= testQs.length) testOver = true;
         renderTest();
       }, ok ? 1000 : 2000);
-    });
+    };
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+    el.querySelector('#ansBtn').addEventListener('click', submit);
   } else {
     el.innerHTML = head + `<div class="q-meaning">${esc(q.m)} ${posTag(q.p)}</div>
-      <input class="answer" id="ans" placeholder="영어 단어를 입력하고 Enter" autocomplete="off" spellcheck="false">
+      <div class="answer-row"><input class="answer" id="ans" placeholder="영어 단어를 입력" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"><button id="ansBtn">확인</button></div>
       <div class="feedback" id="fb">&nbsp;</div>`;
     const inp = el.querySelector('#ans');
     inp.focus();
-    inp.addEventListener('keydown', e => {
-      if (e.key !== 'Enter' || testLocked) return;
+    const submit = () => {
+      if (testLocked) return;
       const v = inp.value.trim().toLowerCase();
       if (!v) return;
       testLocked = true;
@@ -1653,7 +1633,9 @@ function renderTest() {
         if (testIdx >= testQs.length) testOver = true;
         renderTest();
       }, ok ? 800 : 1600);
-    });
+    };
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+    el.querySelector('#ansBtn').addEventListener('click', submit);
   }
 }
 
