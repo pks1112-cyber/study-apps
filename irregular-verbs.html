@@ -300,7 +300,14 @@ const ttsOK = 'speechSynthesis' in window;
 const player = new Audio();
 player.preload = 'auto';
 let enVoice = null;
-function stopAudio() { try { player.onended = null; player.onerror = null; player.pause(); } catch (e) {} if (ttsOK) { try { speechSynthesis.cancel(); } catch (e) {} } }
+const audioCache = {};   // url -> 미리 받아둔 Audio (소리 파일까지 받아둬 즉시 재생)
+let curAudio = null;     // 현재 재생 중인 오디오 요소
+function preloadAudio(url) {
+  if (!url || audioCache[url]) return;
+  if (Object.keys(audioCache).length >= 220) return;   // 메모리 상한
+  const a = new Audio(); a.preload = 'auto'; a.src = url; audioCache[url] = a;
+}
+function stopAudio() { try { if (curAudio) { curAudio.onended = null; curAudio.onerror = null; curAudio.pause(); } } catch (e) {} if (ttsOK) { try { speechSynthesis.cancel(); } catch (e) {} } }
 
 // 사전(dictionaryapi.dev) 원어민 음원 — localStorage 캐시
 const DICT_CACHE_KEY = 'irreg-verbs-dictcache';
@@ -332,16 +339,15 @@ let _pfQueue = [], _pfActive = 0;
 function prefetchDictAudio(words) {
   for (let w of words) {
     w = String(w).split('/')[0].trim().toLowerCase();
-    if (/^[a-z'-]+$/.test(w) && !(w in dictCache) && _pfQueue.indexOf(w) < 0) _pfQueue.push(w);
+    if (/^[a-z'-]+$/.test(w) && _pfQueue.indexOf(w) < 0) _pfQueue.push(w);   // URL 캐시 여부와 무관하게 통과 → 소리 파일까지 확보
   }
   _pumpPrefetch();
 }
 function _pumpPrefetch() {
   while (_pfActive < 4 && _pfQueue.length) {
     const w = _pfQueue.shift();
-    if (w in dictCache) continue;
     _pfActive++;
-    getDictAudio(w).then(() => {}, () => {}).then(() => { _pfActive--; _pumpPrefetch(); });
+    getDictAudio(w).then(u => { if (u) preloadAudio(u); }, () => {}).then(() => { _pfActive--; _pumpPrefetch(); });
   }
 }
 
@@ -350,11 +356,14 @@ function playUrl(url) {
   return new Promise(res => {
     let done = false, timer = null;
     const fin = ok => { if (!done) { done = true; if (timer) clearTimeout(timer); res(ok); } };
-    player.onended = () => fin(true);
-    player.onerror = () => fin(false);
+    const a = audioCache[url] || player;   // 미리 받아둔 음원이 있으면 그걸로 즉시 재생
+    curAudio = a;
+    a.onended = () => fin(true);
+    a.onerror = () => fin(false);
     try {
-      player.src = url;
-      player.play().then(() => { timer = setTimeout(() => fin(true), 7000); }).catch(() => fin(false));
+      if (a === player) a.src = url;
+      try { a.currentTime = 0; } catch (e) {}
+      a.play().then(() => { timer = setTimeout(() => fin(true), 7000); }).catch(() => fin(false));
     } catch (e) { fin(false); }
   });
 }
