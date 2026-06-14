@@ -298,6 +298,7 @@ function reviewItems() { return store.wrong.map(k => INDEX[k]).filter(Boolean); 
 // ===== 발음 (영단어 앱과 동일: 원어민 음원 → 구글 TTS → 기기 음성) =====
 const ttsOK = 'speechSynthesis' in window;
 const player = new Audio();
+player.preload = 'auto';
 let enVoice = null;
 function stopAudio() { try { player.onended = null; player.onerror = null; player.pause(); } catch (e) {} if (ttsOK) { try { speechSynthesis.cancel(); } catch (e) {} } }
 
@@ -308,10 +309,11 @@ try { dictCache = JSON.parse(localStorage.getItem(DICT_CACHE_KEY)) || {}; } catc
 function saveDictCache() { try { localStorage.setItem(DICT_CACHE_KEY, JSON.stringify(dictCache)); } catch (e) {} }
 async function getDictAudio(word) {
   if (word in dictCache) return dictCache[word];
-  let best = null;
+  let best = null, keep = false;
   try {
     const r = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word));
     if (r.ok) {
+      keep = true;
       const data = await r.json();
       outer:
       for (const entry of data) for (const ph of (entry.phonetics || [])) {
@@ -319,11 +321,29 @@ async function getDictAudio(word) {
         if (/-us\.mp3/i.test(ph.audio)) { best = ph.audio; break outer; }   // 미국식 우선
         if (!best) best = ph.audio;
       }
-    }
-  } catch (e) { return null; }   // 네트워크 오류면 캐시하지 않고 다음에 재시도
-  dictCache[word] = best; saveDictCache(); return best;   // null = 음원 없음(확정)
+    } else if (r.status === 404) { keep = true; }   // 사전에 없는 단어 → 음원 없음 확정
+    // 429(과다 요청)·5xx 등 일시 오류는 캐시하지 않고 다음에 재시도
+  } catch (e) { return null; }                       // 네트워크 오류도 캐시 안 함
+  if (keep) { dictCache[word] = best; saveDictCache(); }
+  return best;
 }
-function prefetchDictAudio(words) { words.forEach(w => { if (/^[A-Za-z'-]+$/.test(w)) getDictAudio(w.toLowerCase()); }); }
+// 음원 미리 받기 — 동시 4개로 제한(과다 요청 방지), 이미 받은 건 건너뜀
+let _pfQueue = [], _pfActive = 0;
+function prefetchDictAudio(words) {
+  for (let w of words) {
+    w = String(w).split('/')[0].trim().toLowerCase();
+    if (/^[a-z'-]+$/.test(w) && !(w in dictCache) && _pfQueue.indexOf(w) < 0) _pfQueue.push(w);
+  }
+  _pumpPrefetch();
+}
+function _pumpPrefetch() {
+  while (_pfActive < 4 && _pfQueue.length) {
+    const w = _pfQueue.shift();
+    if (w in dictCache) continue;
+    _pfActive++;
+    getDictAudio(w).then(() => {}, () => {}).then(() => { _pfActive--; _pumpPrefetch(); });
+  }
+}
 
 let speakSeq = 0;   // 최신 발음 요청만 소리내기 위한 세대 토큰
 function playUrl(url) {
@@ -412,11 +432,11 @@ function renderTable() {
   el.querySelector('#tgMean').addEventListener('click', () => { hideMean = !hideMean; renderTable(); });
   el.querySelectorAll('td.cell-hidden').forEach(td => td.addEventListener('click', () => td.classList.remove('cell-hidden'), { once: true }));
   el.querySelectorAll('.say').forEach(td => td.addEventListener('click', () => { if (!td.classList.contains('cell-hidden')) speakForm(td.dataset.s); }));
-  prefetchDictAudio(items.map(v => v.b));   // 원형 음원 미리 받아두기
+  prefetchDictAudio(items.flatMap(v => [v.b, v.pa, v.pp]));   // 원형·과거·과거분사 음원 미리 받아두기
 }
 
 // ===== 카드 =====
-function startCards() { cardDeck = shuffle(levelItems()); cardIdx = 0; cardFlipped = false; prefetchDictAudio(cardDeck.map(v => v.b)); }
+function startCards() { cardDeck = shuffle(levelItems()); cardIdx = 0; cardFlipped = false; prefetchDictAudio(cardDeck.flatMap(v => [v.b, v.pa, v.pp])); }
 function renderCards() {
   if (!cardDeck.length) startCards();
   const v = cardDeck[cardIdx];
@@ -453,6 +473,7 @@ function startTest(type) {
   testType = type;
   testQs = shuffle(testPool().slice()).slice(0, Math.min(10, testPool().length));
   testIdx = 0; testScore = 0; testLocked = false; testOver = false;
+  prefetchDictAudio(testQs.flatMap(v => [v.b, v.pa, v.pp]));
   renderTest();
 }
 function renderTestMenu() {
