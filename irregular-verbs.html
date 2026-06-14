@@ -295,14 +295,68 @@ function addReview(key) { if (!store.wrong.includes(key)) store.wrong.push(key);
 function addReviewClear(key) { const i = store.wrong.indexOf(key); if (i >= 0) store.wrong.splice(i, 1); }
 function reviewItems() { return store.wrong.map(k => INDEX[k]).filter(Boolean); }
 
-// ===== 발음 =====
+// ===== 발음 (영단어 앱과 동일: 원어민 음원 → 구글 TTS → 기기 음성) =====
+const ttsOK = 'speechSynthesis' in window;
 const player = new Audio();
-function stopAudio() { try { player.pause(); } catch (e) {} if ('speechSynthesis' in window) { try { speechSynthesis.cancel(); } catch (e) {} } }
-function ttsUrl(t) { return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=' + encodeURIComponent(t); }
-function playUrl(url) { return new Promise(res => { let done = false; const fin = ok => { if (!done) { done = true; res(ok); } }; player.onended = () => fin(true); player.onerror = () => fin(false); player.src = url; player.play().then(() => setTimeout(() => fin(true), 8000)).catch(() => fin(false)); }); }
-function speakTTS(t) { return new Promise(res => { if (!('speechSynthesis' in window)) return res(false); const u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; u.rate = 0.9; u.onend = () => res(true); u.onerror = () => res(true); try { speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) { res(false); } }); }
-async function speak(t) { stopAudio(); if (await playUrl(ttsUrl(t))) return; await speakTTS(t); }
+let enVoice = null;
+function stopAudio() { try { player.onended = null; player.onerror = null; player.pause(); } catch (e) {} if (ttsOK) { try { speechSynthesis.cancel(); } catch (e) {} } }
+
+// 사전(dictionaryapi.dev) 원어민 음원 — localStorage 캐시
+const DICT_CACHE_KEY = 'irreg-verbs-dictcache';
+let dictCache = {};
+try { dictCache = JSON.parse(localStorage.getItem(DICT_CACHE_KEY)) || {}; } catch (e) {}
+function saveDictCache() { try { localStorage.setItem(DICT_CACHE_KEY, JSON.stringify(dictCache)); } catch (e) {} }
+async function getDictAudio(word) {
+  if (word in dictCache) return dictCache[word];
+  let best = null;
+  try {
+    const r = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word));
+    if (r.ok) {
+      const data = await r.json();
+      outer:
+      for (const entry of data) for (const ph of (entry.phonetics || [])) {
+        if (!ph.audio) continue;
+        if (/-us\.mp3/i.test(ph.audio)) { best = ph.audio; break outer; }   // 미국식 우선
+        if (!best) best = ph.audio;
+      }
+    }
+  } catch (e) { return null; }   // 네트워크 오류면 캐시하지 않고 다음에 재시도
+  dictCache[word] = best; saveDictCache(); return best;   // null = 음원 없음(확정)
+}
+function prefetchDictAudio(words) { words.forEach(w => { if (/^[A-Za-z'-]+$/.test(w)) getDictAudio(w.toLowerCase()); }); }
+
+function playUrl(url) {
+  return new Promise(res => {
+    let done = false; const fin = ok => { if (!done) { done = true; res(ok); } };
+    player.onended = () => fin(true); player.onerror = () => fin(false);
+    player.src = url; player.play().then(() => setTimeout(() => fin(true), 9000)).catch(() => fin(false));
+  });
+}
+function googleTtsUrl(t) { return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=' + encodeURIComponent(t); }
+
+// 기기 음성 폴백 — 자연스러운 en-US 음성 자동 선택
+function enVoices() { return ttsOK ? speechSynthesis.getVoices().filter(v => /^en([-_]|$)/i.test(v.lang)) : []; }
+function rankVoice(v) { let s = 0; if (/natural|neural/i.test(v.name)) s += 8; if (v.localService) s += 4; if (/en[-_]US/i.test(v.lang)) s += 2; return s; }
+function pickVoice() { const vs = enVoices(); return vs.length ? vs.slice().sort((a, b) => rankVoice(b) - rankVoice(a))[0] : null; }
+function speakTTS(t) {
+  return new Promise(res => {
+    if (!ttsOK) return res(false);
+    if (!enVoice) enVoice = pickVoice();
+    const u = new SpeechSynthesisUtterance(t); u.lang = 'en-US'; u.rate = 0.9; if (enVoice) u.voice = enVoice;
+    u.onend = () => res(true); u.onerror = () => res(true);
+    try { speechSynthesis.cancel(); setTimeout(() => { speechSynthesis.speak(u); speechSynthesis.resume(); }, 50); } catch (e) { res(false); }
+  });
+}
+async function pronounce(text) {
+  stopAudio();
+  const single = /^[A-Za-z'-]+$/.test(text.trim());
+  if (single) { const url = await getDictAudio(text.trim().toLowerCase()); if (url && await playUrl(url)) return; }
+  if (await playUrl(googleTtsUrl(text))) return;
+  await speakTTS(text);
+}
+function speak(text) { pronounce(text); }
 function speakForm(s) { speak(s.split('/')[0]); }   // 슬래시 변형은 첫 형태만 발음
+if (ttsOK) { enVoice = pickVoice(); speechSynthesis.onvoiceschanged = () => { enVoice = pickVoice(); }; }
 
 // ===== Hero / 카운트 =====
 function updateHero() {
@@ -344,10 +398,11 @@ function renderTable() {
   el.querySelector('#tgMean').addEventListener('click', () => { hideMean = !hideMean; renderTable(); });
   el.querySelectorAll('td.cell-hidden').forEach(td => td.addEventListener('click', () => td.classList.remove('cell-hidden'), { once: true }));
   el.querySelectorAll('.say').forEach(td => td.addEventListener('click', () => { if (!td.classList.contains('cell-hidden')) speakForm(td.dataset.s); }));
+  prefetchDictAudio(items.map(v => v.b));   // 원형 음원 미리 받아두기
 }
 
 // ===== 카드 =====
-function startCards() { cardDeck = shuffle(levelItems()); cardIdx = 0; cardFlipped = false; }
+function startCards() { cardDeck = shuffle(levelItems()); cardIdx = 0; cardFlipped = false; prefetchDictAudio(cardDeck.map(v => v.b)); }
 function renderCards() {
   if (!cardDeck.length) startCards();
   const v = cardDeck[cardIdx];
