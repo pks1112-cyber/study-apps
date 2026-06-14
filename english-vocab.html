@@ -382,6 +382,25 @@
   .add-msg.ok { color: #0d9466; } .add-msg.warn { color: #d97706; } .add-msg.err { color: #dc2626; }
   .help-box { background: #f1f5ff; border: 1px solid #dbe4ff; border-radius: 11px; padding: 11px 13px; margin-top: 11px; font-size: 12.5px; line-height: 1.75; color: #475569; }
   .help-box b { color: #4338ca; }
+  /* 내단어 — 단어장 선택바 + 서브탭 */
+  .ml-bar { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+  #myListSel { flex: 1; min-width: 0; padding: 12px 12px; border: 2px solid #c7d2fe; border-radius: 12px; font-family: inherit; font-size: 15px; font-weight: 800; color: #3730a3; background: linear-gradient(180deg, #fff, #eef2ff); outline: none; cursor: pointer; }
+  #myListSel:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
+  .ml-bar .icon-btn { padding: 10px 11px; font-size: 15px; flex-shrink: 0; }
+  .ml-info { font-size: 12px; color: #64748b; font-weight: 600; margin: 0 2px 12px; }
+  .sub-nav { display: flex; gap: 6px; background: #f1f5f9; border-radius: 12px; padding: 4px; margin-bottom: 16px; }
+  .sub-seg { flex: 1; min-width: 0; background: transparent; color: #475569; box-shadow: none; padding: 10px 4px; border-radius: 9px; font-size: 13px; font-weight: 700; }
+  .sub-seg:hover { background: #fff; box-shadow: none; transform: none; }
+  .sub-seg.on { background: linear-gradient(135deg, #4f46e5, #6d28d9); color: #fff; }
+  .sub-seg.on:hover { background: linear-gradient(135deg, #4f46e5, #6d28d9); }
+  .bulk-box { width: 100%; min-height: 96px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 11px; font-family: inherit; font-size: 14px; line-height: 1.6; outline: none; resize: vertical; color: var(--ink); }
+  .bulk-box:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+  .src-tag { font-size: 10.5px; font-weight: 700; color: #0f766e; background: #ccfbf1; padding: 1px 6px; border-radius: 6px; vertical-align: middle; }
+  .no-mean { color: #d97706; font-weight: 700; font-size: 12.5px; }
+  .my-empty { text-align: center; padding: 36px 16px; }
+  .my-empty-icon { font-size: 52px; }
+  .my-empty-title { font-size: 18px; font-weight: 800; color: #312e81; margin: 12px 0 6px; }
+  .my-empty-sub { font-size: 13px; color: #64748b; line-height: 1.7; }
   .add-grp-row { display: flex; gap: 8px; margin-bottom: 12px; }
   .add-grp-row input { flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; font-family: inherit; font-size: 14px; outline: none; }
   .add-grp-row input:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
@@ -456,6 +475,8 @@
     button { padding: 9px 15px; font-size: 13px; }
     .add-form { grid-template-columns: 1fr; }
     .grp-actions button { padding: 8px 10px; font-size: 12px; }
+    .sub-seg { font-size: 11.5px; padding: 9px 2px; }
+    #myListSel { font-size: 14px; padding: 11px 8px; }
   }
 </style>
 </head>
@@ -501,11 +522,11 @@
 
 <div class="card main-card">
   <div class="tabs" id="modeTabs">
-    <div class="tab active" data-mode="table"><span class="ti">📖</span><span class="tl">단어표</span></div>
+    <div class="tab active" data-mode="my"><span class="ti">📚</span><span class="tl">내단어장</span></div>
+    <div class="tab" data-mode="table"><span class="ti">📖</span><span class="tl">단어표</span></div>
     <div class="tab" data-mode="cards"><span class="ti">🃏</span><span class="tl">카드</span></div>
     <div class="tab" data-mode="test"><span class="ti">✏️</span><span class="tl">테스트</span></div>
     <div class="tab" data-mode="review"><span class="ti">🔄</span><span class="tl">복습 <span class="cnt" id="reviewCnt">0</span></span></div>
-    <div class="tab" data-mode="my"><span class="ti">➕</span><span class="tl">내단어</span></div>
     <div class="tab" data-mode="search"><span class="ti">🔍</span><span class="tl">검색</span></div>
     <div class="tab" data-mode="stats"><span class="ti">📊</span><span class="tl">기록</span></div>
   </div>
@@ -562,7 +583,8 @@ const store = {
   goal: sv.goal || 20,        // daily goal (problems per day)
   taBest: sv.taBest || {},    // level -> time attack best score
   myWords: Array.isArray(sv.myWords) ? sv.myWords : [],   // [{w,m,p,ipa,ex,exk}] 직접 추가한 단어
-  groups: (sv.groups && typeof sv.groups === 'object') ? sv.groups : {}  // {그룹명: [key, ...]}
+  groups: (sv.groups && typeof sv.groups === 'object') ? sv.groups : {},  // {그룹명: [key, ...]}
+  lastGroup: sv.lastGroup || null    // 최근 선택/생성한 단어장 (내단어 기본 선택)
 };
 function saveStore() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {}
@@ -587,7 +609,7 @@ function dueKeys() {
 // ===== State =====
 let curLevel = LEVEL_NAMES[0];
 let curUnit = 0;
-let mode = 'table';
+let mode = 'my';
 let hideMode = 'none';   // 'none' | 'kor' | 'eng'
 let searchQuery = '';
 
@@ -645,13 +667,15 @@ function groupWords(name) { return (store.groups[name] || []).map(findByKey).fil
 function groupCount(name) { return (store.groups[name] || []).filter(findByKey).length; }
 function currentWords() { return studyGroup ? groupWords(studyGroup) : unitWords(curLevel, curUnit); }
 function exitGroup() { studyGroup = null; resetModeStates(); renderAll(); }
-
-// 그룹 학습 시작 — 단어표/카드/테스트로 진입
-function studyGroupStart(name, m) {
-  if (groupCount(name) === 0) { alert('이 단어장은 비어 있어.\n단어표나 검색에서 ＋담기로 단어를 넣어 줘.'); return; }
-  studyGroup = name;
-  switchMode(m);
+// 내단어 탭에선 공용 렌더러(단어표·카드·테스트)가 헤더 아래 #myBody로 출력되게 한다
+function renderTarget() {
+  const mb = document.getElementById('myBody');
+  return (mode === 'my' && mb) ? mb : document.getElementById('content');
 }
+
+// 내단어 탭 내부 상태
+let myList = null;        // 현재 선택된 단어장
+let mySub = 'table';      // 내단어 안의 서브뷰: table | cards | test | add
 
 // 단어 하나를 단어장(그룹)에 담는 모달 — 단어표·검색·내단어 목록 어디서든 호출
 function openGroupPicker(key) {
@@ -759,168 +783,290 @@ function importBackup() {
 }
 
 // ===== Mode: 내 단어 (직접 추가 + 단어장 + 백업) =====
-function tryAddMyWord() {
-  const w = document.getElementById('awWord').value.trim();
-  const m = document.getElementById('awMean').value.trim();
-  const msg = document.getElementById('awMsg');
-  if (!w || !m) { msg.textContent = '영단어와 뜻은 꼭 입력해 줘.'; msg.className = 'add-msg err'; return; }
-  if (!/^[a-zA-Z][a-zA-Z '.\-]*$/.test(w)) { msg.textContent = '영단어는 영문으로 입력해 줘.'; msg.className = 'add-msg err'; return; }
-  if (findMyWord(w)) { msg.textContent = '"' + w + '"는 이미 내 단어장에 있어.'; msg.className = 'add-msg warn'; return; }
-  const ex = findExisting(w);
-  if (ex) {
-    const exObj = findByKey(ex.key);
-    msg.textContent = '"' + w + '"는 이미 ' + ex.level + '에 「' + (exObj ? exObj.m : '') + '」(으)로 있는 단어야. 원래 뜻 그대로 단어장에 담아 줄게!';
-    msg.className = 'add-msg warn';
-    openGroupPicker(ex.key);
-    return;
-  }
-  store.myWords.unshift({
-    w: w, m: m,
-    p: document.getElementById('awPos').value,
-    ipa: document.getElementById('awIpa').value.trim(),
-    ex: document.getElementById('awEx').value.trim(),
-    exk: document.getElementById('awExk').value.trim()
-  });
-  saveStore();
-  renderMy();
-  const m2 = document.getElementById('awMsg');
-  if (m2) { m2.textContent = '"' + w + '" 추가 완료! 📚 버튼으로 단어장에 담을 수 있어.'; m2.className = 'add-msg ok'; }
+function myListNames() { return Object.keys(store.groups); }
+function resolveMyList() {
+  const names = myListNames();
+  if (!names.length) { myList = null; return; }
+  if (myList && store.groups[myList]) return;
+  myList = (store.lastGroup && store.groups[store.lastGroup]) ? store.lastGroup : names[names.length - 1];
 }
+function createList(name) {
+  const v = (name || '').trim();
+  if (!v) return false;
+  if (!store.groups[v]) store.groups[v] = [];
+  myList = v; store.lastGroup = v; saveStore();
+  return true;
+}
+// 단어 하나를 현재 단어장에 자동 판별해서 추가. 반환 {status:'exist'|'new'|'dupGroup', key, existed}
+function addWordToCurrent(w, m, opts) {
+  opts = opts || {};
+  const nw = (w || '').trim();
+  if (!nw) return null;
+  const ex = findExisting(nw);
+  let key, existed = false;
+  if (ex) { key = ex.key; existed = true; }
+  else {
+    const mine = findMyWord(nw);
+    if (mine) {
+      key = myKey(mine.w);
+      if (!mine.m && (m || '').trim()) mine.m = m.trim();   // 뜻 비어있던 단어면 채워줌
+    } else {
+      store.myWords.unshift({ w: nw, m: (m || '').trim(), p: opts.p || '', ipa: (opts.ipa || '').trim(), ex: '', exk: '' });
+      key = myKey(nw);
+    }
+  }
+  const arr = store.groups[myList];
+  if (arr.includes(key)) return { status: 'dupGroup', key: key, existed: existed };
+  arr.push(key);
+  return { status: existed ? 'exist' : 'new', key: key, existed: existed };
+}
+
 function renderMy() {
   const el = document.getElementById('content');
-  const groups = Object.keys(store.groups);
-  let html = '';
+  resolveMyList();
+  const names = myListNames();
 
-  // A. 단어 직접 추가
-  html += `<div class="my-section">
-    <div class="my-h">➕ 단어 직접 추가 <span class="my-sub">학원 프린트·교재 단어를 넣어 보세요</span></div>
+  // 빈 상태 — 첫 단어장 만들기
+  if (!names.length) {
+    el.innerHTML = `<div class="my-empty">
+      <div class="my-empty-icon">📚</div>
+      <div class="my-empty-title">내 단어장이 비어 있어요</div>
+      <div class="my-empty-sub">학교·학원 단어, 안 외워지는 단어를 모아서 따로 공부해요.<br>첫 단어장을 만들어 볼까요?</div>
+      <div class="add-grp-row" style="max-width:380px;margin:18px auto 0">
+        <input id="ngName" placeholder="단어장 이름 (예: 중간고사 3과)" maxlength="20">
+        <button id="ngAdd">만들기</button>
+      </div>
+      <div style="margin-top:18px"><button class="mini" id="impBtn">⬆ 백업 가져오기</button></div>
+      <div class="add-msg" id="bkMsg" style="text-align:center"></div>
+    </div>`;
+    const mk = () => { if (createList(el.querySelector('#ngName').value)) { mySub = 'add'; renderMy(); } };
+    el.querySelector('#ngAdd').addEventListener('click', mk);
+    el.querySelector('#ngName').addEventListener('keydown', e => { if (e.key === 'Enter') mk(); });
+    el.querySelector('#impBtn').addEventListener('click', importBackup);
+    return;
+  }
+
+  // 헤더: 단어장 선택 + 관리 + 서브탭
+  const cnt = groupCount(myList);
+  const mastered = groupWords(myList).filter(x => stat(x.key).c >= 3).length;
+  el.innerHTML = `<div class="ml-bar">
+      <select id="myListSel">${names.map(n => `<option value="${esc(n)}" ${n === myList ? 'selected' : ''}>📒 ${esc(n)} (${groupCount(n)})</option>`).join('')}</select>
+      <button class="icon-btn" id="mlNew" title="새 단어장">➕</button>
+      <button class="icon-btn" id="mlRen" title="이름 변경">✏️</button>
+      <button class="icon-btn" id="mlDel" title="삭제">🗑</button>
+    </div>
+    <div class="ml-info">${cnt}단어 · 외운 단어 ${mastered}/${cnt}</div>
+    <div class="sub-nav">
+      <button class="sub-seg ${mySub === 'table' ? 'on' : ''}" data-s="table">📖 단어표</button>
+      <button class="sub-seg ${mySub === 'cards' ? 'on' : ''}" data-s="cards">🃏 카드</button>
+      <button class="sub-seg ${mySub === 'test' ? 'on' : ''}" data-s="test">✏️ 테스트</button>
+      <button class="sub-seg ${mySub === 'add' ? 'on' : ''}" data-s="add">➕ 단어추가</button>
+    </div>
+    <div id="myBody"></div>`;
+
+  // 서브뷰 — studyGroup을 현재 단어장으로 두면 공용 렌더러가 #myBody로 출력
+  studyGroup = myList;
+  if (mySub === 'cards') { startCards(); renderCards(); }
+  else if (mySub === 'test') { testType = null; testOver = false; renderTest(); }
+  else if (mySub === 'add') renderAddView();
+  else renderTable();
+
+  // 헤더 이벤트
+  el.querySelector('#myListSel').addEventListener('change', e => {
+    myList = e.target.value; store.lastGroup = myList; saveStore();
+    renderMy();
+  });
+  el.querySelector('#mlNew').addEventListener('click', () => {
+    const nn = prompt('새 단어장 이름');
+    if (nn === null) return;
+    if (!nn.trim()) return;
+    if (store.groups[nn.trim()]) { alert('같은 이름의 단어장이 이미 있어.'); return; }
+    if (createList(nn)) { mySub = 'add'; renderMy(); }
+  });
+  el.querySelector('#mlRen').addEventListener('click', () => {
+    const nn = prompt('단어장 새 이름', myList);
+    if (nn === null) return;
+    const v = nn.trim();
+    if (!v || v === myList) return;
+    if (store.groups[v]) { alert('같은 이름의 단어장이 이미 있어.'); return; }
+    store.groups[v] = store.groups[myList];
+    delete store.groups[myList];
+    if (store.lastGroup === myList) store.lastGroup = v;
+    myList = v; saveStore(); renderMy();
+  });
+  el.querySelector('#mlDel').addEventListener('click', () => {
+    if (!confirm('"' + myList + '" 단어장을 삭제할까요?\n(담긴 단어 자체는 사라지지 않아요)')) return;
+    delete store.groups[myList];
+    if (store.lastGroup === myList) store.lastGroup = null;
+    myList = null; saveStore(); renderMy();
+  });
+  el.querySelectorAll('.sub-seg').forEach(b => b.addEventListener('click', () => { mySub = b.dataset.s; renderMy(); }));
+}
+
+function renderAddView() {
+  const body = document.getElementById('myBody');
+  const words = groupWords(myList);
+  let html = `<div class="my-section">
     <div class="add-form">
       <input id="awWord" placeholder="영단어 *" autocomplete="off" spellcheck="false">
-      <input id="awMean" placeholder="뜻 *">
+      <input id="awMean" placeholder="뜻 (모르면 비워둬도 OK)">
       <select id="awPos"><option value="">품사 (선택)</option><option value="명">명사</option><option value="동">동사</option><option value="형">형용사</option><option value="부">부사</option></select>
       <input id="awIpa" placeholder="발음기호 (선택)">
-      <input id="awEx" class="full" placeholder="예문 (선택, 영어)">
-      <input id="awExk" class="full" placeholder="예문 뜻 (선택, 한글)">
-      <button id="awAdd" class="full">추가하기</button>
+      <button id="awAdd" class="full">이 단어장에 추가</button>
     </div>
     <div class="add-msg" id="awMsg"></div>
-    <div class="help-box">
-      💡 <b>처음 보는 새 단어</b>(2,000단어에 없는 단어)는 아래 <b>「내가 추가한 단어」</b>에 저장돼요.<br>
-      💡 이미 교과서 <b>2,000단어에 있는 단어</b>면, 직접 쓴 뜻 대신 <b>원래 뜻 그대로</b> 단어장에 담겨요 (중복으로 안 만들어져요).<br>
-      💡 단어를 묶고 싶으면 아래에서 <b>단어장</b>을 만들고, 단어표·검색의 <b>＋담기</b>로 모으면 돼요. 한 단어를 여러 단어장에 담아도 OK.
-    </div>
-  </div>`;
-
-  // B. 내 단어장 (그룹)
-  html += `<div class="my-section">
-    <div class="my-h">📚 내 단어장 <span class="my-sub">단어를 묶어 집중 학습 (학교/학원 대비)</span></div>
-    <div class="add-grp-row">
-      <input id="ngName" placeholder="새 단어장 이름 (예: 안 외워지는 단어)" maxlength="20">
-      <button id="ngAdd">만들기</button>
-    </div>`;
-  if (!groups.length) {
-    html += `<div class="m-sub" style="color:#94a3b8;font-size:13px;padding:4px 2px">아직 단어장이 없어요. 위에서 만들거나, 단어표·검색에서 <b>＋담기</b>로 모아 보세요.</div>`;
-  }
-  for (const n of groups) {
-    html += `<div class="grp-card">
-      <div class="grp-top"><span class="grp-name">📒 ${esc(n)}</span><span class="grp-cnt">${groupCount(n)}단어</span></div>
-      <div class="grp-actions">
-        <button class="mini study-g" data-n="${esc(n)}" data-m="table">📖 단어표</button>
-        <button class="mini study-g" data-n="${esc(n)}" data-m="cards">🃏 카드</button>
-        <button class="mini study-g" data-n="${esc(n)}" data-m="test">✏️ 테스트</button>
-        <button class="icon-btn ren-g" data-n="${esc(n)}">✏️ 이름</button>
-        <button class="danger del-g" data-n="${esc(n)}">🗑 삭제</button>
-      </div>
-    </div>`;
-  }
-  html += `</div>`;
-
-  // C. 내가 추가한 단어 모아보기
-  html += `<div class="my-section">
-    <div class="my-h">📝 내가 추가한 단어 <span class="my-sub">${store.myWords.length}개</span></div>`;
-  if (!store.myWords.length) {
-    html += `<div class="m-sub" style="color:#94a3b8;font-size:13px;padding:4px 2px">아직 추가한 단어가 없어요.</div>`;
+    <div class="help-box">💡 영단어만 넣어도 돼요. 추가하면 자동으로 확인해서 — <b>교과서 2,000단어에 있으면</b> 원래 뜻·발음을 채워 담고, <b>없으면 새 단어</b>로 담아요 (뜻은 나중에 ✏️로 채우면 돼요).</div>
+  </div>
+  <div class="my-section">
+    <div class="my-h">📋 여러 단어 한 번에 추가 <span class="my-sub">학원 프린트 붙여넣기</span></div>
+    <textarea id="bulkBox" class="bulk-box" placeholder="줄바꿈 또는 쉼표로 구분해서 붙여넣기&#10;예) apple&#10;banana&#10;run=달리다&#10;또는: apple, banana, run"></textarea>
+    <button id="bulkAdd" class="full" style="margin-top:8px">일괄 추가</button>
+    <div class="add-msg" id="bulkMsg"></div>
+  </div>
+  <div class="my-section">
+    <div class="my-h">📝 이 단어장의 단어 <span class="my-sub">${words.length}개</span></div>`;
+  if (!words.length) {
+    html += `<div class="m-sub" style="color:#94a3b8;font-size:13px;padding:4px 2px">아직 단어가 없어요. 위에서 추가하거나, 단어표·검색에서 ＋담기로 모아 보세요.</div>`;
   } else {
-    for (const o of store.myWords) {
-      const key = myKey(o.w);
+    for (const it of words) {
+      const custom = it.level === MY;
       html += `<div class="mw-row">
         <div class="mw-main">
-          <div class="mw-w">${esc(o.w)} <span class="ipa">${esc(o.ipa || '')}</span> ${posTag(o.p)}</div>
-          <div class="mw-m">${esc(o.m)}</div>
+          <div class="mw-w">${esc(it.w)} <span class="ipa">${esc(it.ipa || '')}</span> ${it.p ? posTag(it.p) : ''} ${custom ? '' : '<span class="src-tag">교과서</span>'}</div>
+          <div class="mw-m">${it.m ? esc(it.m) : '<span class="no-mean">✏️ 뜻 없음 — 눌러서 입력</span>'}</div>
         </div>
         <div class="mw-btns">
-          <button class="icon-btn say-w" data-w="${esc(o.w)}">🔊</button>
-          <button class="icon-btn add-g" data-key="${esc(key)}">📚</button>
-          <button class="icon-btn del-w" data-w="${esc(o.w)}">🗑</button>
+          <button class="icon-btn say-w" data-w="${esc(it.w)}">🔊</button>
+          ${custom ? `<button class="icon-btn edit-w" data-w="${esc(it.w)}">✏️</button>` : ''}
+          <button class="icon-btn rm-from" data-key="${esc(it.key)}" title="이 단어장에서 빼기">➖</button>
         </div>
       </div>`;
     }
   }
-  html += `</div>`;
-
-  // D. 백업
-  html += `<div class="my-section">
-    <div class="my-h">💾 백업 <span class="my-sub">단어는 이 기기 브라우저에만 저장돼요</span></div>
-    <div class="grp-actions">
-      <button class="mini" id="expBtn">⬇ 내보내기 (파일 저장)</button>
-      <button class="mini" id="impBtn">⬆ 가져오기 (파일 불러오기)</button>
-    </div>
+  html += `</div>
+  <div class="my-section">
+    <div class="grp-actions"><button class="mini" id="expBtn">⬇ 백업 내보내기</button><button class="mini" id="impBtn">⬆ 백업 가져오기</button></div>
     <div class="add-msg" id="bkMsg"></div>
   </div>`;
+  body.innerHTML = html;
 
-  el.innerHTML = html;
-
-  // ----- 이벤트 -----
-  el.querySelector('#awAdd').addEventListener('click', tryAddMyWord);
-  el.querySelector('#awWord').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('awMean').focus(); });
-  el.querySelector('#awMean').addEventListener('keydown', e => { if (e.key === 'Enter') tryAddMyWord(); });
-  el.querySelector('#ngAdd').addEventListener('click', () => {
-    const inp = el.querySelector('#ngName');
-    const v = inp.value.trim();
-    if (!v) return;
-    if (store.groups[v]) { inp.value = ''; return; }
-    store.groups[v] = [];
+  const doAdd = () => {
+    const w = body.querySelector('#awWord').value.trim();
+    const m = body.querySelector('#awMean').value.trim();
+    const msg = body.querySelector('#awMsg');
+    if (!w) { msg.textContent = '영단어를 입력해 줘.'; msg.className = 'add-msg err'; return; }
+    if (!/^[a-zA-Z][a-zA-Z '.\-]*$/.test(w)) { msg.textContent = '영단어는 영문으로 입력해 줘.'; msg.className = 'add-msg err'; return; }
+    const r = addWordToCurrent(w, m, { p: body.querySelector('#awPos').value, ipa: body.querySelector('#awIpa').value });
     saveStore();
-    renderMy();
+    renderAddView();
+    const m2 = document.getElementById('myBody').querySelector('#awMsg');
+    if (r.status === 'dupGroup') { m2.textContent = '"' + w + '"는 이미 이 단어장에 있어.'; m2.className = 'add-msg warn'; }
+    else if (r.existed) { const o = findByKey(r.key); m2.textContent = '"' + w + '" 추가! 교과서에 「' + (o ? o.m : '') + '」(으)로 있어서 원래 뜻으로 담았어.'; m2.className = 'add-msg ok'; }
+    else { m2.textContent = '"' + w + '" 새 단어로 추가!' + (m ? '' : ' 뜻은 아래 ✏️로 채우면 돼.'); m2.className = 'add-msg ok'; }
+  };
+  body.querySelector('#awAdd').addEventListener('click', doAdd);
+  body.querySelector('#awWord').addEventListener('keydown', e => { if (e.key === 'Enter') body.querySelector('#awMean').focus(); });
+  body.querySelector('#awMean').addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
+
+  body.querySelector('#bulkAdd').addEventListener('click', () => {
+    const raw = body.querySelector('#bulkBox').value;
+    const entries = [];
+    raw.split(/\n/).forEach(line => {
+      const t = line.trim();
+      if (!t) return;
+      if (t.includes('=')) { const i = t.indexOf('='); entries.push([t.slice(0, i).trim(), t.slice(i + 1).trim()]); }
+      else t.split(',').forEach(tok => { const w = tok.trim(); if (w) entries.push([w, '']); });
+    });
+    let added = 0, existed = 0, fresh = 0, dup = 0, bad = 0, emptyMean = 0;
+    for (const [w, m] of entries) {
+      if (!/^[a-zA-Z][a-zA-Z '.\-]*$/.test(w)) { bad++; continue; }
+      const r = addWordToCurrent(w, m);
+      if (!r) { bad++; continue; }
+      if (r.status === 'dupGroup') { dup++; continue; }
+      added++;
+      if (r.existed) existed++; else { fresh++; if (!m) emptyMean++; }
+    }
+    saveStore();
+    renderAddView();
+    const m2 = document.getElementById('myBody').querySelector('#bulkMsg');
+    if (m2) {
+      m2.textContent = added + '개 추가 (교과서 ' + existed + ' · 새 단어 ' + fresh + ')'
+        + (emptyMean ? ' · 뜻 비어있는 ' + emptyMean + '개는 ✏️로 채워줘' : '')
+        + (dup ? ' · 중복 ' + dup + '개 건너뜀' : '')
+        + (bad ? ' · 형식오류 ' + bad + '개' : '');
+      m2.className = 'add-msg ok';
+    }
   });
-  el.querySelector('#ngName').addEventListener('keydown', e => { if (e.key === 'Enter') el.querySelector('#ngAdd').click(); });
-  el.querySelectorAll('.study-g').forEach(b => b.addEventListener('click', () => studyGroupStart(b.dataset.n, b.dataset.m)));
-  el.querySelectorAll('.ren-g').forEach(b => b.addEventListener('click', () => {
-    const old = b.dataset.n;
-    const nn = prompt('단어장 새 이름', old);
-    if (nn === null) return;
-    const v = nn.trim();
-    if (!v || v === old) return;
-    if (store.groups[v]) { alert('같은 이름의 단어장이 이미 있어.'); return; }
-    store.groups[v] = store.groups[old];
-    delete store.groups[old];
+
+  body.querySelectorAll('.say-w').forEach(b => b.addEventListener('click', () => speak(b.dataset.w)));
+  body.querySelectorAll('.edit-w').forEach(b => b.addEventListener('click', () => openEditWord(b.dataset.w)));
+  body.querySelectorAll('.rm-from').forEach(b => b.addEventListener('click', () => {
+    store.groups[myList] = store.groups[myList].filter(k => k !== b.dataset.key);
     saveStore();
     renderMy();
   }));
-  el.querySelectorAll('.del-g').forEach(b => b.addEventListener('click', () => {
-    const n = b.dataset.n;
-    if (!confirm('"' + n + '" 단어장을 삭제할까요?\n(담긴 단어 자체는 사라지지 않아요)')) return;
-    delete store.groups[n];
-    saveStore();
-    renderMy();
-  }));
-  el.querySelectorAll('.say-w').forEach(b => b.addEventListener('click', () => speak(b.dataset.w)));
-  el.querySelectorAll('.add-g').forEach(b => b.addEventListener('click', () => openGroupPicker(b.dataset.key)));
-  el.querySelectorAll('.del-w').forEach(b => b.addEventListener('click', () => {
-    const w = b.dataset.w;
-    if (!confirm('"' + w + '" 단어를 삭제할까요?')) return;
-    const key = myKey(w);
-    store.myWords = store.myWords.filter(x => x.w !== w);
+  body.querySelector('#expBtn').addEventListener('click', exportBackup);
+  body.querySelector('#impBtn').addEventListener('click', importBackup);
+}
+
+// 커스텀 단어 수정 / 삭제 모달
+function openEditWord(w) {
+  const o = findMyWord(w);
+  if (!o) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-back';
+  overlay.innerHTML = `<div class="modal">
+    <h3>✏️ 단어 수정</h3>
+    <div class="add-form" style="margin-top:8px">
+      <input id="ewWord" class="full" value="${esc(o.w)}" placeholder="영단어">
+      <input id="ewMean" class="full" value="${esc(o.m || '')}" placeholder="뜻">
+      <select id="ewPos"><option value="">품사</option><option value="명">명사</option><option value="동">동사</option><option value="형">형용사</option><option value="부">부사</option></select>
+      <input id="ewIpa" value="${esc(o.ipa || '')}" placeholder="발음기호">
+      <input id="ewEx" class="full" value="${esc(o.ex || '')}" placeholder="예문 (영어)">
+      <input id="ewExk" class="full" value="${esc(o.exk || '')}" placeholder="예문 뜻 (한글)">
+    </div>
+    <div class="add-msg" id="ewMsg"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="danger" id="ewDelete">완전 삭제</button>
+      <button class="secondary" id="ewCancel" style="flex:1">취소</button>
+      <button id="ewSave" style="flex:1">저장</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#ewPos').value = o.p || '';
+  function close() { if (overlay.parentNode) document.body.removeChild(overlay); }
+  overlay.querySelector('#ewCancel').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('#ewDelete').addEventListener('click', () => {
+    if (!confirm('"' + o.w + '" 단어를 모든 단어장에서 완전히 삭제할까요?')) return;
+    const key = myKey(o.w);
+    store.myWords = store.myWords.filter(x => x.w !== o.w);
     for (const n in store.groups) store.groups[n] = store.groups[n].filter(k => k !== key);
-    delete store.wordStats[key];
-    delete store.srs[key];
+    delete store.wordStats[key]; delete store.srs[key];
     store.wrongKeys = store.wrongKeys.filter(k => k !== key);
-    saveStore();
-    updateWrongCnt();
-    renderMy();
-  }));
-  el.querySelector('#expBtn').addEventListener('click', exportBackup);
-  el.querySelector('#impBtn').addEventListener('click', importBackup);
+    saveStore(); updateWrongCnt(); close(); renderMy();
+  });
+  overlay.querySelector('#ewSave').addEventListener('click', () => {
+    const nw = overlay.querySelector('#ewWord').value.trim();
+    const msg = overlay.querySelector('#ewMsg');
+    if (!nw || !/^[a-zA-Z][a-zA-Z '.\-]*$/.test(nw)) { msg.textContent = '영단어를 영문으로 입력해 줘.'; msg.className = 'add-msg err'; return; }
+    if (normW(nw) !== normW(o.w) && (findMyWord(nw) || findExisting(nw))) { msg.textContent = '"' + nw + '"는 이미 있는 단어야.'; msg.className = 'add-msg err'; return; }
+    const oldKey = myKey(o.w), changed = nw !== o.w;
+    o.w = nw;
+    o.m = overlay.querySelector('#ewMean').value.trim();
+    o.p = overlay.querySelector('#ewPos').value;
+    o.ipa = overlay.querySelector('#ewIpa').value.trim();
+    o.ex = overlay.querySelector('#ewEx').value.trim();
+    o.exk = overlay.querySelector('#ewExk').value.trim();
+    if (changed) {
+      const newKey = myKey(nw);
+      for (const n in store.groups) store.groups[n] = store.groups[n].map(k => k === oldKey ? newKey : k);
+      if (store.wordStats[oldKey]) { store.wordStats[newKey] = store.wordStats[oldKey]; delete store.wordStats[oldKey]; }
+      if (store.srs[oldKey]) { store.srs[newKey] = store.srs[oldKey]; delete store.srs[oldKey]; }
+      store.wrongKeys = store.wrongKeys.map(k => k === oldKey ? newKey : k);
+    }
+    saveStore(); close(); renderMy();
+  });
 }
 function stat(key) { return store.wordStats[key] || { c: 0, w: 0 }; }
 function bumpStat(key, ok) {
@@ -1201,15 +1347,17 @@ function resetModeStates() {
 // ===== Mode: word table =====
 function renderTable() {
   const words = currentWords();
+  const inMy = (mode === 'my');
   const head = studyGroup ? `📚 단어장 「${esc(studyGroup)}」` : `${curLevel} · ${curUnit + 1}단원 「${esc(RAW[curLevel][curUnit][0])}」`;
-  const banner = studyGroup ? `<div class="group-banner"><span>📚 단어장 <b>${esc(studyGroup)}</b> · ${words.length}단어 학습 중</span><button class="chip-btn" id="exitGroup">✕ 전체로</button></div>` : '';
+  const banner = (studyGroup && !inMy) ? `<div class="group-banner"><span>📚 단어장 <b>${esc(studyGroup)}</b> · ${words.length}단어 학습 중</span><button class="chip-btn" id="exitGroup">✕ 전체로</button></div>` : '';
+  const titleRow = inMy ? '' : `<div class="unit-title">${head}</div>`;
   if (words.length === 0) {
-    const el0 = document.getElementById('content');
-    el0.innerHTML = banner + `<div class="unit-title">${head}</div><div class="search-empty">단어가 없어요. 단어표·검색에서 ＋담기로 단어를 모아 보세요.</div>`;
-    if (studyGroup) el0.querySelector('#exitGroup').addEventListener('click', exitGroup);
+    const el0 = renderTarget();
+    el0.innerHTML = banner + titleRow + `<div class="search-empty">단어가 없어요. 단어표·검색에서 ＋담기로 단어를 모아 보세요.</div>`;
+    if (studyGroup && !inMy) el0.querySelector('#exitGroup').addEventListener('click', exitGroup);
     return;
   }
-  let html = banner + `<div class="unit-title">${head}</div>
+  let html = banner + titleRow + `
     <div class="toolbar">
       <button class="secondary ${hideMode === 'eng' ? 'on' : ''}" id="hideEng">단어 가리기</button>
       <button class="secondary ${hideMode === 'kor' ? 'on' : ''}" id="hideKor">뜻 가리기</button>
@@ -1230,10 +1378,10 @@ function renderTable() {
     }
   }
   html += '</table>';
-  const el = document.getElementById('content');
+  const el = renderTarget();
   el.innerHTML = html;
 
-  if (studyGroup) el.querySelector('#exitGroup').addEventListener('click', exitGroup);
+  if (studyGroup && !inMy) el.querySelector('#exitGroup').addEventListener('click', exitGroup);
   el.querySelectorAll('.gp-open').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openGroupPicker(b.dataset.key); }));
   el.querySelectorAll('tr.wrow').forEach(tr => {
     const eng = tr.querySelector('.eng');
@@ -1295,7 +1443,7 @@ function startCards() {
   cardFlipped = false;
 }
 function renderCards() {
-  const el = document.getElementById('content');
+  const el = renderTarget();
   if (cardQueue.length === 0 && cardTotal === 0) startCards();
   if (cardQueue.length === 0) {
     el.innerHTML = `<div class="center" style="padding:40px 0">
@@ -1351,13 +1499,14 @@ function mcOptions(correct) {
   return shuffle([correct.m, ...picks]);
 }
 function renderTest() {
-  const el = document.getElementById('content');
+  const el = renderTarget();
   if (testType === null) {
+    const inMy = (mode === 'my');
     const taBest = store.taBest[curLevel];
     const cw = currentWords();
     const hasEx = cw.some(x => x.ex);
-    const banner = studyGroup ? `<div class="group-banner"><span>📚 단어장 <b>${esc(studyGroup)}</b> · ${cw.length}단어</span><button class="chip-btn" id="exitGroup">✕ 전체로</button></div>` : '';
-    const ttitle = studyGroup ? `✏️ 「${esc(studyGroup)}」 테스트` : `✏️ ${curLevel} · ${curUnit + 1}단원 테스트`;
+    const banner = (studyGroup && !inMy) ? `<div class="group-banner"><span>📚 단어장 <b>${esc(studyGroup)}</b> · ${cw.length}단어</span><button class="chip-btn" id="exitGroup">✕ 전체로</button></div>` : '';
+    const ttitle = inMy ? '✏️ 테스트 유형 선택' : (studyGroup ? `✏️ 「${esc(studyGroup)}」 테스트` : `✏️ ${curLevel} · ${curUnit + 1}단원 테스트`);
     el.innerHTML = banner + `
       <div class="unit-title">${ttitle}</div>
       <div class="test-grid">
@@ -1367,7 +1516,7 @@ function renderTest() {
         ${hasEx ? `<div class="test-opt" id="clozeBtn"><div class="to-icon">📝</div><b>빈칸 채우기</b><span>예문 속 빈칸 단어 입력</span></div>` : ''}
         ${studyGroup ? '' : `<div class="test-opt ta" id="taBtn"><div class="to-icon">⚡</div><b>타임어택 60초</b><span>${curLevel} 전체 · 최고 ${taBest !== undefined ? taBest + '점' : '기록 없음'}</span></div>`}
       </div>`;
-    if (studyGroup) el.querySelector('#exitGroup').addEventListener('click', exitGroup);
+    if (studyGroup && !inMy) el.querySelector('#exitGroup').addEventListener('click', exitGroup);
     el.querySelector('#mcBtn').addEventListener('click', () => startTest('mc'));
     el.querySelector('#typeBtn').addEventListener('click', () => startTest('type'));
     el.querySelector('#dictBtn').addEventListener('click', () => startTest('dict'));
@@ -1735,6 +1884,7 @@ function searchWords(q) {
 
 function switchMode(m) {
   mode = m;
+  if (m !== 'my') studyGroup = null;
   document.querySelectorAll('#modeTabs .tab').forEach(x => x.classList.toggle('active', x.dataset.mode === m));
   resetModeStates();
   renderAll();
@@ -1886,6 +2036,7 @@ document.querySelectorAll('#modeTabs .tab').forEach(t => {
     t.classList.add('active');
     stopTimeAttack();
     mode = t.dataset.mode;
+    if (mode !== 'my') studyGroup = null;   // 내단어 밖으로 나가면 그룹 학습 해제
     if (mode === 'cards') startCards();
     if (mode === 'test') { testType = null; testOver = false; }
     if (mode === 'review') { wrongQuizOn = false; srsQuizOn = false; }
