@@ -325,11 +325,17 @@ async function getDictAudio(word) {
 }
 function prefetchDictAudio(words) { words.forEach(w => { if (/^[A-Za-z'-]+$/.test(w)) getDictAudio(w.toLowerCase()); }); }
 
+let speakSeq = 0;   // 최신 발음 요청만 소리내기 위한 세대 토큰
 function playUrl(url) {
   return new Promise(res => {
-    let done = false; const fin = ok => { if (!done) { done = true; res(ok); } };
-    player.onended = () => fin(true); player.onerror = () => fin(false);
-    player.src = url; player.play().then(() => setTimeout(() => fin(true), 9000)).catch(() => fin(false));
+    let done = false, timer = null;
+    const fin = ok => { if (!done) { done = true; if (timer) clearTimeout(timer); res(ok); } };
+    player.onended = () => fin(true);
+    player.onerror = () => fin(false);
+    try {
+      player.src = url;
+      player.play().then(() => { timer = setTimeout(() => fin(true), 7000); }).catch(() => fin(false));
+    } catch (e) { fin(false); }
   });
 }
 function googleTtsUrl(t) { return 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en&q=' + encodeURIComponent(t); }
@@ -348,10 +354,18 @@ function speakTTS(t) {
   });
 }
 async function pronounce(text) {
+  const my = ++speakSeq;   // 이 호출이 최신인 동안에만 진행
   stopAudio();
-  const single = /^[A-Za-z'-]+$/.test(text.trim());
-  if (single) { const url = await getDictAudio(text.trim().toLowerCase()); if (url && await playUrl(url)) return; }
+  const t = text.trim();
+  const single = /^[A-Za-z'-]+$/.test(t);
+  if (single) {
+    const url = await getDictAudio(t.toLowerCase());
+    if (my !== speakSeq) return;                 // 더 새 요청이 들어옴 → 폐기
+    if (url && await playUrl(url)) return;
+    if (my !== speakSeq) return;
+  }
   if (await playUrl(googleTtsUrl(text))) return;
+  if (my !== speakSeq) return;
   await speakTTS(text);
 }
 function speak(text) { pronounce(text); }
