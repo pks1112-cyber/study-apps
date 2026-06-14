@@ -854,7 +854,7 @@ function renderMy() {
   const cnt = groupCount(myList);
   const mastered = groupWords(myList).filter(x => stat(x.key).c >= 3).length;
   el.innerHTML = `<div class="ml-bar">
-      <select id="myListSel">${names.map(n => `<option value="${esc(n)}" ${n === myList ? 'selected' : ''}>📒 ${esc(n)} (${groupCount(n)})</option>`).join('')}</select>
+      <select id="myListSel">${names.map(n => `<option value="${esc(n)}" ${n === myList ? 'selected' : ''}>📒 ${esc(n)} (${groupCount(n)}개)</option>`).join('')}</select>
       <button class="icon-btn" id="mlNew" title="새 단어장">➕</button>
       <button class="icon-btn" id="mlRen" title="이름 변경">✏️</button>
       <button class="icon-btn" id="mlDel" title="삭제">🗑</button>
