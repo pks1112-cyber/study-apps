@@ -1370,7 +1370,7 @@ function renderTable() {
       <td class="eng ${hideMode === 'eng' ? 'm-hidden' : ''}">${esc(it.w)} <span class="ipa">${esc(it.ipa)}</span></td>
       <td class="pos-td">${posTag(it.p)}</td>
       <td class="kor ${hideMode === 'kor' ? 'm-hidden' : ''}">${esc(it.m)}</td>
-      <td class="star">${mastered ? '⭐ ' : ''}<button class="tbl-add gp-open" data-key="${esc(it.key)}">＋담기</button></td></tr>`;
+      <td class="star">${mastered ? '⭐ ' : ''}${inMy ? '' : `<button class="tbl-add gp-open" data-key="${esc(it.key)}">＋담기</button>`}</td></tr>`;
     if (it.ex) {
       html += `<tr class="ex-row"><td colspan="4">
         <span class="ex-en ${hideMode === 'eng' ? 'm-hidden' : ''}" data-s="${esc(it.ex)}">${esc(it.ex)}</span>
