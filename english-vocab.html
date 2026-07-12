@@ -402,6 +402,9 @@
   .sub-seg.on:hover { background: linear-gradient(135deg, #4f46e5, #6d28d9); }
   .bulk-box { width: 100%; min-height: 96px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 11px; font-family: inherit; font-size: 14px; line-height: 1.6; outline: none; resize: vertical; color: var(--ink); }
   .bulk-box:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.1); }
+  .bulk-opt { display: flex; align-items: center; gap: 7px; margin-top: 9px; font-size: 13px; font-weight: 700; color: #4338ca; cursor: pointer; }
+  .bulk-opt input { width: 17px; height: 17px; accent-color: #4f46e5; flex-shrink: 0; }
+  .bulk-opt span { font-weight: 500; color: #64748b; font-size: 12px; }
   .src-tag { font-size: 10.5px; font-weight: 700; color: #0f766e; background: #ccfbf1; padding: 1px 6px; border-radius: 6px; vertical-align: middle; }
   .no-mean { color: #d97706; font-weight: 700; font-size: 12.5px; }
   .my-empty { text-align: center; padding: 36px 16px; }
@@ -872,14 +875,14 @@ function addWordToCurrent(w, m, opts) {
   opts = opts || {};
   const nw = (w || '').trim();
   if (!nw) return null;
-  const ex = findExisting(nw);
+  const ex = opts.forceCustom ? null : findExisting(nw);   // 적은 뜻 그대로 모드면 교과서 매칭 건너뜀
   let key, existed = false;
   if (ex) { key = ex.key; existed = true; }
   else {
     const mine = findMyWord(nw);
     if (mine) {
       key = myKey(mine.w);
-      if (!mine.m && (m || '').trim()) mine.m = m.trim();   // 뜻 비어있던 단어면 채워줌
+      if ((m || '').trim() && (opts.forceCustom || !mine.m)) mine.m = m.trim();   // 적은 뜻 모드면 덮어쓰기, 아니면 비었을 때만
     } else {
       store.myWords.unshift({ w: nw, m: (m || '').trim(), p: opts.p || '', ipa: (opts.ipa || '').trim(), ex: '', exk: '' });
       key = myKey(nw);
@@ -983,9 +986,10 @@ function renderAddView() {
   let html = `<div class="my-section">
     <div class="my-h">➕ 단어 추가 <span class="my-sub">학원 프린트·교재 단어 붙여넣기</span></div>
     <textarea id="bulkBox" class="bulk-box" placeholder="단어를 줄바꿈·띄어쓰기·쉼표로 구분해서 넣으세요&#10;예) apple banana run&#10;또는 한 줄에 하나씩&#10;뜻도 함께: run=달리다"></textarea>
+    <label class="bulk-opt"><input type="checkbox" id="bulkForce"> ✍️ 적은 뜻 그대로 넣기 <span>(교과서에 있는 단어도 내가 쓴 뜻으로)</span></label>
     <button id="bulkAdd" class="full" style="margin-top:8px">단어장에 추가</button>
     <div class="add-msg" id="bulkMsg"></div>
-    <div class="help-box">💡 영단어만 넣어도 돼요. 추가하면 자동으로 확인해서 — <b>교과서 2,000단어에 있으면</b> 원래 뜻·발음을 채워 담고, <b>없으면 새 단어</b>로 담아요 (뜻은 아래 목록에서 ✏️로 채우면 돼요).</div>
+    <div class="help-box">💡 영단어만 넣어도 돼요. 기본은 <b>교과서 2,000단어에 있으면</b> 원래 뜻·발음으로, <b>없으면 새 단어</b>로 담아요. <b>「적은 뜻 그대로」</b>를 켜면 교과서 단어라도 내가 쓴 뜻(<code>단어=뜻</code>)으로 들어가요 — 학원 표 그대로 넣을 때 좋아요.</div>
   </div>
   <div class="my-section">
     <div class="my-h">📝 이 단어장의 단어 <span class="my-sub">${words.length}개</span></div>`;
@@ -1016,6 +1020,7 @@ function renderAddView() {
 
   body.querySelector('#bulkAdd').addEventListener('click', () => {
     const raw = body.querySelector('#bulkBox').value;
+    const force = body.querySelector('#bulkForce').checked;   // 적은 뜻 그대로
     const entries = [];
     raw.split(/\n/).forEach(line => {
       const t = line.trim();
@@ -1026,7 +1031,7 @@ function renderAddView() {
     let added = 0, existed = 0, fresh = 0, dup = 0, bad = 0, emptyMean = 0;
     for (const [w, m] of entries) {
       if (!/^[a-zA-Z][a-zA-Z '.\-]*$/.test(w)) { bad++; continue; }
-      const r = addWordToCurrent(w, m);
+      const r = addWordToCurrent(w, m, { forceCustom: force });
       if (!r) { bad++; continue; }
       if (r.status === 'dupGroup') { dup++; continue; }
       added++;
@@ -1036,10 +1041,12 @@ function renderAddView() {
     renderAddView();
     const m2 = document.getElementById('myBody').querySelector('#bulkMsg');
     if (m2) {
-      m2.textContent = added + '개 추가 (교과서 ' + existed + ' · 새 단어 ' + fresh + ')'
+      m2.textContent = force
+        ? (added + '개 추가 (적은 뜻 그대로)' + (dup ? ' · 중복 ' + dup + '개 건너뜀' : '') + (bad ? ' · 형식오류 ' + bad + '개' : ''))
+        : (added + '개 추가 (교과서 ' + existed + ' · 새 단어 ' + fresh + ')'
         + (emptyMean ? ' · 뜻 비어있는 ' + emptyMean + '개는 ✏️로 채워줘' : '')
         + (dup ? ' · 중복 ' + dup + '개 건너뜀' : '')
-        + (bad ? ' · 형식오류 ' + bad + '개' : '');
+        + (bad ? ' · 형식오류 ' + bad + '개' : ''));
       m2.className = 'add-msg ok';
     }
   });
