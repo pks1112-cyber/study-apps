@@ -818,7 +818,8 @@ function exportBackup() {
 function importBackup() {
   const inp = document.createElement('input');
   inp.type = 'file';
-  inp.accept = 'application/json,.json';
+  // iOS Safari는 application/json만 지정하면 파일이 회색으로 비활성화되는 경우가 있어 확장자·텍스트도 함께 허용
+  inp.accept = '.json,application/json,.txt,text/plain';
   inp.addEventListener('change', () => {
     const f = inp.files[0];
     if (!f) return;
