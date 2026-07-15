@@ -143,6 +143,20 @@
   .mt-tex { flex: 1.2; min-width: 0; overflow-x: auto; padding: 2px 0; }
   .hidden-cell { filter: blur(6px); cursor: pointer; }
   .table-hint { margin-top: 16px; font-size: 12.5px; color: #8aa9a3; }
+  .mt-row.has-why { cursor: pointer; transition: background 0.12s; }
+  .mt-row.has-why:hover { background: #e8f7f3; }
+  .why-mark { font-size: 11px; color: #79a8a1; margin-left: 4px; }
+
+  /* ===== 원리 모달 ===== */
+  .modal-back { position: fixed; inset: 0; background: rgba(15, 40, 35, .45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .modal { background: #fff; border-radius: 18px; padding: 22px; width: 520px; max-width: 100%; max-height: 84vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0, 0, 0, .25); text-align: left; }
+  .why-head { font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+  .why-name { font-size: 17px; font-weight: 800; color: #173531; margin-bottom: 12px; }
+  .why-tex { background: #f4fbf9; border: 1px solid var(--line); border-radius: 12px; padding: 14px 10px; text-align: center; overflow: hidden; margin-bottom: 14px; }
+  .why-body { font-size: 14.5px; color: #29455a; line-height: 1.9; }
+  .why-body p { margin: 0 0 8px; }
+  .why-body .katex { font-size: 1.02em; }
+  .modal-close { width: 100%; margin-top: 10px; }
 
   /* ===== 검색 ===== */
   #searchInput {
@@ -311,7 +325,7 @@
     <button class="chip" id="hideNameBtn">🙈 이름 가리기</button>
   </div>
   <div id="tableBody"></div>
-  <div class="table-hint">가린 부분은 눌러서 확인할 수 있어요</div>
+  <div class="table-hint">가린 부분은 눌러서 확인 · 💡 있는 공식 줄을 누르면 원리가 보여요</div>
 </div>
 
 <!-- 카드 -->
@@ -325,6 +339,7 @@
   <div class="actions">
     <button id="cardPrev" class="secondary">◀ 이전</button>
     <button id="cardFlipBtn">뒤집기</button>
+    <button id="cardWhy" class="secondary">💡 원리</button>
     <button id="cardNext" class="secondary">다음 ▶</button>
     <button id="cardShuffle" class="secondary">🔀 섞기</button>
   </div>
@@ -364,6 +379,7 @@
 </div>
 
 <script src="math-formula-data.js?v=2"></script>
+<script src="math-formula-why.js?v=1"></script>
 <script>
 // === 데이터 펼치기 ===
 const LEVELS = Object.keys(M_RAW);
@@ -436,6 +452,51 @@ function fitFormula(el) {
   }
 }
 
+// ===== 공식의 원리(유도) 모달 =====
+function whyOf(it) { return (typeof M_WHY !== 'undefined' && M_WHY[it.key]) || ''; }
+// 텍스트 + $...$ 수식 혼합 문자열을 렌더
+function renderMixed(el, s) {
+  el.innerHTML = '';
+  String(s).split('\n').forEach(line => {
+    if (!line.trim()) return;
+    const p = document.createElement('p');
+    line.split(/\$([^$]+)\$/).forEach((seg, i) => {
+      if (i % 2 === 0) {
+        if (seg) p.appendChild(document.createTextNode(seg));
+      } else {
+        const sp = document.createElement('span');
+        if (window.katex) {
+          try { katex.render(seg, sp, { throwOnError: false, strict: false }); }
+          catch (e) { sp.textContent = seg; }
+        } else sp.textContent = seg;
+        p.appendChild(sp);
+      }
+    });
+    el.appendChild(p);
+  });
+}
+function openWhy(it) {
+  const w = whyOf(it);
+  if (!w) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-back';
+  overlay.innerHTML = `<div class="modal">
+    <div class="why-head">💡 왜 이렇게 될까?</div>
+    <div class="why-name">${it.lv} · ${it.name}</div>
+    <div class="why-tex" id="whyTex"></div>
+    <div class="why-body" id="whyBody"></div>
+    <button class="secondary modal-close" id="whyClose">닫기</button>
+  </div>`;
+  document.body.appendChild(overlay);
+  const tEl = overlay.querySelector('#whyTex');
+  tex(tEl, it.tex);
+  fitFormula(tEl);
+  renderMixed(overlay.querySelector('#whyBody'), w);
+  const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
+  overlay.querySelector('#whyClose').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+}
+
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -460,9 +521,10 @@ function renderTable() {
       lastCat = it.cat;
       html += `<div class="mt-cat">${it.cat}</div>`;
     }
-    html += `<div class="mt-row">` +
+    const hasWhy = !!whyOf(it);
+    html += `<div class="mt-row${hasWhy ? ' has-why' : ''}" data-i="${i}">` +
       `<div class="mt-left${hideName ? ' hidden-cell' : ''}">` +
-      `<div class="mt-name">${it.name}</div>` +
+      `<div class="mt-name">${it.name}${hasWhy ? ' <span class="why-mark">💡</span>' : ''}</div>` +
       (it.desc ? `<div class="mt-desc">${it.desc}</div>` : '') +
       `</div>` +
       `<div class="mt-tex${hideTex ? ' hidden-cell' : ''}" data-i="${i}"></div>` +
@@ -471,7 +533,9 @@ function renderTable() {
   body.innerHTML = html + '</div>';
   body.querySelectorAll('.mt-tex').forEach(cell => { tex(cell, items[+cell.dataset.i].tex); fitFormula(cell); });
   body.querySelectorAll('.hidden-cell').forEach(cell =>
-    cell.addEventListener('click', () => cell.classList.remove('hidden-cell')));
+    cell.addEventListener('click', e => { e.stopPropagation(); cell.classList.remove('hidden-cell'); }));
+  body.querySelectorAll('.mt-row.has-why').forEach(row =>
+    row.addEventListener('click', () => openWhy(items[+row.dataset.i])));
 }
 
 // === 카드 ===
@@ -505,6 +569,7 @@ function renderCard() {
     document.getElementById('fcSub').textContent = '카드를 누르면 공식이 보여요 👆';
   }
   document.getElementById('cardProgress').textContent = `${cardIdx + 1} / ${cardDeck.length}`;
+  document.getElementById('cardWhy').style.display = whyOf(it) ? '' : 'none';
 }
 function toggleFlip() {
   cardFlipped = !cardFlipped;
@@ -671,12 +736,14 @@ function renderSearch() {
   body.className = '';
   body.innerHTML = `<div class="sr-count">${hits.length}개 찾음</div><div class="formula-list">` +
     hits.map((it, i) =>
-      `<div class="mt-row"><div class="mt-left">` +
+      `<div class="mt-row${whyOf(it) ? ' has-why' : ''}" data-i="${i}"><div class="mt-left">` +
       `<div class="sr-badge">${it.lv} · ${it.cat}</div>` +
-      `<div class="mt-name">${hl(it.name, q)}</div>` +
+      `<div class="mt-name">${hl(it.name, q)}${whyOf(it) ? ' <span class="why-mark">💡</span>' : ''}</div>` +
       (it.desc ? `<div class="mt-desc">${hl(it.desc, q)}</div>` : '') +
       `</div><div class="mt-tex" data-i="${i}"></div></div>`).join('') + '</div>';
   body.querySelectorAll('.mt-tex').forEach(cell => { tex(cell, hits[+cell.dataset.i].tex); fitFormula(cell); });
+  body.querySelectorAll('.mt-row.has-why').forEach(row =>
+    row.addEventListener('click', () => openWhy(hits[+row.dataset.i])));
 }
 
 // === 뷰 전환 ===
@@ -743,6 +810,7 @@ document.getElementById('cardFlipBtn').addEventListener('click', toggleFlip);
 document.getElementById('cardPrev').addEventListener('click', () => moveCard(-1));
 document.getElementById('cardNext').addEventListener('click', () => moveCard(1));
 document.getElementById('cardShuffle').addEventListener('click', () => { shuffleCards(); renderCard(); });
+document.getElementById('cardWhy').addEventListener('click', () => { const it = cardDeck[cardIdx]; if (it) openWhy(it); });
 document.getElementById('quizCatSel').addEventListener('change', e => {
   quizCat = e.target.value;
   score = 0;
