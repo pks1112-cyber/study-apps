@@ -151,7 +151,7 @@ const M_RAW = {
     ['세제곱의 합', 'a^3+b^3=(a+b)(a^2-ab+b^2)', '가운데 부호가 −ab인 것에 주의'],
     ['세제곱의 차', 'a^3-b^3=(a-b)(a^2+ab+b^2)', ''],
     ['세 수 합의 제곱', '(a+b+c)^2=a^2+b^2+c^2+2ab+2bc+2ca', ''],
-    ['a³+b³+c³−3abc의 인수분해', 'a^3+b^3+c^3-3abc=(a+b+c)(a^2+b^2+c^2-ab-bc-ca)', ''],
+    ['a³+b³+c³−3abc의 인수분해', '\\begin{aligned}&a^3+b^3+c^3-3abc\\\\&=(a+b+c)(a^2+b^2+c^2-ab-bc-ca)\\end{aligned}', ''],
     ['복이차 꼴 곱셈공식', '(a^2+ab+b^2)(a^2-ab+b^2)=a^4+a^2b^2+b^4', '심화 — x⁴+x²+1 인수분해에 활용'],
   ]],
   ['곱셈공식의 변형', [
@@ -161,10 +161,10 @@ const M_RAW = {
     ['변형 ④ 역수 제곱의 합', 'a^2+\\dfrac{1}{a^2}=\\left(a+\\dfrac{1}{a}\\right)^2-2', ''],
     ['변형 ⑤ 역수 세제곱의 합', 'a^3+\\dfrac{1}{a^3}=\\left(a+\\dfrac{1}{a}\\right)^3-3\\left(a+\\dfrac{1}{a}\\right)', ''],
     ['변형 ⑥ 세제곱의 차', 'a^3-b^3=(a-b)^3+3ab(a-b)', '차와 곱으로 나타내기 — 변형 ②의 짝'],
-    ['변형 ⑦ 세 수 세제곱의 합', 'a^3+b^3+c^3=(a+b+c)(a^2+b^2+c^2-ab-bc-ca)+3abc', '세 수의 합, 곱의 합, 곱만 알면 구할 수 있다'],
+    ['변형 ⑦ 세 수 세제곱의 합', '\\begin{aligned}&a^3+b^3+c^3\\\\&=(a+b+c)(a^2+b^2+c^2-ab-bc-ca)\\\\&\\quad+3abc\\end{aligned}', '세 수의 합, 곱의 합, 곱만 알면 구할 수 있다'],
     ['변형 ⑧ 역수 제곱 (차 꼴)', 'a^2+\\dfrac{1}{a^2}=\\left(a-\\dfrac{1}{a}\\right)^2+2', '변형 ④의 짝 — 부호만 반대'],
     ['변형 ⑨ 역수 세제곱 (차 꼴)', 'a^3-\\dfrac{1}{a^3}=\\left(a-\\dfrac{1}{a}\\right)^3+3\\left(a-\\dfrac{1}{a}\\right)', ''],
-    ['제곱의 합으로 묶기', 'a^2+b^2+c^2-ab-bc-ca=\\dfrac{1}{2}\\left\\{(a-b)^2+(b-c)^2+(c-a)^2\\right\\}', '항상 0 이상 — 부호 판단에 활용'],
+    ['제곱의 합으로 묶기', '\\begin{aligned}&a^2+b^2+c^2-ab-bc-ca\\\\&=\\dfrac{1}{2}\\left\\{(a-b)^2+(b-c)^2+(c-a)^2\\right\\}\\end{aligned}', '항상 0 이상 — 부호 판단에 활용'],
     ['합과 차의 제곱 관계', '(a+b)^2=(a-b)^2+4ab', ''],
   ]],
   ['나눗셈과 나머지정리', [
@@ -192,7 +192,7 @@ const M_RAW = {
     ['포물선과 직선의 위치 관계', 'D>0\\text{ 두 점, }\\;D=0\\text{ 접함, }\\;D<0\\text{ 만나지 않음}', '연립해서 만든 이차방정식의 판별식 D'],
   ]],
   ['삼차·사차방정식', [
-    ['삼차방정식 근과 계수의 관계', '\\alpha+\\beta+\\gamma=-\\dfrac{b}{a},\\;\\;\\alpha\\beta+\\beta\\gamma+\\gamma\\alpha=\\dfrac{c}{a},\\;\\;\\alpha\\beta\\gamma=-\\dfrac{d}{a}', 'ax³+bx²+cx+d=0의 세 근 (교과서에 따라 심화)'],
+    ['삼차방정식 근과 계수의 관계', '\\begin{aligned}&\\alpha+\\beta+\\gamma=-\\dfrac{b}{a},\\;\\;\\alpha\\beta+\\beta\\gamma+\\gamma\\alpha=\\dfrac{c}{a}\\\\&\\alpha\\beta\\gamma=-\\dfrac{d}{a}\\end{aligned}', 'ax³+bx²+cx+d=0의 세 근 (교과서에 따라 심화)'],
     ['ω(오메가)의 성질', '\\omega^3=1,\\;\\;\\omega^2+\\omega+1=0', 'x³=1의 한 허근 ω'],
   ]],
   ['부등식', [
@@ -223,7 +223,7 @@ const M_RAW = {
     ['원 위의 점에서의 접선', 'x_1x+y_1y=r^2', '원 x²+y²=r² 위의 점 (x₁, y₁)에서'],
     ['기울기가 m인 원의 접선', 'y=mx\\pm r\\sqrt{m^2+1}', '원 x²+y²=r²에 접하는 직선'],
     ['평행이동', 'f(x-a,\\;y-b)=0', 'x축으로 a, y축으로 b만큼 이동 — 부호가 반대인 것에 주의'],
-    ['대칭이동', 'x\\text{축: }(x,-y),\\;\\;y\\text{축: }(-x,y),\\;\\;\\text{원점: }(-x,-y),\\;\\;y=x\\text{: }(y,x)', '점 (x, y)의 대칭이동'],
+    ['대칭이동', '\\begin{aligned}&x\\text{축: }(x,-y),\\;\\;y\\text{축: }(-x,y)\\\\&\\text{원점: }(-x,-y),\\;\\;y=x\\text{: }(y,x)\\end{aligned}', '점 (x, y)의 대칭이동'],
   ]],
   ['집합과 명제', [
     ['합집합의 원소의 개수', 'n(A\\cup B)=n(A)+n(B)-n(A\\cap B)', '겹치는 부분을 한 번 뺀다'],

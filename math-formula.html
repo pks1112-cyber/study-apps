@@ -383,7 +383,7 @@
   © 2026 Mina &amp; Juho. All rights reserved. 무단 복제·배포 금지
 </div>
 
-<script src="math-formula-data.js?v=5"></script>
+<script src="math-formula-data.js?v=6"></script>
 <script src="math-formula-why.js?v=4"></script>
 <script>
 // === 데이터 펼치기 ===
@@ -677,7 +677,7 @@ function renderQuiz() {
   box.innerHTML = options.map(o => `<button class="opt" data-k="${o.key}"></button>`).join('');
   box.querySelectorAll('.opt').forEach(btn => {
     const o = ITEM_INDEX[btn.dataset.k];
-    if (curDir === 'n2f') tex(btn, o.tex);
+    if (curDir === 'n2f') { tex(btn, o.tex); fitFormula(btn); }
     else btn.textContent = o.name;
     btn.addEventListener('click', () => answer(btn, o, item));
   });
