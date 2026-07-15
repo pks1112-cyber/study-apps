@@ -140,7 +140,8 @@
   .mt-left { flex: 1; min-width: 0; }
   .mt-name { font-size: 15px; font-weight: 700; color: #173531; line-height: 1.35; word-break: keep-all; }
   .mt-desc { font-size: 12.5px; color: var(--muted); margin-top: 2px; word-break: keep-all; }
-  .mt-tex { flex: 1.2; min-width: 0; overflow-x: auto; padding: 2px 0; }
+  /* overflow-y hidden: KaTeX 수식의 유령 세로 여백(1~5px)이 Windows 클래식 스크롤바를 만들지 않게 */
+  .mt-tex { flex: 1.2; min-width: 0; overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
   .hidden-cell { filter: blur(6px); cursor: pointer; }
   .table-hint { margin-top: 16px; font-size: 12.5px; color: #8aa9a3; }
   .mt-row.has-why { cursor: pointer; transition: background 0.12s; }
@@ -217,7 +218,7 @@
   .opt {
     background: #f4fbf9; color: var(--ink); border: 1.5px solid var(--line);
     border-radius: 13px; padding: 13px 14px; font-size: 15px; font-weight: 600;
-    box-shadow: none; overflow-x: auto; line-height: 1.4;
+    box-shadow: none; overflow-x: auto; overflow-y: hidden; line-height: 1.4;
   }
   .opt:hover { transform: none; box-shadow: none; background: #e8f7f3; border-color: #99e3d8; }
   .opt.right { background: #e7f8ef; border-color: #34c98a; color: #0b7a4e; }
@@ -455,6 +456,19 @@ function fitFormula(el) {
     size -= 5;
     el.style.fontSize = size + '%';
   }
+}
+// 창 크기·확대/축소·수식 폰트 로딩이 바뀌면 화면의 모든 수식을 다시 맞춤
+// (fitFormula는 렌더 시점 폭 기준이라, 이후 폭이 변하면 어긋난 채 남는 문제 방지)
+function refitAll() {
+  document.querySelectorAll('.mt-tex, .opt, .q-prompt, .fc-main, .why-tex').forEach(el => {
+    if (el.querySelector('.katex')) fitFormula(el);
+  });
+}
+let refitTimer;
+window.addEventListener('resize', () => { clearTimeout(refitTimer); refitTimer = setTimeout(refitAll, 150); });
+if (document.fonts) {
+  document.fonts.ready.then(refitAll);
+  document.fonts.addEventListener('loadingdone', refitAll);
 }
 
 // ===== 삼각형 그림 (공식표·원리 모달 공용) =====
