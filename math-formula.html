@@ -156,6 +156,11 @@
   .why-body { font-size: 14.5px; color: #29455a; line-height: 1.9; }
   .why-body p { margin: 0 0 8px; }
   .why-body .katex { font-size: 1.02em; }
+  /* 삼각형 그림 (공식표·원리 모달 공용) */
+  .mt-fig { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 12px 10px 8px; text-align: center; }
+  .why-fig { background: #f4fbf9; border: 1px solid var(--line); border-radius: 12px; padding: 10px 8px 6px; text-align: center; margin-bottom: 14px; }
+  .mt-fig svg, .why-fig svg { max-width: 100%; height: auto; }
+  .fig-cap { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.6; }
   .modal-close { width: 100%; margin-top: 10px; }
 
   /* ===== 검색 ===== */
@@ -378,8 +383,8 @@
   © 2026 Mina &amp; Juho. All rights reserved. 무단 복제·배포 금지
 </div>
 
-<script src="math-formula-data.js?v=4"></script>
-<script src="math-formula-why.js?v=3"></script>
+<script src="math-formula-data.js?v=5"></script>
+<script src="math-formula-why.js?v=4"></script>
 <script>
 // === 데이터 펼치기 ===
 const LEVELS = Object.keys(M_RAW);
@@ -452,6 +457,46 @@ function fitFormula(el) {
   }
 }
 
+// ===== 삼각형 그림 (공식표·원리 모달 공용) =====
+const FIG_TRI = `<svg viewBox="0 0 300 195" width="260" xmlns="http://www.w3.org/2000/svg" aria-label="직각삼각형 ABC">
+  <path d="M30,165 L270,165 L270,40 Z" fill="rgba(13,148,136,0.07)" stroke="var(--primary)" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M256,165 L256,151 L270,151" fill="none" stroke="var(--primary)" stroke-width="1.8"/>
+  <path d="M64,165 A34,34 0 0 0 60.2,149.3" fill="none" stroke="var(--primary-2)" stroke-width="1.6"/>
+  <g font-family="KaTeX_Math, 'Times New Roman', serif" font-style="italic" font-size="17" fill="var(--ink)">
+    <text x="16" y="177">A</text><text x="276" y="36">B</text><text x="276" y="180">C</text>
+  </g>
+  <g font-family="KaTeX_Math, 'Times New Roman', serif" font-style="italic" font-size="18" font-weight="600" fill="var(--primary-2)">
+    <text x="279" y="108">a</text><text x="146" y="185">b</text><text x="136" y="96">c</text>
+  </g>
+</svg>`;
+const FIG_SPECIAL = `<svg viewBox="0 0 330 185" width="300" xmlns="http://www.w3.org/2000/svg" aria-label="특수각 삼각형 두 개">
+  <path d="M15,145 L140,145 L140,73 Z" fill="rgba(13,148,136,0.07)" stroke="var(--primary)" stroke-width="2.2" stroke-linejoin="round"/>
+  <path d="M128,145 L128,133 L140,133" fill="none" stroke="var(--primary)" stroke-width="1.6"/>
+  <path d="M200,145 L295,145 L295,50 Z" fill="rgba(13,148,136,0.07)" stroke="var(--primary)" stroke-width="2.2" stroke-linejoin="round"/>
+  <path d="M283,145 L283,133 L295,133" fill="none" stroke="var(--primary)" stroke-width="1.6"/>
+  <g font-family="KaTeX_Math, 'Times New Roman', serif" font-size="16" font-weight="600" fill="var(--primary-2)" text-anchor="middle">
+    <text x="66" y="100">2</text><text x="150" y="113" text-anchor="start">1</text><text x="77" y="162">√3</text>
+    <text x="234" y="90">√2</text><text x="303" y="102" text-anchor="start">1</text><text x="247" y="162">1</text>
+  </g>
+  <g font-size="11.5" fill="var(--ink)" text-anchor="middle">
+    <text x="52" y="139">30°</text><text x="126" y="94">60°</text>
+    <text x="230" y="139">45°</text><text x="285" y="74">45°</text>
+  </g>
+  <g font-size="12" fill="var(--muted)" text-anchor="middle">
+    <text x="80" y="180">정삼각형의 반쪽</text><text x="250" y="180">정사각형의 반쪽</text>
+  </g>
+</svg>`;
+const CAP_TRI = '∠C = 90°인 직각삼각형 — a: 높이 (각 A의 맞은편) · b: 밑변 · c: 빗변';
+const CAP_SPECIAL = '특수각의 값은 이 두 삼각형의 변의 비를 그대로 읽은 것';
+const M_FIG = {
+  '중3|사인': [FIG_TRI, CAP_TRI],
+  '중3|코사인': [FIG_TRI, CAP_TRI],
+  '중3|탄젠트': [FIG_TRI, CAP_TRI],
+  '중3|특수각의 삼각비': [FIG_SPECIAL, CAP_SPECIAL],
+  '중2|피타고라스 정리': [FIG_TRI, CAP_TRI],
+};
+const CAT_FIG = { '중3|삼각비': [FIG_TRI, CAP_TRI] };
+
 // ===== 공식의 원리(유도) 모달 =====
 function whyOf(it) { return (typeof M_WHY !== 'undefined' && M_WHY[it.key]) || ''; }
 // 텍스트 + $...$ 수식 혼합 문자열을 렌더
@@ -478,12 +523,14 @@ function renderMixed(el, s) {
 function openWhy(it) {
   const w = whyOf(it);
   if (!w) return;
+  const fig = M_FIG[it.key];
   const overlay = document.createElement('div');
   overlay.className = 'modal-back';
   overlay.innerHTML = `<div class="modal">
     <div class="why-head">💡 왜 이렇게 될까?</div>
     <div class="why-name">${it.lv} · ${it.name}</div>
     <div class="why-tex" id="whyTex"></div>
+    ${fig ? `<div class="why-fig">${fig[0]}<div class="fig-cap">${fig[1]}</div></div>` : ''}
     <div class="why-body" id="whyBody"></div>
     <button class="secondary modal-close" id="whyClose">닫기</button>
   </div>`;
@@ -520,6 +567,8 @@ function renderTable() {
     if (it.cat !== lastCat) {
       lastCat = it.cat;
       html += `<div class="mt-cat">${it.cat}</div>`;
+      const catFig = CAT_FIG[it.lv + '|' + it.cat];
+      if (catFig) html += `<div class="mt-fig">${catFig[0]}<div class="fig-cap">${catFig[1]}</div></div>`;
     }
     const hasWhy = !!whyOf(it);
     html += `<div class="mt-row${hasWhy ? ' has-why' : ''}" data-i="${i}">` +
