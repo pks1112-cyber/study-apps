@@ -1202,7 +1202,7 @@ let audioSrc = localStorage.getItem(SRC_KEY) || 'dict';
 
 const player = new Audio();
 function stopAudio() {
-  try { player.onended = null; player.onerror = null; player.pause(); } catch (e) {}
+  try { player.onended = null; player.onerror = null; player.onplaying = null; player.pause(); } catch (e) {}
   if (ttsOK) { try { speechSynthesis.cancel(); } catch (e) {} }
 }
 
@@ -1228,23 +1228,47 @@ async function getDictAudio(word) {
           if (!best) best = ph.audio;
         }
       }
-    }
+    } else if (r.status !== 404) return null;   // 429/5xx 같은 일시 오류는 캐시하지 않고 다음에 재시도
   } catch (e) { return null; }   // network error: don't cache, retry later
-  dictCache[word] = best;        // null = known to have no audio
+  dictCache[word] = best;        // null = known to have no audio (404 확인된 경우만)
   saveDictCache();
   return best;
 }
+// 과거에 429 응답이 '음원 없음'으로 잘못 저장된 항목 청소 — 시작 시 1회, null 항목은 재시도 기회를 준다
+(function purgeNullDictCache() {
+  let n = 0;
+  for (const k in dictCache) if (dictCache[k] === null) { delete dictCache[k]; n++; }
+  if (n) saveDictCache();
+})();
+// 리스트 렌더 때 한꺼번에 수십 개를 조회하면 429가 나므로 3개씩만 동시 조회
+let pfQueue = [], pfActive = 0;
+function pumpPrefetch() {
+  while (pfActive < 3 && pfQueue.length) {
+    const w = pfQueue.shift();
+    if (w in dictCache) continue;
+    pfActive++;
+    getDictAudio(w).catch(() => {}).then(() => { pfActive--; pumpPrefetch(); });
+  }
+}
 function prefetchDictAudio(words) {
   if (audioSrc !== 'dict') return;
-  words.forEach(w => { if (/^[A-Za-z'-]+$/.test(w)) getDictAudio(w.toLowerCase()); });
+  words.forEach(w => {
+    if (/^[A-Za-z'-]+$/.test(w)) {
+      const lw = w.toLowerCase();
+      if (!(lw in dictCache) && !pfQueue.includes(lw)) pfQueue.push(lw);
+    }
+  });
+  pumpPrefetch();
 }
 
 function playUrl(url) {
   return new Promise(res => {
     let done = false;
-    const finish = ok => { if (!done) { done = true; res(ok); } };
+    const guard = setTimeout(() => finish(false), 5000);   // 로드가 소리 없이 멈춰버리는 경우 대비
+    const finish = ok => { if (!done) { done = true; clearTimeout(guard); res(ok); } };
     player.onended = () => finish(true);
     player.onerror = () => finish(false);
+    player.onplaying = () => clearTimeout(guard);
     player.src = url;
     player.play().then(() => setTimeout(() => finish(true), 10000))
                  .catch(() => finish(false));
@@ -1283,20 +1307,34 @@ function populateVoiceSel() {
 function speakTTS(text) {
   return new Promise(res => {
     if (!ttsOK) return res(false);
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'en-US';
-    u.rate = 0.9;
-    if (enVoice) u.voice = enVoice;
-    u.onend = () => res(true);
-    u.onerror = () => res(true);
+    let settled = false, started = false;
+    const done = ok => { if (!settled) { settled = true; res(ok); } };
+    const makeU = useVoice => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-US';
+      u.rate = 0.9;
+      if (useVoice && enVoice) u.voice = enVoice;
+      u.onstart = () => { started = true; };
+      u.onend = () => done(true);
+      u.onerror = () => done(true);
+      return u;
+    };
     try {
       speechSynthesis.cancel();
-      setTimeout(() => { speechSynthesis.speak(u); speechSynthesis.resume(); }, 50);
-    } catch (e) { res(false); }
+      setTimeout(() => { speechSynthesis.speak(makeU(true)); speechSynthesis.resume(); }, 50);
+      // iOS가 조용히 무시하는 경우: 1.3초 안에 시작 안 되면 보이스 지정 없이 한 번 더
+      setTimeout(() => {
+        if (!started && !settled) {
+          try { speechSynthesis.cancel(); speechSynthesis.speak(makeU(false)); speechSynthesis.resume(); } catch (e) {}
+          setTimeout(() => { if (!started) done(false); }, 1500);
+        }
+      }, 1300);
+    } catch (e) { done(false); }
   });
 }
 
 // --- main entry: play once, resolve when finished ---
+let googleFails = 0;   // 구글 TTS가 막힌 환경(iOS 등)에서 매번 기다리지 않도록 세션 내 실패 기억
 async function pronounce(text) {
   stopAudio();
   const single = /^[A-Za-z'-]+$/.test(text.trim());
@@ -1304,8 +1342,9 @@ async function pronounce(text) {
     const url = await getDictAudio(text.trim().toLowerCase());
     if (url && await playUrl(url)) return;
   }
-  if (audioSrc === 'dict' || audioSrc === 'google') {
-    if (await playUrl(googleTtsUrl(text))) return;
+  if ((audioSrc === 'dict' || audioSrc === 'google') && googleFails < 2) {
+    if (await playUrl(googleTtsUrl(text))) { googleFails = 0; return; }
+    googleFails++;
   }
   await speakTTS(text);
 }
@@ -1330,6 +1369,14 @@ function stopSpeakAll() {
     voiceWrap.style.display = audioSrc === 'browser' ? 'inline' : 'none';
   });
   document.getElementById('voiceTest').addEventListener('click', () => speak('beautiful'));
+  // iOS는 첫 사용자 터치 안에서 speak()를 한 번 해줘야 이후 음성이 잠기지 않는다
+  if (ttsOK) {
+    const unlockTTS = () => {
+      try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } catch (e) {}
+    };
+    document.addEventListener('touchend', unlockTTS, { once: true });
+    document.addEventListener('click', unlockTTS, { once: true });
+  }
   if (ttsOK) {
     populateVoiceSel();
     speechSynthesis.onvoiceschanged = populateVoiceSel;
