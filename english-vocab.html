@@ -172,6 +172,8 @@
 
   /* test */
   .q-mark { display: flex; justify-content: flex-end; margin: 2px 0 -6px; }
+  button.linklike { background: none; border: none; color: #4f46e5; font-size: 12.5px; font-weight: 700; padding: 0; box-shadow: none; cursor: pointer; vertical-align: baseline; }
+  button.linklike:hover { transform: none; box-shadow: none; text-decoration: underline; }
   .flash .mk-wrap { position: absolute; top: 12px; right: 12px; }
   .q-meaning { font-size: 27px; font-weight: 700; text-align: center; margin: 20px 0; }
   .q-word { font-size: 46px; font-weight: 800; text-align: center; margin: 18px 0 12px; color: #4338ca; letter-spacing: -0.5px; }
@@ -569,7 +571,7 @@
     <h1>영단어 마스터</h1>
     <p class="tagline">초5 ~ 고3 필수 영단어 2,000 · 발음기호 · 원어민 발음 · 예문</p>
     <div class="hero-stats">
-      <span class="hstat">⭐ 외운 단어 <b id="hMastered">0</b></span>
+      <span class="hstat">😊 외운 단어 <b id="hMastered">0</b></span>
       <span class="hstat">🎯 정답률 <b id="hAcc">0%</b></span>
       <span class="hstat">🔥 최고 연속 <b id="hStreak">0</b></span>
       <span class="hstat">📅 오늘 <b id="hToday">0/20</b></span>
@@ -697,7 +699,7 @@ let mode = 'my';
 let hideMode = 'none';   // 'none' | 'kor' | 'eng'
 let searchQuery = '';
 
-let cardQueue = [], cardFlipped = false, cardDone = 0, cardTotal = 0;
+let cardQueue = [], cardFlipped = false, cardDone = 0, cardTotal = 0, cardStarted = false;
 let testType = null, testQs = [], testIdx = 0, testScore = 0, testLocked = false, testOver = false;
 let tblFilter = 'all';               // 단어표 보기 필터: all|none|known|hard
 let cardFilter = 'all';              // 카드 덱 필터: all|notknown|hard
@@ -1244,6 +1246,7 @@ document.addEventListener('click', e => {
   if (sum && (mode === 'table' || mode === 'cards' || mode === 'test' || mode === 'my')) {
     try { sum.innerHTML = markSumHtml(currentWords()); } catch (err) {}
   }
+  updateHeroStats();   // 상단 보드 '😊 외운 단어' 즉시 갱신
 }, true);
 
 function stat(key) { return store.wordStats[key] || { c: 0, w: 0 }; }
@@ -1301,7 +1304,7 @@ function updateWrongCnt() {
 }
 function updateHeroStats() {
   let mastered = 0;
-  for (const k in store.wordStats) if (store.wordStats[k].c >= 3) mastered++;
+  for (const k in store.marks) if (store.marks[k] === 1) mastered++;   // 😊 수동 외움 기준
   const acc = store.answered ? Math.round(store.correct / store.answered * 100) : 0;
   document.getElementById('hMastered').textContent = mastered;
   document.getElementById('hAcc').textContent = acc + '%';
@@ -1568,8 +1571,7 @@ document.getElementById('unitNext').addEventListener('click', () => gotoUnit(cur
 function resetModeStates() {
   stopTimeAttack();
   testType = null; testQs = []; testOver = false;
-  cardQueue = []; cardTotal = 0; wrongQuizOn = false; srsQuizOn = false;
-  if (mode === 'cards') startCards();
+  cardQueue = []; cardTotal = 0; cardStarted = false; wrongQuizOn = false; srsQuizOn = false;
 }
 
 // ===== Mode: word table =====
@@ -1605,12 +1607,11 @@ function renderTable() {
   } else {
     html += `<table class="words"><tr><th>영단어</th><th>품사</th><th>뜻</th><th></th></tr>`;
     for (const it of shown) {
-      const mastered = stat(it.key).c >= 3;
       html += `<tr class="wrow ${it.ex ? 'has-ex' : ''}" data-w="${esc(it.w)}">
         <td class="eng ${hideMode === 'eng' ? 'm-hidden' : ''}">${esc(it.w)} <span class="ipa">${esc(it.ipa)}</span></td>
         <td class="pos-td">${posTag(it.p)}</td>
         <td class="kor ${hideMode === 'kor' ? 'm-hidden' : ''}">${esc(it.m)}</td>
-        <td class="star">${markWidget(it.key)}${mastered ? ' ⭐' : ''}${inMy ? '' : ` <button class="tbl-add gp-open" data-key="${esc(it.key)}">＋담기</button>`}</td></tr>`;
+        <td class="star">${markWidget(it.key)}${inMy ? '' : ` <button class="tbl-add gp-open" data-key="${esc(it.key)}">＋담기</button>`}</td></tr>`;
       if (it.ex) {
         html += `<tr class="ex-row"><td colspan="4">
           <span class="ex-en ${hideMode === 'eng' ? 'm-hidden' : ''}" data-s="${esc(it.ex)}">${esc(it.ex)}</span>
@@ -1690,36 +1691,45 @@ function startCards() {
   cardDone = 0;
   cardFlipped = false;
 }
-function cardChipsHtml() {
-  return `<div class="fchips">
-    <button class="fchip ${cardFilter === 'all' ? 'on' : ''}" data-f="all">전체</button>
-    <button class="fchip ${cardFilter === 'notknown' ? 'on' : ''}" data-f="notknown">외움 빼고</button>
-    <button class="fchip h ${cardFilter === 'hard' ? 'on' : ''}" data-f="hard">😖 못외움만</button>
-  </div>`;
-}
-function bindCardChips(el) {
-  el.querySelectorAll('.fchip').forEach(b => b.addEventListener('click', () => {
-    cardFilter = b.dataset.f;
-    startCards();
-    renderCards();
-  }));
-}
 function renderCards() {
   const el = renderTarget();
+  // 시작 화면: 조건 고르고 출발 (카드 넘기는 중엔 필터가 안 보이게)
+  if (!cardStarted) {
+    const pool = cardPoolWords();
+    el.innerHTML = `
+      <div class="unit-title" style="text-align:center">🃏 카드 학습</div>
+      <div class="fchips">
+        <button class="fchip ${cardFilter === 'all' ? 'on' : ''}" data-f="all">전체</button>
+        <button class="fchip ${cardFilter === 'notknown' ? 'on' : ''}" data-f="notknown">외움 빼고</button>
+        <button class="fchip h ${cardFilter === 'hard' ? 'on' : ''}" data-f="hard">😖 못외움만</button>
+      </div>
+      <div class="mk-sum">${markSumHtml(currentWords())}</div>
+      <div class="center" style="padding:14px 0 6px">
+        ${pool.length
+          ? `<button id="cardGo" style="font-size:16px;padding:14px 34px">▶ ${pool.length}장 시작</button>`
+          : `<div class="search-empty">이 조건의 카드가 없어요. 다른 조건을 골라 보세요.</div>`}
+      </div>`;
+    el.querySelectorAll('.fchip').forEach(b => b.addEventListener('click', () => { cardFilter = b.dataset.f; renderCards(); }));
+    const go = el.querySelector('#cardGo');
+    if (go) go.addEventListener('click', () => { cardStarted = true; startCards(); renderCards(); });
+    return;
+  }
   if (cardQueue.length === 0 && cardTotal === 0) startCards();
   if (cardQueue.length === 0) {
-    const emptyByFilter = cardTotal === 0 && cardFilter !== 'all';
-    el.innerHTML = cardChipsHtml() + `<div class="center" style="padding:34px 0">
-      <div style="font-size:60px">${emptyByFilter ? '🔍' : '🎉'}</div>
-      <div style="font-size:20px;font-weight:bold;margin:12px 0">${emptyByFilter ? '이 조건의 카드가 없어요' : '카드 한 바퀴 완료!'}</div>
-      ${emptyByFilter ? '' : '<button id="againBtn">다시 섞어서 보기</button>'}</div>`;
-    if (!emptyByFilter) el.querySelector('#againBtn').addEventListener('click', () => { startCards(); renderCards(); });
-    bindCardChips(el);
+    el.innerHTML = `<div class="center" style="padding:34px 0">
+      <div style="font-size:60px">🎉</div>
+      <div style="font-size:20px;font-weight:bold;margin:12px 0">카드 한 바퀴 완료!</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button id="againBtn">다시 섞어서 보기</button>
+        <button class="secondary" id="cardCfg">⚙ 조건 바꾸기</button>
+      </div></div>`;
+    el.querySelector('#againBtn').addEventListener('click', () => { startCards(); renderCards(); });
+    el.querySelector('#cardCfg').addEventListener('click', () => { cardStarted = false; cardQueue = []; cardTotal = 0; renderCards(); });
     return;
   }
   const cur = cardQueue[0];
-  el.innerHTML = cardChipsHtml() + `
-    <div class="progress-line">남은 카드 ${cardQueue.length}장 · 완료 ${cardDone}장</div>
+  el.innerHTML = `
+    <div class="progress-line">남은 카드 ${cardQueue.length}장 · 완료 ${cardDone}장 · <button class="linklike" id="cardCfg">⚙ 조건 바꾸기</button></div>
     <div class="flash ${cardFlipped ? 'back' : ''}" id="flashCard">
       ${markWidget(cur.key)}
       ${cardFlipped ? esc(cur.m) : esc(cur.w)}
@@ -1728,18 +1738,12 @@ function renderCards() {
     </div>
     <div class="actions" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
       <button class="secondary" id="sayBtn">🔊 발음</button>
-      <button class="red" id="dontKnow">❌ 몰라요</button>
-      <button class="green" id="know">✅ 알아요</button>
+      <button id="nextCard">다음 카드 ▶</button>
     </div>`;
-  bindCardChips(el);
   el.querySelector('#flashCard').addEventListener('click', () => { cardFlipped = !cardFlipped; renderCards(); });
+  el.querySelector('#cardCfg').addEventListener('click', () => { cardStarted = false; cardQueue = []; cardTotal = 0; cardFlipped = false; renderCards(); });
   el.querySelector('#sayBtn').addEventListener('click', () => speak(cur.w));
-  el.querySelector('#dontKnow').addEventListener('click', () => {
-    cardQueue.push(cardQueue.shift());
-    cardFlipped = false;
-    renderCards();
-  });
-  el.querySelector('#know').addEventListener('click', () => {
+  el.querySelector('#nextCard').addEventListener('click', () => {
     cardQueue.shift();
     cardDone++;
     cardFlipped = false;
@@ -2307,10 +2311,9 @@ function renderSearchResults() {
   }
   let html = `<div class="search-count">${rs.total}개 결과${rs.total > 50 ? ' (상위 50개 표시)' : ''} · 단어를 클릭하면 발음이 들려요</div>`;
   for (const r of rs.list) {
-    const mastered = stat(r.key).c >= 3;
     html += `<div class="result-item">
       <div class="result-main">
-        <div class="result-word"><b class="say-w" data-w="${esc(r.w)}">${esc(r.w)}</b> <span class="ipa">${esc(r.ipa)}</span> ${posTag(r.p)} ${mastered ? '⭐' : ''}</div>
+        <div class="result-word"><b class="say-w" data-w="${esc(r.w)}">${esc(r.w)}</b> <span class="ipa">${esc(r.ipa)}</span> ${posTag(r.p)}</div>
         <div class="result-meaning">${esc(r.m)}</div>
       </div>
       <div class="result-side">
@@ -2367,11 +2370,11 @@ function renderStats() {
   html += `<div class="unit-title">학습 기록</div><div class="stats-wrap">
     <table class="stats"><tr><th>레벨</th>`;
   for (let u = 0; u < maxUnits; u++) html += `<th>${u + 1}단원</th>`;
-  html += '<th>⭐ 외운 단어</th></tr>';
+  html += '<th>😊 외운 단어</th></tr>';
   for (const lv of LEVEL_NAMES) {
     const lw = levelWords(lv);
     let mastered = 0;
-    for (const it of lw) if (stat(it.key).c >= 3) mastered++;
+    for (const it of lw) if (markOf(it.key) === 1) mastered++;
     html += `<tr><td class="lv">${lv}</td>`;
     for (let u = 0; u < maxUnits; u++) {
       if (u >= RAW[lv].length) { html += '<td></td>'; continue; }
