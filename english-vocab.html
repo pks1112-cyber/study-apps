@@ -501,6 +501,60 @@
     .sub-seg { font-size: 11.5px; padding: 9px 2px; }
     #myListSel { font-size: 14px; padding: 11px 8px; }
   }
+
+  /* ===== 외움 표시 (미분류 회색 / 외움 초록 / 못외움 빨강) ===== */
+  .mk-wrap { display: inline-flex; gap: 4px; vertical-align: middle; }
+  .mk {
+    padding: 3px 7px; font-size: 15px; line-height: 1; border-radius: 999px;
+    background: #f1f5f9; border: 1.5px solid #e2e8f0; box-shadow: none;
+    filter: grayscale(1); opacity: .5; cursor: pointer;
+  }
+  .mk:hover { transform: none; box-shadow: none; opacity: .85; }
+  .mk:active { transform: scale(1.15); }
+  .mk.on { filter: none; opacity: 1; }
+  .mk.k.on { background: #e7f8ef; border-color: #34c98a; }
+  .mk.h.on { background: #fdeeee; border-color: #ef8e8e; }
+  .mk-sum { display: flex; gap: 6px; justify-content: center; margin: 0 0 10px; flex-wrap: wrap; }
+  .ms { font-size: 12.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+  .ms.k { background: #e7f8ef; color: #0b7a4e; }
+  .ms.h { background: #fdeeee; color: #c0392b; }
+  .ms.n { background: #eef2f7; color: #64748b; }
+  /* 보기/출제 필터 칩 */
+  .fchips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 0 0 12px; }
+  .fchip {
+    padding: 7px 13px; border-radius: 999px; font-size: 12.5px; font-weight: 700;
+    background: #eef2f7; color: #475569; border: 1.5px solid transparent; box-shadow: none;
+  }
+  .fchip:hover { transform: none; box-shadow: none; background: #e2e8f0; }
+  .fchip.on { background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; }
+  .fchip.on.k { background: #16a34a; }
+  .fchip.on.h { background: #dc2626; }
+  /* 테스트 설정 카드 */
+  .test-cfg {
+    background: #f8faff; border: 1.5px solid #e4e9f5; border-radius: 16px;
+    padding: 14px 14px 12px; margin-bottom: 16px; text-align: left;
+  }
+  .cfg-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .cfg-row:last-child { margin-bottom: 0; }
+  .cfg-label { font-size: 12.5px; font-weight: 800; color: #64748b; min-width: 52px; }
+  .cfg-scope { font-size: 13.5px; font-weight: 700; color: #1e293b; }
+  .cnt-row { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  .cnt-btn {
+    width: 34px; height: 34px; padding: 0; border-radius: 10px; font-size: 18px; line-height: 1;
+    background: #e2e8f0; color: #334155; box-shadow: none; flex-shrink: 0;
+  }
+  .cnt-btn:hover { transform: none; box-shadow: none; background: #cbd5e1; }
+  #cntSlider { flex: 1; min-width: 60px; accent-color: #4f46e5; height: 28px; }
+  .cnt-val { font-size: 13.5px; font-weight: 800; color: #4f46e5; min-width: 74px; text-align: right; }
+  /* 범위 다중 선택 팝업 목록 */
+  .scope-list { max-height: 46vh; overflow-y: auto; margin: 10px 0; text-align: left; }
+  .scope-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9; border-radius: 8px; cursor: pointer; font-size: 14px;
+  }
+  .scope-item:hover { background: #f8faff; }
+  .scope-item input { width: 18px; height: 18px; accent-color: #4f46e5; flex-shrink: 0; }
+  .scope-item .sc-cnt { margin-left: auto; color: #94a3b8; font-size: 12.5px; flex-shrink: 0; }
 </style>
 </head>
 <body>
@@ -608,7 +662,8 @@ const store = {
   taBest: sv.taBest || {},    // level -> time attack best score
   myWords: Array.isArray(sv.myWords) ? sv.myWords : [],   // [{w,m,p,ipa,ex,exk}] 직접 추가한 단어
   groups: (sv.groups && typeof sv.groups === 'object') ? sv.groups : {},  // {그룹명: [key, ...]}
-  lastGroup: sv.lastGroup || null    // 최근 선택/생성한 단어장 (내단어 기본 선택)
+  lastGroup: sv.lastGroup || null,   // 최근 선택/생성한 단어장 (내단어 기본 선택)
+  marks: (sv.marks && typeof sv.marks === 'object') ? sv.marks : {}   // key -> 1(외움) | 2(못외움), 없으면 미분류
 };
 function saveStore() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch (e) {}
@@ -639,6 +694,11 @@ let searchQuery = '';
 
 let cardQueue = [], cardFlipped = false, cardDone = 0, cardTotal = 0;
 let testType = null, testQs = [], testIdx = 0, testScore = 0, testLocked = false, testOver = false;
+let tblFilter = 'all';               // 단어표 보기 필터: all|none|known|hard
+let cardFilter = 'all';              // 카드 덱 필터: all|notknown|hard
+let testUnits = null;                // 테스트 범위 다중 선택 (없으면 현재 단원/단어장)
+let testFilter = 'all';              // 테스트 대상: all|notknown|hard
+let testCount = 0;                   // 출제 문제 수 (0 = 전부)
 let wrongQuizOn = false, wrongLocked = false;
 let speakAllOn = false;
 
@@ -804,7 +864,7 @@ function openGroupPicker(key) {
 
 // 백업 — 내보내기 / 가져오기 (기기 간 이동·복구)
 function exportBackup() {
-  const data = JSON.stringify({ app: 'en-vocab', v: 1, myWords: store.myWords, groups: store.groups }, null, 2);
+  const data = JSON.stringify({ app: 'en-vocab', v: 1, myWords: store.myWords, groups: store.groups, marks: store.marks }, null, 2);
   const blob = new Blob([data], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -841,6 +901,11 @@ function importBackup() {
             const incoming = Array.isArray(d.groups[n]) ? d.groups[n] : [];
             if (!store.groups[n]) store.groups[n] = [];
             for (const k of incoming) if (!store.groups[n].includes(k)) store.groups[n].push(k);
+          }
+        }
+        if (d.marks && typeof d.marks === 'object') {
+          for (const k in d.marks) {
+            if (!store.marks[k] && (d.marks[k] === 1 || d.marks[k] === 2)) store.marks[k] = d.marks[k];
           }
         }
         saveStore();
@@ -923,14 +988,17 @@ function renderMy() {
 
   // 헤더: 단어장 선택 + 관리 + 서브탭
   const cnt = groupCount(myList);
-  const mastered = groupWords(myList).filter(x => stat(x.key).c >= 3).length;
+  const gc = markCounts(groupWords(myList));
   el.innerHTML = `<div class="ml-bar">
-      <select id="myListSel">${names.map(n => `<option value="${esc(n)}" ${n === myList ? 'selected' : ''}>📒 ${esc(n)} (${groupCount(n)}개)</option>`).join('')}</select>
+      <select id="myListSel">${names.map(n => {
+        const c = markCounts(groupWords(n));
+        return `<option value="${esc(n)}" ${n === myList ? 'selected' : ''}>📒 ${esc(n)} (${groupCount(n)}개${c.known ? ' · 😊' + c.known : ''})</option>`;
+      }).join('')}</select>
       <button class="icon-btn" id="mlNew" title="새 단어장">➕</button>
       <button class="icon-btn" id="mlRen" title="이름 변경">✏️</button>
       <button class="icon-btn" id="mlDel" title="삭제">🗑</button>
     </div>
-    <div class="ml-info">${cnt}단어 · 외운 단어 ${mastered}/${cnt}</div>
+    <div class="ml-info">${cnt}단어 · 😊 외움 ${gc.known} · 😖 못외움 ${gc.hard} · ⚪ 미분류 ${gc.none}</div>
     <div class="sub-nav">
       <button class="sub-seg ${mySub === 'table' ? 'on' : ''}" data-s="table">📖 단어표</button>
       <button class="sub-seg ${mySub === 'cards' ? 'on' : ''}" data-s="cards">🃏 카드</button>
@@ -1127,6 +1195,52 @@ function openEditWord(w) {
     saveStore(); close(); renderMy();
   });
 }
+// ===== 외움 표시 (수동 3단계: 미분류 / 😊 외움 / 😖 못외움) =====
+function markOf(key) { return store.marks[key] || 0; }   // 0 미분류, 1 외움, 2 못외움
+function setMark(key, v) {
+  if (v) store.marks[key] = v; else delete store.marks[key];
+  saveStore();
+}
+function markCounts(words) {
+  const c = { known: 0, hard: 0, none: 0 };
+  for (const it of words) {
+    const m = markOf(it.key);
+    if (m === 1) c.known++; else if (m === 2) c.hard++; else c.none++;
+  }
+  return c;
+}
+function markSumHtml(words) {
+  const c = markCounts(words);
+  return `<span class="ms k">😊 ${c.known}</span><span class="ms h">😖 ${c.hard}</span><span class="ms n">⚪ ${c.none}</span>`;
+}
+// 단어가 보이는 모든 화면에서 쓰는 공용 체크 위젯
+function markWidget(key) {
+  const m = markOf(key);
+  return `<span class="mk-wrap" data-key="${esc(key)}">` +
+    `<button class="mk k ${m === 1 ? 'on' : ''}" title="외웠어요">😊</button>` +
+    `<button class="mk h ${m === 2 ? 'on' : ''}" title="못 외웠어요">😖</button></span>`;
+}
+// 캡처 단계 위임: 어떤 화면에서 눌러도 처리되고, 줄 클릭(발음)으로 번지지 않게
+document.addEventListener('click', e => {
+  const btn = e.target.closest && e.target.closest('.mk');
+  if (!btn) return;
+  e.stopPropagation();
+  e.preventDefault();
+  const key = btn.closest('.mk-wrap').dataset.key;
+  const want = btn.classList.contains('k') ? 1 : 2;
+  const now = markOf(key) === want ? 0 : want;
+  setMark(key, now);
+  document.querySelectorAll('.mk-wrap').forEach(w => {
+    if (w.dataset.key !== key) return;
+    w.querySelector('.mk.k').classList.toggle('on', now === 1);
+    w.querySelector('.mk.h').classList.toggle('on', now === 2);
+  });
+  const sum = document.querySelector('.mk-sum');
+  if (sum && (mode === 'table' || mode === 'cards' || mode === 'test' || mode === 'my')) {
+    try { sum.innerHTML = markSumHtml(currentWords()); } catch (err) {}
+  }
+}, true);
+
 function stat(key) { return store.wordStats[key] || { c: 0, w: 0 }; }
 function bumpStat(key, ok) {
   const s = store.wordStats[key] || { c: 0, w: 0 };
@@ -1402,6 +1516,7 @@ document.getElementById('levelSel').addEventListener('change', e => {
   studyGroup = null;
   curLevel = e.target.value;
   curUnit = 0;
+  testUnits = null;   // 단원 다중 선택은 레벨이 바뀌면 의미가 없어짐
   resetModeStates();
   renderAll();
 });
@@ -1419,7 +1534,9 @@ function renderUnitBar() {
   const sel = document.getElementById('unitSel');
   sel.innerHTML = RAW[curLevel].map(([title], u) => {
     const best = store.unitBest[curLevel + '|' + u];
-    return `<option value="${u}">${u + 1}단원 · ${title}${best !== undefined ? '  (' + best + '점)' : ''}</option>`;
+    const c = markCounts(unitWords(curLevel, u));
+    const mk = c.known ? ` 😊${c.known}/${c.known + c.hard + c.none}` : '';
+    return `<option value="${u}">${u + 1}단원 · ${title}${mk}${best !== undefined ? '  (' + best + '점)' : ''}</option>`;
   }).join('');
   sel.value = curUnit;
   const best = store.unitBest[curLevel + '|' + curUnit];
@@ -1463,31 +1580,45 @@ function renderTable() {
     if (studyGroup && !inMy) el0.querySelector('#exitGroup').addEventListener('click', exitGroup);
     return;
   }
+  const shown = tblFilter === 'all' ? words :
+    words.filter(x => (tblFilter === 'known' ? markOf(x.key) === 1 : tblFilter === 'hard' ? markOf(x.key) === 2 : markOf(x.key) === 0));
   let html = banner + titleRow + `
+    <div class="mk-sum">${markSumHtml(words)}</div>
+    <div class="fchips">
+      <button class="fchip ${tblFilter === 'all' ? 'on' : ''}" data-f="all">전체 ${words.length}</button>
+      <button class="fchip ${tblFilter === 'none' ? 'on' : ''}" data-f="none">⚪ 미분류</button>
+      <button class="fchip k ${tblFilter === 'known' ? 'on' : ''}" data-f="known">😊 외움</button>
+      <button class="fchip h ${tblFilter === 'hard' ? 'on' : ''}" data-f="hard">😖 못외움</button>
+    </div>
     <div class="toolbar">
       <button class="secondary ${hideMode === 'eng' ? 'on' : ''}" id="hideEng">단어 가리기</button>
       <button class="secondary ${hideMode === 'kor' ? 'on' : ''}" id="hideKor">뜻 가리기</button>
       <button class="secondary" id="speakAll">${speakAllOn ? '⏹ 중지' : '🔊 전체 듣기'}</button>
-    </div>
-    <table class="words"><tr><th>영단어</th><th>품사</th><th>뜻</th><th></th></tr>`;
-  for (const it of words) {
-    const mastered = stat(it.key).c >= 3;
-    html += `<tr class="wrow ${it.ex ? 'has-ex' : ''}" data-w="${esc(it.w)}">
-      <td class="eng ${hideMode === 'eng' ? 'm-hidden' : ''}">${esc(it.w)} <span class="ipa">${esc(it.ipa)}</span></td>
-      <td class="pos-td">${posTag(it.p)}</td>
-      <td class="kor ${hideMode === 'kor' ? 'm-hidden' : ''}">${esc(it.m)}</td>
-      <td class="star">${mastered ? '⭐ ' : ''}${inMy ? '' : `<button class="tbl-add gp-open" data-key="${esc(it.key)}">＋담기</button>`}</td></tr>`;
-    if (it.ex) {
-      html += `<tr class="ex-row"><td colspan="4">
-        <span class="ex-en ${hideMode === 'eng' ? 'm-hidden' : ''}" data-s="${esc(it.ex)}">${esc(it.ex)}</span>
-        <span class="ex-ko ${hideMode === 'kor' ? 'm-hidden' : ''}">${esc(it.exk)}</span></td></tr>`;
+    </div>`;
+  if (!shown.length) {
+    html += `<div class="search-empty">이 조건의 단어가 없어요</div>`;
+  } else {
+    html += `<table class="words"><tr><th>영단어</th><th>품사</th><th>뜻</th><th></th></tr>`;
+    for (const it of shown) {
+      const mastered = stat(it.key).c >= 3;
+      html += `<tr class="wrow ${it.ex ? 'has-ex' : ''}" data-w="${esc(it.w)}">
+        <td class="eng ${hideMode === 'eng' ? 'm-hidden' : ''}">${esc(it.w)} <span class="ipa">${esc(it.ipa)}</span></td>
+        <td class="pos-td">${posTag(it.p)}</td>
+        <td class="kor ${hideMode === 'kor' ? 'm-hidden' : ''}">${esc(it.m)}</td>
+        <td class="star">${markWidget(it.key)}${mastered ? ' ⭐' : ''}${inMy ? '' : ` <button class="tbl-add gp-open" data-key="${esc(it.key)}">＋담기</button>`}</td></tr>`;
+      if (it.ex) {
+        html += `<tr class="ex-row"><td colspan="4">
+          <span class="ex-en ${hideMode === 'eng' ? 'm-hidden' : ''}" data-s="${esc(it.ex)}">${esc(it.ex)}</span>
+          <span class="ex-ko ${hideMode === 'kor' ? 'm-hidden' : ''}">${esc(it.exk)}</span></td></tr>`;
+      }
     }
+    html += '</table>';
   }
-  html += '</table>';
   const el = renderTarget();
   el.innerHTML = html;
 
   if (studyGroup && !inMy) el.querySelector('#exitGroup').addEventListener('click', exitGroup);
+  el.querySelectorAll('.fchip').forEach(b => b.addEventListener('click', () => { tblFilter = b.dataset.f; renderTable(); }));
   el.querySelectorAll('.gp-open').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); openGroupPicker(b.dataset.key); }));
   el.querySelectorAll('tr.wrow').forEach(tr => {
     const eng = tr.querySelector('.eng');
@@ -1522,7 +1653,7 @@ function renderTable() {
     }
     speakAllOn = true;
     renderTable();
-    const ws = words.map(x => x.w);
+    const ws = shown.map(x => x.w);
     let i = 0;
     const step = async () => {
       if (!speakAllOn) return;
@@ -1538,40 +1669,64 @@ function renderTable() {
     };
     step();
   });
-  prefetchDictAudio(words.map(x => x.w));
+  prefetchDictAudio(shown.map(x => x.w));
 }
 
 // ===== Mode: flashcards =====
+function cardPoolWords() {
+  const all = currentWords();
+  if (cardFilter === 'notknown') return all.filter(x => markOf(x.key) !== 1);
+  if (cardFilter === 'hard') return all.filter(x => markOf(x.key) === 2);
+  return all;
+}
 function startCards() {
-  cardQueue = shuffle(currentWords().slice());
+  cardQueue = shuffle(cardPoolWords().slice());
   cardTotal = cardQueue.length;
   cardDone = 0;
   cardFlipped = false;
+}
+function cardChipsHtml() {
+  return `<div class="fchips">
+    <button class="fchip ${cardFilter === 'all' ? 'on' : ''}" data-f="all">전체</button>
+    <button class="fchip ${cardFilter === 'notknown' ? 'on' : ''}" data-f="notknown">외움 빼고</button>
+    <button class="fchip h ${cardFilter === 'hard' ? 'on' : ''}" data-f="hard">😖 못외움만</button>
+  </div>`;
+}
+function bindCardChips(el) {
+  el.querySelectorAll('.fchip').forEach(b => b.addEventListener('click', () => {
+    cardFilter = b.dataset.f;
+    startCards();
+    renderCards();
+  }));
 }
 function renderCards() {
   const el = renderTarget();
   if (cardQueue.length === 0 && cardTotal === 0) startCards();
   if (cardQueue.length === 0) {
-    el.innerHTML = `<div class="center" style="padding:40px 0">
-      <div style="font-size:60px">🎉</div>
-      <div style="font-size:20px;font-weight:bold;margin:12px 0">카드 한 바퀴 완료!</div>
-      <button id="againBtn">다시 섞어서 보기</button></div>`;
-    el.querySelector('#againBtn').addEventListener('click', () => { startCards(); renderCards(); });
+    const emptyByFilter = cardTotal === 0 && cardFilter !== 'all';
+    el.innerHTML = cardChipsHtml() + `<div class="center" style="padding:34px 0">
+      <div style="font-size:60px">${emptyByFilter ? '🔍' : '🎉'}</div>
+      <div style="font-size:20px;font-weight:bold;margin:12px 0">${emptyByFilter ? '이 조건의 카드가 없어요' : '카드 한 바퀴 완료!'}</div>
+      ${emptyByFilter ? '' : '<button id="againBtn">다시 섞어서 보기</button>'}</div>`;
+    if (!emptyByFilter) el.querySelector('#againBtn').addEventListener('click', () => { startCards(); renderCards(); });
+    bindCardChips(el);
     return;
   }
   const cur = cardQueue[0];
-  el.innerHTML = `
+  el.innerHTML = cardChipsHtml() + `
     <div class="progress-line">남은 카드 ${cardQueue.length}장 · 완료 ${cardDone}장</div>
     <div class="flash ${cardFlipped ? 'back' : ''}" id="flashCard">
       ${cardFlipped ? esc(cur.m) : esc(cur.w)}
       <div class="sub">${cardFlipped ? posTag(cur.p) + ' ' + esc(cur.w) + ' ' + esc(cur.ipa) : esc(cur.ipa) + ' · 클릭하면 뜻이 보여요'}</div>
       ${cardFlipped && cur.ex ? `<div class="sub flash-ex">${esc(cur.ex)}<br>${esc(cur.exk)}</div>` : ''}
     </div>
-    <div class="actions" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+    <div class="actions" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:center">
+      ${markWidget(cur.key)}
       <button class="secondary" id="sayBtn">🔊 발음</button>
       <button class="red" id="dontKnow">❌ 몰라요</button>
       <button class="green" id="know">✅ 알아요</button>
     </div>`;
+  bindCardChips(el);
   el.querySelector('#flashCard').addEventListener('click', () => { cardFlipped = !cardFlipped; renderCards(); });
   el.querySelector('#sayBtn').addEventListener('click', () => speak(cur.w));
   el.querySelector('#dontKnow').addEventListener('click', () => {
@@ -1589,11 +1744,80 @@ function renderCards() {
 }
 
 // ===== Mode: test =====
+// 테스트 출제 풀: 범위(다중 선택) → 대상 필터 순으로 적용
+function testPoolWords() {
+  let pool;
+  if (testUnits && testUnits.length) {
+    pool = [];
+    const seen = {};
+    if (mode === 'my' || studyGroup) {
+      testUnits.forEach(n => groupWords(n).forEach(w => { if (!seen[w.key]) { seen[w.key] = 1; pool.push(w); } }));
+    } else {
+      testUnits.forEach(u => { if (RAW[curLevel][u]) pool.push(...unitWords(curLevel, u)); });
+    }
+  } else pool = currentWords().slice();
+  if (testFilter === 'notknown') pool = pool.filter(x => markOf(x.key) !== 1);
+  else if (testFilter === 'hard') pool = pool.filter(x => markOf(x.key) === 2);
+  return pool;
+}
+function testScopeLabel() {
+  if (testUnits && testUnits.length) return `${testUnits.length}개 합침`;
+  return (mode === 'my' || studyGroup) ? `${esc(studyGroup || '')}` : `${curUnit + 1}단원`;
+}
+// 범위 다중 선택 팝업 (내단어: 단어장 목록 / 공통: 현재 레벨 단원 목록)
+function openScopePicker() {
+  const inMy = (mode === 'my' || !!studyGroup);
+  const items = inMy
+    ? myListNames().map(n => ({ id: n, label: '📒 ' + esc(n), cnt: groupCount(n) }))
+    : RAW[curLevel].map(([t], u) => ({ id: u, label: (u + 1) + '단원 · ' + esc(t), cnt: RAW[curLevel][u][1].length }));
+  const cur = new Set((testUnits || [inMy ? (studyGroup || myList) : curUnit]).map(String));
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-back';
+  overlay.innerHTML = `<div class="modal">
+    <h3>📚 테스트 범위 고르기</h3>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="mini" id="scAll">전체 선택</button>
+      <button class="mini" id="scNone">전체 해제</button>
+    </div>
+    <div class="scope-list">${items.map(it =>
+      `<label class="scope-item"><input type="checkbox" data-id="${esc(String(it.id))}" ${cur.has(String(it.id)) ? 'checked' : ''}> ${it.label}<span class="sc-cnt">${it.cnt}단어</span></label>`).join('')}
+    </div>
+    <div class="dlg-msg" id="scSum" style="text-align:center;font-weight:700"></div>
+    <div class="dlg-actions">
+      <button class="secondary" id="dlgCancel">취소</button>
+      <button id="dlgOk">이 범위로</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const boxes = [...overlay.querySelectorAll('input[type=checkbox]')];
+  const sum = overlay.querySelector('#scSum');
+  const refreshSum = () => {
+    const picked = boxes.filter(b => b.checked);
+    const total = picked.reduce((s, b) => s + items.find(x => String(x.id) === b.dataset.id).cnt, 0);
+    sum.textContent = picked.length ? `${picked.length}개 선택 · 약 ${total}단어` : '최소 1개는 골라 줘';
+  };
+  refreshSum();
+  boxes.forEach(b => b.addEventListener('change', refreshSum));
+  overlay.querySelector('#scAll').addEventListener('click', () => { boxes.forEach(b => b.checked = true); refreshSum(); });
+  overlay.querySelector('#scNone').addEventListener('click', () => { boxes.forEach(b => b.checked = false); refreshSum(); });
+  const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
+  overlay.querySelector('#dlgCancel').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('#dlgOk').addEventListener('click', () => {
+    const picked = boxes.filter(b => b.checked).map(b => inMy ? b.dataset.id : parseInt(b.dataset.id));
+    if (!picked.length) { refreshSum(); return; }
+    // 하나만 골랐고 그게 현재 것이면 '현재 단원' 상태로 되돌림
+    testUnits = (picked.length === 1 && String(picked[0]) === String(inMy ? (studyGroup || myList) : curUnit)) ? null : picked;
+    close();
+    renderTest();
+  });
+}
 function startTest(type) {
   testType = type;
-  let pool = currentWords().slice();
+  let pool = testPoolWords();
   if (type === 'cloze') pool = pool.filter(x => x.ex);
   testQs = shuffle(pool);
+  if (testCount > 0 && testCount < testQs.length) testQs = testQs.slice(0, testCount);
   testIdx = 0; testScore = 0; testLocked = false; testOver = false;
   renderTest();
 }
@@ -1609,25 +1833,74 @@ function renderTest() {
   if (testType === null) {
     const inMy = (mode === 'my');
     const taBest = store.taBest[curLevel];
-    const cw = currentWords();
-    const hasEx = cw.some(x => x.ex);
-    const banner = (studyGroup && !inMy) ? `<div class="group-banner"><span>📚 단어장 <b>${esc(studyGroup)}</b> · ${cw.length}단어</span><button class="chip-btn" id="exitGroup">✕ 전체로</button></div>` : '';
-    const ttitle = inMy ? '✏️ 테스트 유형 선택' : (studyGroup ? `✏️ 「${esc(studyGroup)}」 테스트` : `✏️ ${curLevel} · ${curUnit + 1}단원 테스트`);
+    const pool = testPoolWords();
+    const clozeN = pool.filter(x => x.ex).length;
+    const banner = (studyGroup && !inMy) ? `<div class="group-banner"><span>📚 단어장 <b>${esc(studyGroup)}</b></span><button class="chip-btn" id="exitGroup">✕ 전체로</button></div>` : '';
+    const ttitle = inMy ? '✏️ 테스트' : (studyGroup ? `✏️ 「${esc(studyGroup)}」 테스트` : `✏️ ${curLevel} 테스트`);
+    const max = Math.max(pool.length, 1);
+    const sliderVal = (testCount <= 0 || testCount >= max) ? max : testCount;
+    const qn = sliderVal >= max ? max : sliderVal;
+    const cntLabel = (sliderVal >= max) ? `전부 (${max})` : `${sliderVal}문제`;
     el.innerHTML = banner + `
       <div class="unit-title">${ttitle}</div>
+      <div class="test-cfg">
+        <div class="cfg-row">
+          <span class="cfg-label">범위</span>
+          <span class="cfg-scope">${testScopeLabel()}</span>
+          <button class="mini" id="scopeBtn">📚 여러 개 골라서</button>
+          ${testUnits ? '<button class="mini" id="scopeClear">✕ 현재 것만</button>' : ''}
+        </div>
+        <div class="cfg-row">
+          <span class="cfg-label">대상</span>
+          <div class="fchips" style="margin:0">
+            <button class="fchip ${testFilter === 'all' ? 'on' : ''}" data-f="all">전체</button>
+            <button class="fchip ${testFilter === 'notknown' ? 'on' : ''}" data-f="notknown">외움 빼고</button>
+            <button class="fchip h ${testFilter === 'hard' ? 'on' : ''}" data-f="hard">😖 못외움만</button>
+          </div>
+        </div>
+        <div class="cfg-row">
+          <span class="cfg-label">문제 수</span>
+          <div class="cnt-row">
+            <button class="cnt-btn" id="cntMinus">−</button>
+            <input type="range" id="cntSlider" min="1" max="${max}" value="${sliderVal}" ${pool.length <= 1 ? 'disabled' : ''}>
+            <button class="cnt-btn" id="cntPlus">＋</button>
+            <span class="cnt-val" id="cntVal">${cntLabel}</span>
+          </div>
+        </div>
+        <div class="cfg-row" style="justify-content:center;margin-top:2px">
+          <span class="mk-sum" style="margin:0">${markSumHtml(pool)}</span>
+        </div>
+      </div>
+      ${pool.length === 0 ? `<div class="search-empty">이 조건에 맞는 단어가 없어요. 대상을 바꿔 보세요.</div>` : `
       <div class="test-grid">
-        <div class="test-opt" id="mcBtn"><div class="to-icon">🅰️</div><b>4지선다</b><span>영어 보고 뜻 고르기 · ${Math.min(10, cw.length)}문제</span></div>
+        <div class="test-opt" id="mcBtn"><div class="to-icon">🅰️</div><b>4지선다</b><span>영어 보고 뜻 고르기 · ${qn}문제</span></div>
         <div class="test-opt" id="typeBtn"><div class="to-icon">⌨️</div><b>직접 입력</b><span>뜻 보고 영어 쓰기</span></div>
         <div class="test-opt" id="dictBtn"><div class="to-icon">🎧</div><b>듣고 쓰기</b><span>발음 듣고 철자 입력</span></div>
-        ${hasEx ? `<div class="test-opt" id="clozeBtn"><div class="to-icon">📝</div><b>빈칸 채우기</b><span>예문 속 빈칸 단어 입력</span></div>` : ''}
+        ${clozeN ? `<div class="test-opt" id="clozeBtn"><div class="to-icon">📝</div><b>빈칸 채우기</b><span>예문 있는 ${clozeN}단어</span></div>` : ''}
         ${studyGroup ? '' : `<div class="test-opt ta" id="taBtn"><div class="to-icon">⚡</div><b>타임어택 60초</b><span>${curLevel} 전체 · 최고 ${taBest !== undefined ? taBest + '점' : '기록 없음'}</span></div>`}
-      </div>`;
+      </div>`}`;
     if (studyGroup && !inMy) el.querySelector('#exitGroup').addEventListener('click', exitGroup);
-    el.querySelector('#mcBtn').addEventListener('click', () => startTest('mc'));
-    el.querySelector('#typeBtn').addEventListener('click', () => startTest('type'));
-    el.querySelector('#dictBtn').addEventListener('click', () => startTest('dict'));
-    if (hasEx) el.querySelector('#clozeBtn').addEventListener('click', () => startTest('cloze'));
-    if (!studyGroup) el.querySelector('#taBtn').addEventListener('click', startTimeAttack);
+    el.querySelector('#scopeBtn').addEventListener('click', openScopePicker);
+    const sc = el.querySelector('#scopeClear');
+    if (sc) sc.addEventListener('click', () => { testUnits = null; renderTest(); });
+    el.querySelectorAll('.test-cfg .fchip').forEach(b => b.addEventListener('click', () => { testFilter = b.dataset.f; renderTest(); }));
+    const slider = el.querySelector('#cntSlider');
+    const cntVal = el.querySelector('#cntVal');
+    const applySlider = () => {
+      const v = parseInt(slider.value);
+      cntVal.textContent = v >= max ? `전부 (${max})` : `${v}문제`;
+      testCount = v >= max ? 0 : v;
+    };
+    slider.addEventListener('input', applySlider);
+    el.querySelector('#cntMinus').addEventListener('click', () => { slider.value = Math.max(1, parseInt(slider.value) - 1); applySlider(); });
+    el.querySelector('#cntPlus').addEventListener('click', () => { slider.value = Math.min(max, parseInt(slider.value) + 1); applySlider(); });
+    if (pool.length) {
+      el.querySelector('#mcBtn').addEventListener('click', () => startTest('mc'));
+      el.querySelector('#typeBtn').addEventListener('click', () => startTest('type'));
+      el.querySelector('#dictBtn').addEventListener('click', () => startTest('dict'));
+      if (clozeN) el.querySelector('#clozeBtn').addEventListener('click', () => startTest('cloze'));
+      if (!studyGroup) el.querySelector('#taBtn').addEventListener('click', startTimeAttack);
+    }
     return;
   }
   if (testOver) {
@@ -1653,7 +1926,7 @@ function renderTest() {
   const head = `<div class="progress-line">${testIdx + 1} / ${testQs.length} · 점수 ${testScore}</div>`;
   if (testType === 'mc') {
     const opts = mcOptions(q);
-    let html = head + `<div class="q-word">${esc(q.w)} <button class="secondary" style="font-size:13px;padding:6px 10px;vertical-align:middle" id="sayQ">🔊</button></div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
+    let html = head + `<div class="q-word">${esc(q.w)} <button class="secondary" style="font-size:13px;padding:6px 10px;vertical-align:middle" id="sayQ">🔊</button> ${markWidget(q.key)}</div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
     opts.forEach(o => { html += `<div class="opt" data-m="${esc(o)}">${esc(o)}</div>`; });
     html += '</div><div class="feedback" id="fb">&nbsp;</div>';
     el.innerHTML = html;
@@ -1698,7 +1971,7 @@ function renderTest() {
       testLocked = true;
       const ok = v === q.w.toLowerCase();
       const fb = el.querySelector('#fb');
-      fb.textContent = (ok ? '✓ 정답! ' : '✗ 정답: ') + q.w;
+      fb.innerHTML = esc((ok ? '✓ 정답! ' : '✗ 정답: ') + q.w) + ' ' + markWidget(q.key);
       fb.className = 'feedback ' + (ok ? 'ok' : 'no');
       if (ok) testScore++;
       bumpStat(q.key, ok);
@@ -1728,7 +2001,7 @@ function renderTest() {
       testLocked = true;
       const ok = v === q.w.toLowerCase();
       const fb = el.querySelector('#fb');
-      fb.textContent = (ok ? '✓ 정답! ' : '✗ 정답: ') + q.w + ' — ' + q.m;
+      fb.innerHTML = esc((ok ? '✓ 정답! ' : '✗ 정답: ') + q.w + ' — ' + q.m) + ' ' + markWidget(q.key);
       fb.className = 'feedback ' + (ok ? 'ok' : 'no');
       if (ok) testScore++;
       bumpStat(q.key, ok);
@@ -1753,7 +2026,7 @@ function renderTest() {
       testLocked = true;
       const ok = v === q.w.toLowerCase();
       const fb = el.querySelector('#fb');
-      fb.textContent = ok ? '✓ 정답!' : '✗ 정답: ' + q.w;
+      fb.innerHTML = esc(ok ? '✓ 정답! ' + q.w : '✗ 정답: ' + q.w) + ' ' + markWidget(q.key);
       fb.className = 'feedback ' + (ok ? 'ok' : 'no');
       if (ok) testScore++;
       bumpStat(q.key, ok);
@@ -1843,7 +2116,7 @@ function renderWrong() {
     const items = store.wrongKeys.map(findByKey).filter(Boolean);
     let html = `<div class="unit-title">틀린 단어 ${items.length}개</div><div class="wrong-list">`;
     for (const it of items) {
-      html += `<div class="wrong-item"><span><span class="lv-tag">${it.level}</span><b class="say-w" data-w="${esc(it.w)}">${esc(it.w)}</b> <span class="ipa">${esc(it.ipa)}</span> ${posTag(it.p)}</span><span>${esc(it.m)}</span></div>`;
+      html += `<div class="wrong-item"><span><span class="lv-tag">${it.level}</span><b class="say-w" data-w="${esc(it.w)}">${esc(it.w)}</b> <span class="ipa">${esc(it.ipa)}</span> ${posTag(it.p)}</span><span>${esc(it.m)} ${markWidget(it.key)}</span></div>`;
     }
     html += `</div><div class="center"><button id="startWrong">오답 퀴즈 시작 (맞히면 목록에서 빠져요)</button></div>`;
     el.innerHTML = html;
@@ -1857,7 +2130,7 @@ function renderWrong() {
   const pool = allWords().filter(x => x.w !== q.w && x.m !== q.m);
   const opts = shuffle([q.m, ...shuffle(pool.slice()).slice(0, 3).map(x => x.m)]);
   let html = `<div class="progress-line">남은 오답 ${store.wrongKeys.length}개</div>
-    <div class="q-word">${esc(q.w)} <button class="secondary" style="font-size:13px;padding:6px 10px;vertical-align:middle" id="sayQ">🔊</button></div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
+    <div class="q-word">${esc(q.w)} <button class="secondary" style="font-size:13px;padding:6px 10px;vertical-align:middle" id="sayQ">🔊</button> ${markWidget(q.key)}</div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
   opts.forEach(o => { html += `<div class="opt" data-m="${esc(o)}">${esc(o)}</div>`; });
   html += '</div><div class="feedback" id="fb">&nbsp;</div><div class="center"><button class="secondary" id="stopWrong">그만하기</button></div>';
   el.innerHTML = html;
@@ -1922,7 +2195,7 @@ function renderSrs() {
       <div style="color:#64748b;font-size:13px;margin-bottom:10px">잊어버릴 때가 된 단어들이에요. 맞히면 더 긴 간격(1→3→7→14→30일)으로 미뤄지고, 틀리면 내일 다시 나와요.</div>
       <div class="wrong-list">`;
     for (const it of preview) {
-      html += `<div class="wrong-item"><span><span class="lv-tag">${it.level}</span><b class="say-w" data-w="${esc(it.w)}">${esc(it.w)}</b> <span class="ipa">${esc(it.ipa)}</span></span><span>${esc(it.m)}</span></div>`;
+      html += `<div class="wrong-item"><span><span class="lv-tag">${it.level}</span><b class="say-w" data-w="${esc(it.w)}">${esc(it.w)}</b> <span class="ipa">${esc(it.ipa)}</span></span><span>${esc(it.m)} ${markWidget(it.key)}</span></div>`;
     }
     if (due.length > 30) html += `<div class="search-count" style="padding:8px 10px">…외 ${due.length - 30}개</div>`;
     html += `</div><div class="center" style="margin-top:12px"><button id="startSrs">복습 시작</button></div>`;
@@ -1938,7 +2211,7 @@ function renderSrs() {
   const pool = allWords().filter(x => x.w !== q.w && x.m !== q.m);
   const opts = shuffle([q.m, ...shuffle(pool.slice()).slice(0, 3).map(x => x.m)]);
   let html = `<div class="progress-line">남은 복습 ${due.length}개</div>
-    <div class="q-word">${esc(q.w)} <button class="secondary" style="font-size:13px;padding:6px 10px;vertical-align:middle" id="sayQ">🔊</button></div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
+    <div class="q-word">${esc(q.w)} <button class="secondary" style="font-size:13px;padding:6px 10px;vertical-align:middle" id="sayQ">🔊</button> ${markWidget(q.key)}</div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
   opts.forEach(o => { html += `<div class="opt" data-m="${esc(o)}">${esc(o)}</div>`; });
   html += '</div><div class="feedback" id="fb">&nbsp;</div><div class="center"><button class="secondary" id="stopSrs">그만하기</button></div>';
   el.innerHTML = html;
@@ -2037,6 +2310,7 @@ function renderSearchResults() {
       </div>
       <div class="result-side">
         <span class="lv-tag">${r.level === MY ? '📒 내 단어' : esc(r.level) + ' ' + (r.unit + 1) + '단원'}</span>
+        ${markWidget(r.key)}
         <button class="secondary tbl-add gp-open" data-key="${esc(r.key)}">＋담기</button>
         ${r.level === MY ? '' : `<button class="secondary jump-btn" data-lv="${esc(r.level)}" data-u="${r.unit}">단어표</button>`}
       </div>
