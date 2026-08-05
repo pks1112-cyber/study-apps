@@ -611,7 +611,7 @@
     <div class="tab" data-mode="table"><span class="ti">📖</span><span class="tl">단어표</span></div>
     <div class="tab" data-mode="cards"><span class="ti">🃏</span><span class="tl">카드</span></div>
     <div class="tab" data-mode="test"><span class="ti">✏️</span><span class="tl">테스트</span></div>
-    <div class="tab" data-mode="review"><span class="ti">🔄</span><span class="tl">복습 <span class="cnt" id="reviewCnt">0</span></span></div>
+    <div class="tab" data-mode="review"><span class="ti">😖</span><span class="tl">복습 <span class="cnt" id="reviewCnt">0</span></span></div>
     <div class="tab" data-mode="search"><span class="ti">🔍</span><span class="tl">검색</span></div>
     <div class="tab" data-mode="stats"><span class="ti">📊</span><span class="tl">기록</span></div>
   </div>
@@ -706,7 +706,6 @@ let cardFilter = 'all';              // 카드 덱 필터: all|notknown|hard
 let testUnits = null;                // 테스트 범위 다중 선택 (없으면 현재 단원/단어장)
 let testFilter = 'all';              // 테스트 대상: all|notknown|hard
 let testCount = 0;                   // 출제 문제 수 (0 = 전부)
-let wrongQuizOn = false, wrongLocked = false;
 let speakAllOn = false;
 
 // ===== Helpers =====
@@ -1247,6 +1246,8 @@ document.addEventListener('click', e => {
     try { sum.innerHTML = markSumHtml(currentWords()); } catch (err) {}
   }
   updateHeroStats();   // 상단 보드 '😊 외운 단어' 즉시 갱신
+  updateWrongCnt();    // 복습 탭 😖 카운트 갱신
+  if (mode === 'review' && !reviewQuizOn) renderReview();   // 복습 목록에서 😊 찍으면 바로 졸업
 }, true);
 
 function stat(key) { return store.wordStats[key] || { c: 0, w: 0 }; }
@@ -1299,7 +1300,9 @@ function posClass(p) {
 }
 function posTag(p) { return `<span class="pos ${posClass(p)}">${p}</span>`; }
 function updateWrongCnt() {
-  document.getElementById('reviewCnt').textContent = store.wrongKeys.length + dueKeys().length;
+  let n = 0;
+  for (const k in store.marks) if (store.marks[k] === 2) n++;
+  document.getElementById('reviewCnt').textContent = n;
   updateHeroStats();
 }
 function updateHeroStats() {
@@ -1571,7 +1574,7 @@ document.getElementById('unitNext').addEventListener('click', () => gotoUnit(cur
 function resetModeStates() {
   stopTimeAttack();
   testType = null; testQs = []; testOver = false;
-  cardQueue = []; cardTotal = 0; cardStarted = false; wrongQuizOn = false; srsQuizOn = false;
+  cardQueue = []; cardTotal = 0; cardStarted = false; reviewQuizOn = false;
 }
 
 // ===== Mode: word table =====
@@ -2110,138 +2113,151 @@ function renderTaQuestion() {
   }));
 }
 
-// ===== Mode: wrong review =====
-function renderWrong() {
-  const el = document.getElementById('reviewBody');
-  if (!el) return;
-  if (store.wrongKeys.length === 0) {
-    el.innerHTML = `<div class="center" style="padding:40px 0">
-      <div style="font-size:60px">🎉</div>
-      <div style="font-size:20px;font-weight:bold;margin:12px 0">틀린 단어가 없어요!</div>
-      <div style="color:#64748b">테스트에서 틀린 단어가 여기에 모여요.</div></div>`;
-    return;
-  }
-  if (!wrongQuizOn) {
-    const items = store.wrongKeys.map(findByKey).filter(Boolean);
-    let html = `<div class="unit-title">틀린 단어 ${items.length}개</div><div class="wrong-list">`;
-    for (const it of items) {
-      html += `<div class="wrong-item"><span><span class="lv-tag">${it.level}</span><b class="say-w" data-w="${esc(it.w)}">${esc(it.w)}</b> <span class="ipa">${esc(it.ipa)}</span> ${posTag(it.p)}</span><span>${esc(it.m)} ${markWidget(it.key)}</span></div>`;
-    }
-    html += `</div><div class="center"><button id="startWrong">오답 퀴즈 시작 (맞히면 목록에서 빠져요)</button></div>`;
-    el.innerHTML = html;
-    el.querySelectorAll('.say-w').forEach(b => b.addEventListener('click', () => speak(b.dataset.w)));
-    el.querySelector('#startWrong').addEventListener('click', () => { wrongQuizOn = true; renderReview(); });
-    return;
-  }
-  const key = store.wrongKeys[Math.floor(Math.random() * store.wrongKeys.length)];
-  const q = findByKey(key);
-  if (!q) { store.wrongKeys = store.wrongKeys.filter(k => k !== key); saveStore(); updateWrongCnt(); renderReview(); return; }
-  const pool = allWords().filter(x => x.w !== q.w && x.m !== q.m);
-  const opts = shuffle([q.m, ...shuffle(pool.slice()).slice(0, 3).map(x => x.m)]);
-  let html = `<div class="progress-line">남은 오답 ${store.wrongKeys.length}개</div>
-    <div class="q-word">${esc(q.w)} <button class="secondary" style="font-size:13px;padding:6px 10px;vertical-align:middle" id="sayQ">🔊</button> ${markWidget(q.key)}</div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
-  opts.forEach(o => { html += `<div class="opt" data-m="${esc(o)}">${esc(o)}</div>`; });
-  html += '</div><div class="feedback" id="fb">&nbsp;</div><div class="center"><button class="secondary" id="stopWrong">그만하기</button></div>';
-  el.innerHTML = html;
-  el.querySelector('#sayQ').addEventListener('click', () => speak(q.w));
-  el.querySelector('#stopWrong').addEventListener('click', () => { wrongQuizOn = false; renderReview(); });
-  wrongLocked = false;
-  el.querySelectorAll('.opt').forEach(op => op.addEventListener('click', () => {
-    if (wrongLocked) return;
-    wrongLocked = true;
-    const ok = op.dataset.m === q.m;
-    op.classList.add(ok ? 'right' : 'wrong');
-    if (!ok) el.querySelectorAll('.opt').forEach(o2 => { if (o2.dataset.m === q.m) o2.classList.add('right'); });
-    const fb = el.querySelector('#fb');
-    fb.textContent = ok ? '✓ 정답! 목록에서 제거' : '✗ 정답: ' + q.m;
-    fb.className = 'feedback ' + (ok ? 'ok' : 'no');
-    bumpStat(q.key, ok);
-    setTimeout(() => {
-      if (store.wrongKeys.length === 0) wrongQuizOn = false;
-      renderReview();
-    }, ok ? 800 : 1500);
-  }));
-  speak(q.w);
-}
+// ===== Mode: 복습 (😖 못외운 단어 모아보기) =====
+let reviewQuizOn = false, reviewLocked = false;
+let reviewScope = null;   // null = 전체, 아니면 ['u|초5|2', 'g|단어장이름'] 배열
 
-// ===== Mode: review (오늘의 복습 + 오답 통합) =====
-let reviewSub = 'srs';
+// 😖 못외운 단어 전부 — 커리큘럼 단원 + 내 단어
+function hardWords() {
+  const out = [];
+  for (const lv of LEVEL_NAMES) {
+    RAW[lv].forEach((unit, u) => {
+      unitWords(lv, u).forEach(it => { if (markOf(it.key) === 2) out.push({ ...it, level: lv, unit: u }); });
+    });
+  }
+  store.myWords.forEach(o => { const it = myWordObj(o); if (markOf(it.key) === 2) out.push(it); });
+  return out;
+}
+// 범위 선택지: 😖 단어가 실제로 있는 단원·단어장만 나열
+function reviewScopeOptions() {
+  const opts = [];
+  for (const lv of LEVEL_NAMES) {
+    RAW[lv].forEach(([title], u) => {
+      const n = unitWords(lv, u).filter(it => markOf(it.key) === 2).length;
+      if (n) opts.push({ id: 'u|' + lv + '|' + u, label: lv + ' ' + (u + 1) + '단원 · ' + esc(title), cnt: n });
+    });
+  }
+  for (const name of myListNames()) {
+    const n = groupWords(name).filter(it => markOf(it.key) === 2).length;
+    if (n) opts.push({ id: 'g|' + name, label: '📒 ' + esc(name), cnt: n });
+  }
+  return opts;
+}
+function reviewWords() {
+  const all = hardWords();
+  if (!reviewScope || !reviewScope.length) return all;
+  const uSet = new Set(), gKeys = new Set();
+  for (const id of reviewScope) {
+    if (id.startsWith('u|')) uSet.add(id.slice(2));
+    else (store.groups[id.slice(2)] || []).forEach(k => gKeys.add(k));
+  }
+  return all.filter(it => uSet.has(it.level + '|' + it.unit) || gKeys.has(it.key));
+}
+function openReviewScopePicker() {
+  const items = reviewScopeOptions();
+  if (!items.length) return;
+  const cur = new Set(reviewScope || items.map(x => x.id));
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-back';
+  overlay.innerHTML = `<div class="modal scope-modal">
+    <h3>📚 복습 범위 고르기</h3>
+    <div style="display:flex;gap:8px;margin-top:6px">
+      <button class="mini" id="scAll">전체 선택</button>
+      <button class="mini" id="scNone">전체 해제</button>
+    </div>
+    <div class="scope-list">${items.map(it =>
+      `<label class="scope-item"><input type="checkbox" data-id="${esc(it.id)}" ${cur.has(it.id) ? 'checked' : ''}> ${it.label}<span class="sc-cnt">😖 ${it.cnt}</span></label>`).join('')}
+    </div>
+    <div class="dlg-msg" id="scSum" style="text-align:center;font-weight:700"></div>
+    <div class="dlg-actions">
+      <button class="secondary" id="dlgCancel">취소</button>
+      <button id="dlgOk">이 범위로</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const boxes = [...overlay.querySelectorAll('input[type=checkbox]')];
+  const sum = overlay.querySelector('#scSum');
+  const refreshSum = () => {
+    const picked = boxes.filter(b => b.checked);
+    const total = picked.reduce((s, b) => s + items.find(x => x.id === b.dataset.id).cnt, 0);
+    sum.textContent = picked.length ? `${picked.length}개 범위 · 😖 ${total}개` : '최소 1개는 골라 줘';
+  };
+  refreshSum();
+  boxes.forEach(b => b.addEventListener('change', refreshSum));
+  overlay.querySelector('#scAll').addEventListener('click', () => { boxes.forEach(b => b.checked = true); refreshSum(); });
+  overlay.querySelector('#scNone').addEventListener('click', () => { boxes.forEach(b => b.checked = false); refreshSum(); });
+  const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
+  overlay.querySelector('#dlgCancel').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('#dlgOk').addEventListener('click', () => {
+    const picked = boxes.filter(b => b.checked).map(b => b.dataset.id);
+    if (!picked.length) { refreshSum(); return; }
+    reviewScope = picked.length === items.length ? null : picked;
+    close();
+    renderReview();
+  });
+}
 function renderReview() {
   const el = document.getElementById('content');
-  const due = dueKeys().length;
-  const wrong = store.wrongKeys.length;
-  el.innerHTML = `<div class="sub-toggle">
-      <button class="subseg ${reviewSub === 'srs' ? 'on' : ''}" data-s="srs">📅 오늘 복습 <b>${due}</b></button>
-      <button class="subseg ${reviewSub === 'wrong' ? 'on' : ''}" data-s="wrong">❌ 오답 <b>${wrong}</b></button>
-    </div><div id="reviewBody"></div>`;
-  el.querySelectorAll('.subseg').forEach(b => b.addEventListener('click', () => {
-    if (reviewSub === b.dataset.s) return;
-    reviewSub = b.dataset.s;
-    srsQuizOn = false; wrongQuizOn = false;
-    renderReview();
-  }));
-  if (reviewSub === 'srs') renderSrs(); else renderWrong();
-}
-
-// ===== Mode: SRS (오늘의 복습) =====
-let srsQuizOn = false, srsLocked = false;
-function renderSrs() {
-  const el = document.getElementById('reviewBody');
-  if (!el) return;
-  const due = dueKeys();
-  if (due.length === 0) {
-    el.innerHTML = `<div class="center" style="padding:40px 0">
-      <div style="font-size:60px">🌞</div>
-      <div style="font-size:20px;font-weight:bold;margin:12px 0">오늘 복습할 단어가 없어요!</div>
-      <div style="color:#64748b;line-height:1.8;font-size:14px">테스트·받아쓰기에서 푼 단어가 자동으로 복습 일정에 등록돼요.<br>
-      맞힐 때마다 1일 → 3일 → 7일 → 14일 → 30일 간격으로 다시 나와요.<br>
-      틀리면 다시 처음(내일)부터!</div></div>`;
-    return;
-  }
-  if (!srsQuizOn) {
-    const preview = due.slice(0, 30).map(findByKey).filter(Boolean);
-    let html = `<div class="unit-title">📅 오늘 복습할 단어 ${due.length}개</div>
-      <div style="color:#64748b;font-size:13px;margin-bottom:10px">잊어버릴 때가 된 단어들이에요. 맞히면 더 긴 간격(1→3→7→14→30일)으로 미뤄지고, 틀리면 내일 다시 나와요.</div>
-      <div class="wrong-list">`;
-    for (const it of preview) {
-      html += `<div class="wrong-item"><span><span class="lv-tag">${it.level}</span><b class="say-w" data-w="${esc(it.w)}">${esc(it.w)}</b> <span class="ipa">${esc(it.ipa)}</span></span><span>${esc(it.m)} ${markWidget(it.key)}</span></div>`;
+  const words = reviewWords();
+  if (reviewQuizOn && words.length) { renderReviewQuiz(el, words); return; }
+  reviewQuizOn = false;
+  const total = hardWords().length;
+  let html = `<div class="unit-title">😖 못외운 단어 ${words.length}개${reviewScope ? ` <span style="font-weight:400;color:#64748b;font-size:13px">(전체 ${total}개)</span>` : ''}</div>
+    <div class="fchips">
+      <button class="fchip ${!reviewScope ? 'on' : ''}" id="rvAll">전체</button>
+      <button class="fchip ${reviewScope ? 'on' : ''}" id="rvScope">📚 범위 골라서${reviewScope ? ` · ${reviewScope.length}개` : ''}</button>
+    </div>`;
+  if (!total) {
+    html += `<div class="center" style="padding:36px 0">
+      <div style="font-size:60px">🌱</div>
+      <div style="font-size:19px;font-weight:bold;margin:12px 0">아직 😖로 표시한 단어가 없어요</div>
+      <div style="color:#64748b;line-height:1.8;font-size:14px">단어표·카드·테스트에서 못 외운 단어에 😖를 눌러 보세요.<br>여기에 모여서 한 번에 복습할 수 있어요.</div></div>`;
+  } else if (!words.length) {
+    html += `<div class="search-empty">이 범위엔 못외운 단어가 없어요</div>`;
+  } else {
+    html += '<div class="wrong-list">';
+    for (const it of words) {
+      html += `<div class="wrong-item"><span><span class="lv-tag">${it.level === MY ? '📒 내 단어' : it.level}</span><b class="say-w" data-w="${esc(it.w)}">${esc(it.w)}</b> <span class="ipa">${esc(it.ipa)}</span> ${posTag(it.p)}</span><span>${esc(it.m)} ${markWidget(it.key)}</span></div>`;
     }
-    if (due.length > 30) html += `<div class="search-count" style="padding:8px 10px">…외 ${due.length - 30}개</div>`;
-    html += `</div><div class="center" style="margin-top:12px"><button id="startSrs">복습 시작</button></div>`;
-    el.innerHTML = html;
-    el.querySelectorAll('.say-w').forEach(b => b.addEventListener('click', () => speak(b.dataset.w)));
-    el.querySelector('#startSrs').addEventListener('click', () => { srsQuizOn = true; renderReview(); });
-    return;
+    html += `</div>
+      <div style="color:#94a3b8;font-size:12.5px;text-align:center;margin-top:8px">외웠으면 😊를 눌러 목록에서 졸업시키세요</div>
+      <div class="center" style="margin-top:10px"><button id="rvQuiz">🅰️ 이 단어들로 4지선다 점검</button></div>`;
   }
-  // quiz one random due word (4-choice)
-  const key = due[Math.floor(Math.random() * due.length)];
-  const q = findByKey(key);
-  if (!q) { srsQuizOn = false; renderReview(); return; }
+  el.innerHTML = html;
+  el.querySelector('#rvAll').addEventListener('click', () => { reviewScope = null; renderReview(); });
+  el.querySelector('#rvScope').addEventListener('click', openReviewScopePicker);
+  el.querySelectorAll('.say-w').forEach(b => b.addEventListener('click', () => speak(b.dataset.w)));
+  const qb = el.querySelector('#rvQuiz');
+  if (qb) qb.addEventListener('click', () => { reviewQuizOn = true; renderReview(); });
+}
+function renderReviewQuiz(el, words) {
+  const q = words[Math.floor(Math.random() * words.length)];
   const pool = allWords().filter(x => x.w !== q.w && x.m !== q.m);
   const opts = shuffle([q.m, ...shuffle(pool.slice()).slice(0, 3).map(x => x.m)]);
-  let html = `<div class="progress-line">남은 복습 ${due.length}개</div>
-    <div class="q-word">${esc(q.w)} <button class="secondary" style="font-size:13px;padding:6px 10px;vertical-align:middle" id="sayQ">🔊</button> ${markWidget(q.key)}</div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
+  let html = `<div class="progress-line">남은 못외움 ${words.length}개</div>
+    <div class="q-mark">${markWidget(q.key)}</div>
+    <div class="q-word">${esc(q.w)} <button class="secondary" style="font-size:13px;padding:6px 10px;vertical-align:middle" id="sayQ">🔊</button></div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
   opts.forEach(o => { html += `<div class="opt" data-m="${esc(o)}">${esc(o)}</div>`; });
-  html += '</div><div class="feedback" id="fb">&nbsp;</div><div class="center"><button class="secondary" id="stopSrs">그만하기</button></div>';
+  html += '</div><div class="feedback" id="fb">&nbsp;</div><div class="center"><button class="secondary" id="stopRv">그만하기</button></div>';
   el.innerHTML = html;
   el.querySelector('#sayQ').addEventListener('click', () => speak(q.w));
-  el.querySelector('#stopSrs').addEventListener('click', () => { srsQuizOn = false; renderReview(); });
-  srsLocked = false;
+  el.querySelector('#stopRv').addEventListener('click', () => { reviewQuizOn = false; renderReview(); });
+  reviewLocked = false;
   el.querySelectorAll('.opt').forEach(op => op.addEventListener('click', () => {
-    if (srsLocked) return;
-    srsLocked = true;
+    if (reviewLocked) return;
+    reviewLocked = true;
     const ok = op.dataset.m === q.m;
     op.classList.add(ok ? 'right' : 'wrong');
     if (!ok) el.querySelectorAll('.opt').forEach(o2 => { if (o2.dataset.m === q.m) o2.classList.add('right'); });
     const fb = el.querySelector('#fb');
-    fb.textContent = ok ? '✓ 정답! 다음 복습 간격으로 미뤄져요' : '✗ 정답: ' + q.m + ' — 내일 다시 나와요';
+    fb.textContent = ok ? '✓ 정답! 확실히 외웠으면 위의 😊를 눌러 줘' : '✗ 정답: ' + q.m;
     fb.className = 'feedback ' + (ok ? 'ok' : 'no');
     bumpStat(q.key, ok);
-    speak(q.w);
     setTimeout(() => {
-      if (dueKeys().length === 0) srsQuizOn = false;
+      if (!reviewWords().length) reviewQuizOn = false;
       renderReview();
-    }, ok ? 850 : 1600);
+    }, ok ? 900 : 1600);
   }));
   speak(q.w);
 }
@@ -2438,7 +2454,7 @@ document.querySelectorAll('#modeTabs .tab').forEach(t => {
     if (mode !== 'my') studyGroup = null;   // 내단어 밖으로 나가면 그룹 학습 해제
     if (mode === 'cards') startCards();
     if (mode === 'test') { testType = null; testOver = false; }
-    if (mode === 'review') { wrongQuizOn = false; srsQuizOn = false; }
+    if (mode === 'review') reviewQuizOn = false;
     renderUnitBar();
     renderContent();
   });
