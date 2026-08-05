@@ -151,6 +151,7 @@
 
   /* flashcard */
   .flash {
+    position: relative;
     margin: 10px auto 16px; width: 100%; max-width: 480px; height: 240px;
     background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
     border-radius: 24px; color: #fff; display: flex; flex-direction: column;
@@ -170,6 +171,8 @@
   .progress-line { font-size: 13.5px; color: var(--muted); margin-bottom: 8px; text-align: center; }
 
   /* test */
+  .q-mark { display: flex; justify-content: flex-end; margin: 2px 0 -6px; }
+  .flash .mk-wrap { position: absolute; top: 12px; right: 12px; }
   .q-meaning { font-size: 27px; font-weight: 700; text-align: center; margin: 20px 0; }
   .q-word { font-size: 46px; font-weight: 800; text-align: center; margin: 18px 0 12px; color: #4338ca; letter-spacing: -0.5px; }
   .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 16px 0; }
@@ -1718,12 +1721,12 @@ function renderCards() {
   el.innerHTML = cardChipsHtml() + `
     <div class="progress-line">남은 카드 ${cardQueue.length}장 · 완료 ${cardDone}장</div>
     <div class="flash ${cardFlipped ? 'back' : ''}" id="flashCard">
+      ${markWidget(cur.key)}
       ${cardFlipped ? esc(cur.m) : esc(cur.w)}
       <div class="sub">${cardFlipped ? posTag(cur.p) + ' ' + esc(cur.w) + ' ' + esc(cur.ipa) : esc(cur.ipa) + ' · 클릭하면 뜻이 보여요'}</div>
       ${cardFlipped && cur.ex ? `<div class="sub flash-ex">${esc(cur.ex)}<br>${esc(cur.exk)}</div>` : ''}
     </div>
-    <div class="actions" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:center">
-      ${markWidget(cur.key)}
+    <div class="actions" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
       <button class="secondary" id="sayBtn">🔊 발음</button>
       <button class="red" id="dontKnow">❌ 몰라요</button>
       <button class="green" id="know">✅ 알아요</button>
@@ -1928,7 +1931,7 @@ function renderTest() {
   const head = `<div class="progress-line">${testIdx + 1} / ${testQs.length} · 점수 ${testScore}</div>`;
   if (testType === 'mc') {
     const opts = mcOptions(q);
-    let html = head + `<div class="q-word">${esc(q.w)} <button class="secondary" style="font-size:13px;padding:6px 10px;vertical-align:middle" id="sayQ">🔊</button> ${markWidget(q.key)}</div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
+    let html = head + `<div class="q-mark">${markWidget(q.key)}</div><div class="q-word">${esc(q.w)} <button class="secondary" style="font-size:13px;padding:6px 10px;vertical-align:middle" id="sayQ">🔊</button></div><div class="q-ipa">${esc(q.ipa)}</div><div class="opts">`;
     opts.forEach(o => { html += `<div class="opt" data-m="${esc(o)}">${esc(o)}</div>`; });
     html += '</div><div class="feedback" id="fb">&nbsp;</div>';
     el.innerHTML = html;
@@ -1959,7 +1962,7 @@ function renderTest() {
     let pat = '\\b' + safe + '(s|es)?\\b';
     if (/y$/i.test(q.w)) pat = '\\b' + safe.slice(0, -1) + '(y|ies)\\b';
     const blanked = q.ex.replace(new RegExp(pat, 'i'), '_____');
-    el.innerHTML = head + `
+    el.innerHTML = head + `<div class="q-mark">${markWidget(q.key)}</div>
       <div class="q-meaning" style="font-size:21px;line-height:1.65;margin:22px 0 8px">${esc(blanked)}</div>
       <div class="q-ipa" style="margin:0 0 14px">${esc(q.exk)} · 힌트: ${esc(q.m)} ${posTag(q.p)}</div>
       <div class="answer-row"><input class="answer" id="ans" placeholder="빈칸에 들어갈 영어 단어" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"><button id="ansBtn">확인</button></div>
@@ -1973,7 +1976,7 @@ function renderTest() {
       testLocked = true;
       const ok = v === q.w.toLowerCase();
       const fb = el.querySelector('#fb');
-      fb.innerHTML = esc((ok ? '✓ 정답! ' : '✗ 정답: ') + q.w) + ' ' + markWidget(q.key);
+      fb.textContent = (ok ? '✓ 정답! ' : '✗ 정답: ') + q.w;
       fb.className = 'feedback ' + (ok ? 'ok' : 'no');
       if (ok) testScore++;
       bumpStat(q.key, ok);
@@ -1987,7 +1990,7 @@ function renderTest() {
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
     el.querySelector('#ansBtn').addEventListener('click', submit);
   } else if (testType === 'dict') {
-    el.innerHTML = head + `<div class="center" style="margin:20px 0 8px">
+    el.innerHTML = head + `<div class="q-mark">${markWidget(q.key)}</div><div class="center" style="margin:20px 0 8px">
       <button id="replay" style="font-size:22px;padding:16px 28px;background:linear-gradient(135deg,#0ea5e9,#0284c7)">🔊 다시 듣기</button>
       <div class="q-ipa" style="margin:12px 0 0">발음을 잘 듣고 영어 철자를 입력하세요</div></div>
       <div class="answer-row"><input class="answer" id="ans" placeholder="들은 단어를 입력" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"><button id="ansBtn">확인</button></div>
@@ -2003,7 +2006,7 @@ function renderTest() {
       testLocked = true;
       const ok = v === q.w.toLowerCase();
       const fb = el.querySelector('#fb');
-      fb.innerHTML = esc((ok ? '✓ 정답! ' : '✗ 정답: ') + q.w + ' — ' + q.m) + ' ' + markWidget(q.key);
+      fb.textContent = (ok ? '✓ 정답! ' : '✗ 정답: ') + q.w + ' — ' + q.m;
       fb.className = 'feedback ' + (ok ? 'ok' : 'no');
       if (ok) testScore++;
       bumpStat(q.key, ok);
@@ -2016,7 +2019,7 @@ function renderTest() {
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
     el.querySelector('#ansBtn').addEventListener('click', submit);
   } else {
-    el.innerHTML = head + `<div class="q-meaning">${esc(q.m)} ${posTag(q.p)}</div>
+    el.innerHTML = head + `<div class="q-mark">${markWidget(q.key)}</div><div class="q-meaning">${esc(q.m)} ${posTag(q.p)}</div>
       <div class="answer-row"><input class="answer" id="ans" placeholder="영어 단어를 입력" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done"><button id="ansBtn">확인</button></div>
       <div class="feedback" id="fb">&nbsp;</div>`;
     const inp = el.querySelector('#ans');
@@ -2028,7 +2031,7 @@ function renderTest() {
       testLocked = true;
       const ok = v === q.w.toLowerCase();
       const fb = el.querySelector('#fb');
-      fb.innerHTML = esc(ok ? '✓ 정답! ' + q.w : '✗ 정답: ' + q.w) + ' ' + markWidget(q.key);
+      fb.textContent = ok ? '✓ 정답! ' + q.w : '✗ 정답: ' + q.w;
       fb.className = 'feedback ' + (ok ? 'ok' : 'no');
       if (ok) testScore++;
       bumpStat(q.key, ok);
