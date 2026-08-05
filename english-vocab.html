@@ -546,8 +546,10 @@
   .cnt-btn:hover { transform: none; box-shadow: none; background: #cbd5e1; }
   #cntSlider { flex: 1; min-width: 60px; accent-color: #4f46e5; height: 28px; }
   .cnt-val { font-size: 13.5px; font-weight: 800; color: #4f46e5; min-width: 74px; text-align: right; }
-  /* 범위 다중 선택 팝업 목록 */
-  .scope-list { max-height: 46vh; overflow-y: auto; margin: 10px 0; text-align: left; }
+  /* 범위 다중 선택 팝업 — 제목·버튼은 고정, 목록만 스크롤 (이중 스크롤 방지) */
+  .scope-modal { display: flex; flex-direction: column; overflow: hidden; }
+  .scope-modal .scope-list { flex: 1; min-height: 0; }
+  .scope-list { overflow-y: auto; margin: 10px 0; text-align: left; }
   .scope-item {
     display: flex; align-items: center; gap: 10px; padding: 10px 12px;
     border-bottom: 1px solid #f1f5f9; border-radius: 8px; cursor: pointer; font-size: 14px;
@@ -1773,7 +1775,7 @@ function openScopePicker() {
   const cur = new Set((testUnits || [inMy ? (studyGroup || myList) : curUnit]).map(String));
   const overlay = document.createElement('div');
   overlay.className = 'modal-back';
-  overlay.innerHTML = `<div class="modal">
+  overlay.innerHTML = `<div class="modal scope-modal">
     <h3>📚 테스트 범위 고르기</h3>
     <div style="display:flex;gap:8px;margin-top:6px">
       <button class="mini" id="scAll">전체 선택</button>
