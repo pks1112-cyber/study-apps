@@ -887,18 +887,47 @@ function openGroupPicker(key) {
   const overlay = document.createElement('div');
   overlay.className = 'modal-back';
   function close() { if (overlay.parentNode) document.body.removeChild(overlay); if (mode === 'my') renderMy(); else if (mode === 'table') renderTable(); }
+  // 단어장이 많으면 묶음(폴더)으로 접어서 보여준다 — 이미 담긴 묶음은 펼쳐서 상태가 보이게
+  const folded = new Set();
+  let gpFind = '';
+  const gpGroups = () => groupListNames(Object.keys(store.groups));
+  (() => {
+    const gs = gpGroups();
+    if (Object.keys(store.groups).length > 10) {
+      gs.forEach((g, gi) => {
+        if (g.label && !g.items.some(n => (store.groups[n] || []).includes(key))) folded.add(gi);
+      });
+    }
+  })();
   function rowsHtml() {
     const names = Object.keys(store.groups);
     if (!names.length) return '<div class="m-sub">아직 단어장이 없어요. 아래에서 새로 만들어 줘.</div>';
-    return names.map(n => {
-      const on = (store.groups[n] || []).includes(key);
-      return `<div class="grp-pick ${on ? 'on' : ''}" data-n="${esc(n)}"><span class="gp-check">${on ? '✅' : '⬜'}</span><span class="gp-name">${esc(n)}</span><span class="gp-cnt">${groupCount(n)}단어</span></div>`;
-    }).join('');
+    const q = gpFind.trim().toLowerCase();
+    let html = '', hits = 0;
+    gpGroups().forEach((g, gi) => {
+      const items = g.items.filter(n => !q || n.toLowerCase().includes(q));
+      if (!items.length) return;
+      hits += items.length;
+      const on = items.filter(n => (store.groups[n] || []).includes(key)).length;
+      const open = !folded.has(gi) || !!q;
+      if (g.label) {
+        html += `<div class="sc-group" data-gfold="${gi}"><span class="sc-arrow">${open ? '▼' : '▶'}</span>` +
+          `<span class="sc-gname">${esc(g.label)} · ${g.items.length}개</span>` +
+          `<span class="sc-gsel">${on ? '담김 ' + on : ''}</span></div>`;
+      }
+      if (open) html += items.map(n => {
+        const inIt = (store.groups[n] || []).includes(key);
+        return `<div class="grp-pick ${inIt ? 'on' : ''}" data-n="${esc(n)}"><span class="gp-check">${inIt ? '✅' : '⬜'}</span><span class="gp-name">${esc(shortListName(n, g.label))}</span><span class="gp-cnt">${groupCount(n)}단어</span></div>`;
+      }).join('');
+    });
+    return hits ? html : '<div class="sc-none">찾는 이름이 없어요</div>';
   }
-  overlay.innerHTML = `<div class="modal">
+  const manyLists = Object.keys(store.groups).length > 8;
+  overlay.innerHTML = `<div class="modal scope-modal">
     <h3>📚 단어장에 담기</h3>
     <div class="m-sub"><b>${esc(w.w)}</b> · ${esc(w.m)}</div>
-    <div id="gpList">${rowsHtml()}</div>
+    ${manyLists ? `<input class="pick-search" id="gpFind" placeholder="이름으로 찾기 (예: Day1, 리딩)" autocomplete="off" spellcheck="false">` : ''}
+    <div class="scope-list" id="gpList">${rowsHtml()}</div>
     <div class="add-grp-row" style="margin-top:12px">
       <input id="gpNew" placeholder="새 단어장 (예: 중간고사 3과)" maxlength="20">
       <button id="gpAdd">만들기</button>
@@ -906,17 +935,27 @@ function openGroupPicker(key) {
     <button class="secondary modal-close" id="gpDone">완료</button>
   </div>`;
   document.body.appendChild(overlay);
+  function redraw() {
+    overlay.querySelector('#gpList').innerHTML = rowsHtml();
+    bindRows();
+  }
   function bindRows() {
     overlay.querySelectorAll('.grp-pick').forEach(r => r.addEventListener('click', () => {
       const n = r.dataset.n, arr = store.groups[n];
       const i = arr.indexOf(key);
       if (i >= 0) arr.splice(i, 1); else arr.push(key);
       saveStore();
-      overlay.querySelector('#gpList').innerHTML = rowsHtml();
-      bindRows();
+      redraw();
+    }));
+    overlay.querySelectorAll('.sc-group').forEach(h => h.addEventListener('click', () => {
+      const gi = +h.dataset.gfold;
+      if (folded.has(gi)) folded.delete(gi); else folded.add(gi);
+      redraw();
     }));
   }
   bindRows();
+  const gf = overlay.querySelector('#gpFind');
+  if (gf) gf.addEventListener('input', () => { gpFind = gf.value; redraw(); });
   overlay.querySelector('#gpAdd').addEventListener('click', () => {
     const inp = overlay.querySelector('#gpNew');
     const v = inp.value.trim();
@@ -925,8 +964,7 @@ function openGroupPicker(key) {
     store.groups[v] = [key];
     saveStore();
     inp.value = '';
-    overlay.querySelector('#gpList').innerHTML = rowsHtml();
-    bindRows();
+    redraw();
   });
   overlay.querySelector('#gpDone').addEventListener('click', close);
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
@@ -1190,6 +1228,7 @@ function renderAddView() {
           <div class="mw-m">${it.m ? esc(it.m) : '<span class="no-mean">✏️ 뜻 없음 — 눌러서 입력</span>'}</div>
         </div>
         <div class="mw-btns">
+          ${markWidget(it.key)}
           <button class="icon-btn say-w" data-w="${esc(it.w)}">🔊</button>
           ${custom ? `<button class="icon-btn edit-w" data-w="${esc(it.w)}">✏️</button>` : ''}
           <button class="icon-btn rm-from" data-key="${esc(it.key)}" title="이 단어장에서 빼기">➖</button>
@@ -2047,17 +2086,21 @@ function openScopePicker() {
   });
 }
 // ===== 인쇄용 시험지 (테스트 탭의 범위·대상·문항 수 설정을 그대로 사용) =====
-let printOn = false, printList = [], printKorToEng = true;
+let printOn = false, printList = [], printKorToEng = true, printScopeText = null;
 function exitPrint() {
   printOn = false;
+  printScopeText = null;
   document.body.classList.remove('printing');
 }
+// 인쇄 화면은 테스트 탭과 복습 탭 양쪽에서 열린다
+function printRerender() { if (mode === 'review') renderReview(); else renderTest(); }
 // 뜻 안에 영어가 든 괄호는 문제에선 빼준다 — 예: "바느질하다 (sew-sewed-sewn)" → 답이 그대로 보임
 function printQuestionMeaning(m) {
   const cut = String(m).replace(/\s*\([^)]*[A-Za-z][^)]*\)/g, '').trim();
   return cut || m;
 }
 function printScopeLabel() {
+  if (printScopeText) return printScopeText;   // 복습 탭에서 연 경우
   const inMy = (mode === 'my' || !!studyGroup);
   if (testUnits && testUnits.length) {
     const names = inMy ? testUnits.map(n => '📒 ' + n)
@@ -2072,8 +2115,18 @@ function startPrintSheet() {
   let pool = shuffle(testPoolWords().slice());
   if (testCount > 0 && testCount < pool.length) pool = pool.slice(0, testCount);
   printList = pool;
+  printScopeText = null;
   printOn = true;
   renderTest();
+}
+// 복습 탭 — 지금 보고 있는 못외운 단어 목록 그대로 시험지로
+function startPrintFromReview() {
+  const words = reviewWords();
+  if (!words.length) return;
+  printList = shuffle(words.slice());
+  printScopeText = '😖 못외운 단어' + (reviewScope ? ' · 고른 범위' : ' 전체');
+  printOn = true;
+  renderReview();
 }
 // A4 한 장에 담는 양을 고정한다 (자동 배치에 맡기면 장이 바뀔 때 번호가 튀어서)
 const PRINT_Q_PER_PAGE = 40;     // 문제지: 2단 × 20문항
@@ -2097,7 +2150,8 @@ function printColsHtml(items, startNo, nCols, rowFn) {
 }
 function renderPrintSheet(el) {
   document.body.classList.add('printing');
-  const filterLabel = testFilter === 'notknown' ? ' · 외움 뺀 단어' : testFilter === 'hard' ? ' · 😖 못외운 단어' : '';
+  const filterLabel = printScopeText ? '' :
+    (testFilter === 'notknown' ? ' · 외움 뺀 단어' : testFilter === 'hard' ? ' · 😖 못외운 단어' : '');
   const dirLabel = printKorToEng ? '뜻 보고 영어 쓰기' : '영어 보고 뜻 쓰기';
   const scope = printScopeLabel();
   const shownOf = it => printKorToEng ? esc(printQuestionMeaning(it.m)) : esc(it.w);
@@ -2109,15 +2163,21 @@ function renderPrintSheet(el) {
   const aRow = (it, n) =>
     `<div class="pq"><span class="pno">${n}.</span><span class="pk">${shownOf(it)}</span><span class="pc">:</span><span class="pa">${hiddenOf(it)}</span></div>`;
 
+  const total = printList.length;
+  if (!total) {
+    el.innerHTML = `<div class="print-ctrl"><button class="secondary" id="pBack">← ${mode === 'review' ? '복습으로' : '테스트로'}</button></div>
+      <div class="search-empty">인쇄할 단어가 없어요. 범위나 대상을 바꿔 보세요.</div>`;
+    el.querySelector('#pBack').addEventListener('click', () => { exitPrint(); printRerender(); });
+    return;
+  }
   const qPages = printChunk(printList, PRINT_Q_PER_PAGE);
   const aPages = printChunk(printList, PRINT_A_PER_PAGE);
-  const total = printList.length;
   let html = `
     <div class="print-ctrl">
       <button id="pShuffle">🔀 순서 다시 섞기</button>
       <button class="secondary" id="pDir">${printKorToEng ? '뜻 → 영어' : '영어 → 뜻'} 바꾸기</button>
       <button class="secondary" id="pPrint">🖨 인쇄 / PDF 저장</button>
-      <button class="secondary" id="pBack">← 테스트로</button>
+      <button class="secondary" id="pBack">← ${mode === 'review' ? '복습으로' : '테스트로'}</button>
       <span class="hintx">인쇄하면 앱 화면은 빠지고 시험지만 나와요 · 정답은 맨 뒤에${qPages.length > 1 ? ` · 문제 ${qPages.length}장` : ''}</span>
     </div>`;
   qPages.forEach((page, pi) => {
@@ -2145,10 +2205,12 @@ function renderPrintSheet(el) {
     </div>`;
   });
   el.innerHTML = html;
-  el.querySelector('#pShuffle').addEventListener('click', startPrintSheet);
-  el.querySelector('#pDir').addEventListener('click', () => { printKorToEng = !printKorToEng; renderTest(); });
+  el.querySelector('#pShuffle').addEventListener('click', () => {
+    if (mode === 'review') startPrintFromReview(); else startPrintSheet();
+  });
+  el.querySelector('#pDir').addEventListener('click', () => { printKorToEng = !printKorToEng; printRerender(); });
   el.querySelector('#pPrint').addEventListener('click', () => window.print());
-  el.querySelector('#pBack').addEventListener('click', () => { exitPrint(); renderTest(); });
+  el.querySelector('#pBack').addEventListener('click', () => { exitPrint(); printRerender(); });
 }
 
 function startTest(type) {
@@ -2516,6 +2578,7 @@ function openReviewScopePicker() {
 }
 function renderReview() {
   const el = document.getElementById('content');
+  if (printOn) { renderPrintSheet(el); return; }
   const words = reviewWords();
   if (reviewQuizOn && words.length) { renderReviewQuiz(el, words); return; }
   reviewQuizOn = false;
@@ -2539,7 +2602,10 @@ function renderReview() {
     }
     html += `</div>
       <div style="color:#94a3b8;font-size:12.5px;text-align:center;margin-top:8px">외웠으면 😊를 눌러 목록에서 졸업시키세요</div>
-      <div class="center" style="margin-top:10px"><button id="rvQuiz">🅰️ 이 단어들로 4지선다 점검</button></div>`;
+      <div class="center" style="margin-top:10px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button id="rvQuiz">🅰️ 이 단어들로 4지선다 점검</button>
+        <button class="secondary" id="rvPrint">🖨 인쇄용 시험지</button>
+      </div>`;
   }
   el.innerHTML = html;
   el.querySelector('#rvAll').addEventListener('click', () => { reviewScope = null; renderReview(); });
@@ -2547,6 +2613,8 @@ function renderReview() {
   el.querySelectorAll('.say-w').forEach(b => b.addEventListener('click', () => speak(b.dataset.w)));
   const qb = el.querySelector('#rvQuiz');
   if (qb) qb.addEventListener('click', () => { reviewQuizOn = true; renderReview(); });
+  const pb = el.querySelector('#rvPrint');
+  if (pb) pb.addEventListener('click', startPrintFromReview);
 }
 function renderReviewQuiz(el, words) {
   const q = words[Math.floor(Math.random() * words.length)];
