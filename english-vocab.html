@@ -569,6 +569,48 @@
   }
   .scope-item:hover { background: #f8faff; }
   .scope-item input { width: 18px; height: 18px; accent-color: #4f46e5; flex-shrink: 0; }
+
+  /* ===== 인쇄용 시험지 ===== */
+  .print-ctrl { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .print-ctrl .hintx { font-size: 12px; color: #94a3b8; }
+  .psheet { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 22px 20px 26px; margin-bottom: 16px; color: #111; text-align: left; }
+  .psheet h2 { font-size: 18px; margin: 0 0 3px; letter-spacing: -0.3px; }
+  .psub { font-size: 12.5px; color: #666; margin: 0 0 14px; line-height: 1.5; }
+  .pmeta { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; border-top: 2px solid #222; border-bottom: 1px solid #ccc; padding: 9px 2px; margin-bottom: 14px; font-size: 13px; }
+  .pmeta span { display: inline-flex; align-items: flex-end; gap: 6px; }
+  .pmeta i { font-style: normal; color: #555; }
+  .pfill { display: inline-block; border-bottom: 1px solid #999; width: 88px; height: 17px; }
+  .pfill.sm { width: 52px; }
+  /* 단·장을 코드에서 직접 나눈다 — 브라우저 자동 단 나눔은 페이지 넘길 때 번호가 튈 수 있어서 */
+  .pcols { display: flex; gap: 28px; align-items: flex-start; }
+  .pcol { flex: 1; min-width: 0; }
+  .ppage + .ppage, .pans { page-break-before: always; break-before: page; }
+  .pq { break-inside: avoid; display: flex; align-items: baseline; gap: 5px; font-size: 13px; line-height: 1.6; padding: 8px 0; }
+  .pno { flex-shrink: 0; width: 23px; text-align: right; font-weight: 700; }
+  .pk { flex-shrink: 0; }
+  .ppos { font-size: 10.5px; color: #999; margin-left: 3px; }
+  .pc { color: #666; flex-shrink: 0; }
+  .pb { flex: 1; border-bottom: 1px solid #bbb; min-width: 60px; height: 20px; }
+  .pans .pcols { gap: 20px; }
+  .pans .pq { font-size: 12px; padding: 2px 0; }
+  .pa { color: #1d4ed8; font-weight: 700; }
+  .ppage-no { text-align: right; font-size: 11px; color: #999; margin-top: 10px; }
+  @media (max-width: 600px) {
+    .pcols { flex-direction: column; gap: 0; }
+  }
+  /* 인쇄할 땐 앱 화면(제목·탭·설정)은 빼고 시험지만 */
+  @media print {
+    body.printing { background: #fff; padding: 0; }
+    body.printing .hero, body.printing .tabs, body.printing .unit-picker,
+    body.printing .level-desc, body.printing .voice-bar, body.printing .info,
+    body.printing .print-ctrl, body.printing .ml-bar, body.printing .ml-info,
+    body.printing .sub-nav, body.printing .group-banner { display: none !important; }
+    body.printing .main-card { box-shadow: none; border: 0; padding: 0; margin: 0; max-width: none; width: auto; border-radius: 0; }
+    body.printing .psheet { border: 0; border-radius: 0; padding: 0; margin: 0; }
+    body.printing .pcols { flex-direction: row !important; gap: 28px !important; }
+    body.printing .pans .pcols { gap: 20px !important; }
+    @page { size: A4; margin: 11mm 12mm; }
+  }
   .scope-item .sc-cnt { margin-left: auto; color: #94a3b8; font-size: 12.5px; flex-shrink: 0; }
 </style>
 </head>
@@ -646,7 +688,7 @@
 </div>
 <div class="info">
   단어를 클릭하면 발음이 들려요 🔊 · 품사: <span class="pos pos-n">명</span> 명사 <span class="pos pos-v">동</span> 동사 <span class="pos pos-a">형</span> 형용사 <span class="pos pos-d">부</span> 부사 <span class="pos pos-x">전·접</span> 전치사/접속사<br>
-  ⭐ = 테스트에서 3번 이상 맞힌 단어 · 모든 기록은 자동 저장<br>
+  😊 외움 / 😖 못외움은 직접 눌러서 표시해요 · 모든 기록은 자동 저장<br>
   원어민 사전 발음·구글 발음은 인터넷 연결이 필요해요 (안 되면 자동으로 다음 발음 소스로 넘어갑니다)<br>
   © 2026 Mina &amp; Juho. All rights reserved. 무단 복제·배포 금지
 </div>
@@ -1104,7 +1146,7 @@ function renderMy() {
     });
   });
   el.querySelector('#mlBak').addEventListener('click', openBackupDialog);
-  el.querySelectorAll('.sub-seg').forEach(b => b.addEventListener('click', () => { mySub = b.dataset.s; renderMy(); }));
+  el.querySelectorAll('.sub-seg').forEach(b => b.addEventListener('click', () => { exitPrint(); mySub = b.dataset.s; renderMy(); }));
 }
 
 function renderAddView() {
@@ -1643,6 +1685,7 @@ function resetModeStates() {
   stopTimeAttack();
   testType = null; testQs = []; testOver = false;
   cardQueue = []; cardTotal = 0; cardStarted = false; reviewQuizOn = false;
+  exitPrint();
 }
 
 // ===== Mode: word table =====
@@ -1892,6 +1935,111 @@ function openScopePicker() {
     renderTest();
   });
 }
+// ===== 인쇄용 시험지 (테스트 탭의 범위·대상·문항 수 설정을 그대로 사용) =====
+let printOn = false, printList = [], printKorToEng = true;
+function exitPrint() {
+  printOn = false;
+  document.body.classList.remove('printing');
+}
+// 뜻 안에 영어가 든 괄호는 문제에선 빼준다 — 예: "바느질하다 (sew-sewed-sewn)" → 답이 그대로 보임
+function printQuestionMeaning(m) {
+  const cut = String(m).replace(/\s*\([^)]*[A-Za-z][^)]*\)/g, '').trim();
+  return cut || m;
+}
+function printScopeLabel() {
+  const inMy = (mode === 'my' || !!studyGroup);
+  if (testUnits && testUnits.length) {
+    const names = inMy ? testUnits.map(n => '📒 ' + n)
+                       : testUnits.map(u => (u + 1) + '단원 「' + RAW[curLevel][u][0] + '」');
+    // 범위가 많으면 제목이 여러 줄이 되어 첫 장 문항 수가 밀린다 — 3개까지만 적는다
+    return names.length > 3 ? names.slice(0, 3).join(' + ') + ' 외 ' + (names.length - 3) + '개' : names.join(' + ');
+  }
+  return inMy ? '📒 ' + (studyGroup || myList)
+              : curLevel + ' ' + (curUnit + 1) + '단원 「' + RAW[curLevel][curUnit][0] + '」';
+}
+function startPrintSheet() {
+  let pool = shuffle(testPoolWords().slice());
+  if (testCount > 0 && testCount < pool.length) pool = pool.slice(0, testCount);
+  printList = pool;
+  printOn = true;
+  renderTest();
+}
+// A4 한 장에 담는 양을 고정한다 (자동 배치에 맡기면 장이 바뀔 때 번호가 튀어서)
+const PRINT_Q_PER_PAGE = 40;     // 문제지: 2단 × 20문항
+const PRINT_A_PER_PAGE = 108;    // 정답지: 3단 × 36개
+function printChunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+// 한 장 안에서 세로로 채운 뒤 다음 단으로 — 번호가 위→아래, 왼→오른쪽 순서로만 흐른다
+function printColsHtml(items, startNo, nCols, rowFn) {
+  const colRows = Math.ceil(items.length / nCols);
+  let html = '<div class="pcols">';
+  for (let c = 0; c < nCols; c++) {
+    const part = items.slice(c * colRows, (c + 1) * colRows);
+    html += '<div class="pcol">';
+    part.forEach((it, i) => { html += rowFn(it, startNo + c * colRows + i); });
+    html += '</div>';
+  }
+  return html + '</div>';
+}
+function renderPrintSheet(el) {
+  document.body.classList.add('printing');
+  const filterLabel = testFilter === 'notknown' ? ' · 외움 뺀 단어' : testFilter === 'hard' ? ' · 😖 못외운 단어' : '';
+  const dirLabel = printKorToEng ? '뜻 보고 영어 쓰기' : '영어 보고 뜻 쓰기';
+  const scope = printScopeLabel();
+  const shownOf = it => printKorToEng ? esc(printQuestionMeaning(it.m)) : esc(it.w);
+  const hiddenOf = it => printKorToEng ? esc(it.w) : esc(it.m);
+  const qRow = (it, n) => {
+    const tag = (printKorToEng && it.p) ? `<span class="ppos">${esc(it.p)}</span>` : '';
+    return `<div class="pq"><span class="pno">${n}.</span><span class="pk">${shownOf(it)}${tag}</span><span class="pc">:</span><span class="pb"></span></div>`;
+  };
+  const aRow = (it, n) =>
+    `<div class="pq"><span class="pno">${n}.</span><span class="pk">${shownOf(it)}</span><span class="pc">:</span><span class="pa">${hiddenOf(it)}</span></div>`;
+
+  const qPages = printChunk(printList, PRINT_Q_PER_PAGE);
+  const aPages = printChunk(printList, PRINT_A_PER_PAGE);
+  const total = printList.length;
+  let html = `
+    <div class="print-ctrl">
+      <button id="pShuffle">🔀 순서 다시 섞기</button>
+      <button class="secondary" id="pDir">${printKorToEng ? '뜻 → 영어' : '영어 → 뜻'} 바꾸기</button>
+      <button class="secondary" id="pPrint">🖨 인쇄 / PDF 저장</button>
+      <button class="secondary" id="pBack">← 테스트로</button>
+      <span class="hintx">인쇄하면 앱 화면은 빠지고 시험지만 나와요 · 정답은 맨 뒤에${qPages.length > 1 ? ` · 문제 ${qPages.length}장` : ''}</span>
+    </div>`;
+  qPages.forEach((page, pi) => {
+    html += `<div class="psheet ppage">`;
+    if (pi === 0) {
+      html += `<h2>단어 시험</h2>
+        <p class="psub">${esc(scope)}${filterLabel} · 총 ${total}문항 · ${dirLabel}</p>
+        <div class="pmeta">
+          <span><i>이름</i><b class="pfill"></b></span>
+          <span><i>날짜</i><b class="pfill"></b></span>
+          <span><i>점수</i><b class="pfill sm"></b><i>/ ${total}</i></span>
+        </div>`;
+    } else {
+      html += `<p class="psub" style="margin-bottom:10px">단어 시험 · ${esc(scope)} (이어서)</p>`;
+    }
+    html += printColsHtml(page, pi * PRINT_Q_PER_PAGE + 1, 2, qRow);
+    if (qPages.length > 1) html += `<div class="ppage-no">${pi + 1} / ${qPages.length}</div>`;
+    html += `</div>`;
+  });
+  aPages.forEach((page, pi) => {
+    html += `<div class="psheet pans">
+      <h2>정답${aPages.length > 1 ? ` (${pi + 1}/${aPages.length})` : ''}</h2>
+      <p class="psub">${esc(scope)} · 문제지와 같은 번호 순서예요</p>
+      ${printColsHtml(page, pi * PRINT_A_PER_PAGE + 1, 3, aRow)}
+    </div>`;
+  });
+  el.innerHTML = html;
+  el.querySelector('#pShuffle').addEventListener('click', startPrintSheet);
+  el.querySelector('#pDir').addEventListener('click', () => { printKorToEng = !printKorToEng; renderTest(); });
+  el.querySelector('#pPrint').addEventListener('click', () => window.print());
+  el.querySelector('#pBack').addEventListener('click', () => { exitPrint(); renderTest(); });
+}
+
 function startTest(type) {
   testType = type;
   let pool = testPoolWords();
@@ -1910,6 +2058,7 @@ function mcOptions(correct) {
 }
 function renderTest() {
   const el = renderTarget();
+  if (printOn) { renderPrintSheet(el); return; }
   if (testType === null) {
     const inMy = (mode === 'my');
     const taBest = store.taBest[curLevel];
@@ -1957,6 +2106,7 @@ function renderTest() {
         <div class="test-opt" id="typeBtn"><div class="to-icon">⌨️</div><b>직접 입력</b><span>뜻 보고 영어 쓰기</span></div>
         <div class="test-opt" id="dictBtn"><div class="to-icon">🎧</div><b>듣고 쓰기</b><span>발음 듣고 철자 입력</span></div>
         ${clozeN ? `<div class="test-opt" id="clozeBtn"><div class="to-icon">📝</div><b>빈칸 채우기</b><span>예문 있는 ${clozeN}단어</span></div>` : ''}
+        <div class="test-opt" id="printBtn"><div class="to-icon">🖨</div><b>인쇄용 시험지</b><span>종이에 뽑아서 시험 · 정답지 포함</span></div>
         ${studyGroup ? '' : `<div class="test-opt ta" id="taBtn"><div class="to-icon">⚡</div><b>타임어택 60초</b><span>${curLevel} 전체 · 최고 ${taBest !== undefined ? taBest + '점' : '기록 없음'}</span></div>`}
       </div>`}`;
     if (studyGroup && !inMy) el.querySelector('#exitGroup').addEventListener('click', exitGroup);
@@ -1979,6 +2129,7 @@ function renderTest() {
       el.querySelector('#typeBtn').addEventListener('click', () => startTest('type'));
       el.querySelector('#dictBtn').addEventListener('click', () => startTest('dict'));
       if (clozeN) el.querySelector('#clozeBtn').addEventListener('click', () => startTest('cloze'));
+      el.querySelector('#printBtn').addEventListener('click', startPrintSheet);
       if (!studyGroup) el.querySelector('#taBtn').addEventListener('click', startTimeAttack);
     }
     return;
@@ -2518,6 +2669,7 @@ document.querySelectorAll('#modeTabs .tab').forEach(t => {
     document.querySelectorAll('#modeTabs .tab').forEach(x => x.classList.remove('active'));
     t.classList.add('active');
     stopTimeAttack();
+    exitPrint();
     mode = t.dataset.mode;
     if (mode !== 'my') studyGroup = null;   // 내단어 밖으로 나가면 그룹 학습 해제
     if (mode === 'cards') startCards();
