@@ -1346,6 +1346,7 @@ let enVoice = null;
 let audioSrc = localStorage.getItem(SRC_KEY) || 'dict';
 
 const player = new Audio();
+let speakSeq = 0;              // 발음 요청 세대 번호 (늦게 온 옛 요청 무시용)
 function stopAudio() {
   try { player.onended = null; player.onerror = null; player.onplaying = null; player.pause(); } catch (e) {}
   if (ttsOK) { try { speechSynthesis.cancel(); } catch (e) {} }
@@ -1362,7 +1363,11 @@ async function getDictAudio(word) {
   if (word in dictCache) return dictCache[word];
   let best = null;
   try {
-    const r = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word));
+    // 2.5초 안에 답이 없으면 포기하고 대체 발음으로 — 느린 조회에 발음이 붙잡히지 않게
+    const ac = ('AbortController' in window) ? new AbortController() : null;
+    const timer = ac ? setTimeout(() => ac.abort(), 2500) : null;
+    const r = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word), ac ? { signal: ac.signal } : undefined)
+      .finally(() => { if (timer) clearTimeout(timer); });
     if (r.ok) {
       const data = await r.json();
       outer:
@@ -1406,8 +1411,9 @@ function prefetchDictAudio(words) {
   pumpPrefetch();
 }
 
-function playUrl(url) {
+function playUrl(url, seq) {
   return new Promise(res => {
+    if (seq !== undefined && seq !== speakSeq) return res(false);   // 이미 다른 발음이 시작됨 — 재생하지 않음
     let done = false;
     const guard = setTimeout(() => finish(false), 5000);   // 로드가 소리 없이 멈춰버리는 경우 대비
     const finish = ok => { if (!done) { done = true; clearTimeout(guard); res(ok); } };
@@ -1449,9 +1455,10 @@ function populateVoiceSel() {
   const chosen = vs.find(v => v.name === savedName) || pickDefaultVoice();
   if (chosen) { sel.value = chosen.name; enVoice = chosen; }
 }
-function speakTTS(text) {
+function speakTTS(text, seq) {
   return new Promise(res => {
     if (!ttsOK) return res(false);
+    if (seq !== undefined && seq !== speakSeq) return res(false);   // 이미 다른 발음이 시작됨
     let settled = false, started = false;
     const done = ok => { if (!settled) { settled = true; res(ok); } };
     const makeU = useVoice => {
@@ -1466,9 +1473,13 @@ function speakTTS(text) {
     };
     try {
       speechSynthesis.cancel();
-      setTimeout(() => { speechSynthesis.speak(makeU(true)); speechSynthesis.resume(); }, 50);
+      setTimeout(() => {
+        if (seq !== undefined && seq !== speakSeq) return done(false);
+        speechSynthesis.speak(makeU(true)); speechSynthesis.resume();
+      }, 50);
       // iOS가 조용히 무시하는 경우: 1.3초 안에 시작 안 되면 보이스 지정 없이 한 번 더
       setTimeout(() => {
+        if (seq !== undefined && seq !== speakSeq) return done(false);
         if (!started && !settled) {
           try { speechSynthesis.cancel(); speechSynthesis.speak(makeU(false)); speechSynthesis.resume(); } catch (e) {}
           setTimeout(() => { if (!started) done(false); }, 1500);
@@ -1480,18 +1491,25 @@ function speakTTS(text) {
 
 // --- main entry: play once, resolve when finished ---
 let googleFails = 0;   // 구글 TTS가 막힌 환경(iOS 등)에서 매번 기다리지 않도록 세션 내 실패 기억
+// speakSeq: 발음 요청 세대 번호. 새로 누르면 번호가 올라가고, 늦게 도착한 옛 요청은 스스로 멈춘다
+// (이게 없으면 느린 조회가 줄줄이 밀렸다가 한꺼번에 소리남)
 async function pronounce(text) {
+  const my = ++speakSeq;
   stopAudio();
   const single = /^[A-Za-z'-]+$/.test(text.trim());
   if (audioSrc === 'dict' && single) {
     const url = await getDictAudio(text.trim().toLowerCase());
-    if (url && await playUrl(url)) return;
+    if (my !== speakSeq) return;
+    if (url && await playUrl(url, my)) return;
+    if (my !== speakSeq) return;
   }
   if ((audioSrc === 'dict' || audioSrc === 'google') && googleFails < 2) {
-    if (await playUrl(googleTtsUrl(text))) { googleFails = 0; return; }
+    if (await playUrl(googleTtsUrl(text), my)) { googleFails = 0; return; }
+    if (my !== speakSeq) return;
     googleFails++;
   }
-  await speakTTS(text);
+  if (my !== speakSeq) return;
+  await speakTTS(text, my);
 }
 function speak(text) { pronounce(text); }   // fire-and-forget wrapper
 
