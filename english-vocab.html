@@ -569,6 +569,14 @@
   }
   .scope-item:hover { background: #f8faff; }
   .scope-item input { width: 18px; height: 18px; accent-color: #4f46e5; flex-shrink: 0; }
+  /* 묶음 헤더 + 이름 찾기 */
+  .pick-search { width: 100%; padding: 10px 12px; margin-top: 8px; border: 1.5px solid #dbe4ff; border-radius: 10px; font-family: inherit; font-size: 14px; outline: none; }
+  .pick-search:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.10); }
+  .sc-group { display: flex; align-items: center; gap: 8px; margin: 13px 2px 3px; }
+  .sc-gname { font-size: 12.5px; font-weight: 800; color: #4338ca; }
+  .sc-gbtn { margin-left: auto; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #eef2ff; color: #4338ca; box-shadow: none; }
+  .sc-gbtn:hover { background: #e0e7ff; transform: none; box-shadow: none; }
+  .sc-none { padding: 18px; text-align: center; color: #94a3b8; font-size: 13px; }
 
   /* ===== 인쇄용 시험지 ===== */
   .print-ctrl { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
@@ -1088,9 +1096,12 @@ function renderMy() {
   const cnt = groupCount(myList);
   const gc = markCounts(groupWords(myList));
   el.innerHTML = `<div class="ml-bar">
-      <select id="myListSel">${names.map(n => {
-        const c = markCounts(groupWords(n));
-        return `<option value="${esc(n)}" ${n === myList ? 'selected' : ''}>📒 ${esc(n)} (${groupCount(n)}개${c.known ? ' · 😊' + c.known : ''})</option>`;
+      <select id="myListSel">${groupListNames(names).map(g => {
+        const opts = g.items.map(n => {
+          const c = markCounts(groupWords(n));
+          return `<option value="${esc(n)}" ${n === myList ? 'selected' : ''}>📒 ${esc(shortListName(n, g.label))} (${groupCount(n)}개${c.known ? ' · 😊' + c.known : ''})</option>`;
+        }).join('');
+        return g.label ? `<optgroup label="${esc(g.label)} · ${g.items.length}개 단어장">${opts}</optgroup>` : opts;
       }).join('')}</select>
       <button class="icon-btn" id="mlNew" title="새 단어장">➕</button>
       <button class="icon-btn" id="mlRen" title="이름 변경">✏️</button>
@@ -1887,52 +1898,119 @@ function testScopeLabel() {
   if (testUnits && testUnits.length) return `${testUnits.length}개 합침`;
   return (mode === 'my' || studyGroup) ? `${esc(studyGroup || '')}` : `${curUnit + 1}단원`;
 }
-// 범위 다중 선택 팝업 (내단어: 단어장 목록 / 공통: 현재 레벨 단원 목록)
-function openScopePicker() {
-  const inMy = (mode === 'my' || !!studyGroup);
-  const items = inMy
-    ? myListNames().map(n => ({ id: n, label: '📒 ' + esc(n), cnt: groupCount(n) }))
-    : RAW[curLevel].map(([t], u) => ({ id: u, label: (u + 1) + '단원 · ' + esc(t), cnt: RAW[curLevel][u][1].length }));
-  const cur = new Set((testUnits || [inMy ? (studyGroup || myList) : curUnit]).map(String));
+// ===== 단어장 묶음 =====
+// "중등보카 Day1-2" → 묶음 "중등보카" · 이름 앞부분이 같은 게 2개 이상일 때만 묶는다
+// (이미 등록된 단어장도 화면 그릴 때 자동으로 묶이므로 저장된 자료는 그대로)
+function listPrefix(name) {
+  const i = name.indexOf(' ');
+  return i > 0 ? name.slice(0, i) : name;
+}
+function shortListName(name, prefix) {
+  return (prefix && name.startsWith(prefix + ' ')) ? name.slice(prefix.length + 1) : name;
+}
+function groupListNames(names) {
+  const cnt = {};
+  names.forEach(n => { const p = listPrefix(n); cnt[p] = (cnt[p] || 0) + 1; });
+  const out = [], idx = {};
+  names.forEach(n => {
+    const p = listPrefix(n);
+    const key = cnt[p] >= 2 ? p : '';
+    if (!(key in idx)) { idx[key] = out.length; out.push({ label: key, items: [] }); }
+    out[idx[key]].items.push(n);
+  });
+  return out;
+}
+
+// ===== 공용 다중 선택 팝업 (묶음 헤더 · 이름 찾기 · 묶음별 전체선택) =====
+// cfg: { title, groups:[{label, items:[{id,label,cnt,cntText}]}], selected:Set<string>, onOk(ids) }
+function openMultiPicker(cfg) {
+  const all = cfg.groups.flatMap(g => g.items);
   const overlay = document.createElement('div');
   overlay.className = 'modal-back';
   overlay.innerHTML = `<div class="modal scope-modal">
-    <h3>📚 테스트 범위 고르기</h3>
+    <h3>${esc(cfg.title)}</h3>
     <div style="display:flex;gap:8px;margin-top:6px">
       <button class="mini" id="scAll">전체 선택</button>
       <button class="mini" id="scNone">전체 해제</button>
     </div>
-    <div class="scope-list">${items.map(it =>
-      `<label class="scope-item"><input type="checkbox" data-id="${esc(String(it.id))}" ${cur.has(String(it.id)) ? 'checked' : ''}> ${it.label}<span class="sc-cnt">${it.cnt}단어</span></label>`).join('')}
-    </div>
+    ${all.length > 8 ? `<input class="pick-search" id="scFind" placeholder="이름으로 찾기 (예: Day1, 리딩)" autocomplete="off" spellcheck="false">` : ''}
+    <div class="scope-list" id="scList">${cfg.groups.map((g, gi) =>
+      (g.label ? `<div class="sc-group" data-g="${gi}"><span class="sc-gname">${esc(g.label)} · ${g.items.length}개</span><button class="sc-gbtn" data-gsel="${gi}">이 묶음 전체</button></div>` : '') +
+      g.items.map(it =>
+        `<label class="scope-item" data-g="${gi}" data-find="${esc((g.label + ' ' + it.label).toLowerCase())}">` +
+        `<input type="checkbox" data-id="${esc(String(it.id))}" ${cfg.selected.has(String(it.id)) ? 'checked' : ''}> ${esc(it.label)}` +
+        `<span class="sc-cnt">${esc(it.cntText)}</span></label>`).join('')
+    ).join('')}<div class="sc-none" id="scNoHit" style="display:none">찾는 이름이 없어요</div></div>
     <div class="dlg-msg" id="scSum" style="text-align:center;font-weight:700"></div>
     <div class="dlg-actions">
       <button class="secondary" id="dlgCancel">취소</button>
-      <button id="dlgOk">이 범위로</button>
+      <button id="dlgOk">${esc(cfg.okText || '이 범위로')}</button>
     </div>
   </div>`;
   document.body.appendChild(overlay);
   const boxes = [...overlay.querySelectorAll('input[type=checkbox]')];
+  const rows = [...overlay.querySelectorAll('.scope-item')];
+  const heads = [...overlay.querySelectorAll('.sc-group')];
   const sum = overlay.querySelector('#scSum');
+  const cntOf = id => (all.find(x => String(x.id) === id) || { cnt: 0 }).cnt;
   const refreshSum = () => {
     const picked = boxes.filter(b => b.checked);
-    const total = picked.reduce((s, b) => s + items.find(x => String(x.id) === b.dataset.id).cnt, 0);
-    sum.textContent = picked.length ? `${picked.length}개 선택 · 약 ${total}단어` : '최소 1개는 골라 줘';
+    const t = picked.reduce((s, b) => s + cntOf(b.dataset.id), 0);
+    sum.textContent = picked.length ? `${picked.length}개 선택 · 약 ${t}단어` : '최소 1개는 골라 줘';
   };
+  const visible = () => rows.filter(r => r.style.display !== 'none');
   refreshSum();
   boxes.forEach(b => b.addEventListener('change', refreshSum));
-  overlay.querySelector('#scAll').addEventListener('click', () => { boxes.forEach(b => b.checked = true); refreshSum(); });
-  overlay.querySelector('#scNone').addEventListener('click', () => { boxes.forEach(b => b.checked = false); refreshSum(); });
+  overlay.querySelector('#scAll').addEventListener('click', () => { visible().forEach(r => r.querySelector('input').checked = true); refreshSum(); });
+  overlay.querySelector('#scNone').addEventListener('click', () => { visible().forEach(r => r.querySelector('input').checked = false); refreshSum(); });
+  overlay.querySelectorAll('.sc-gbtn').forEach(b => b.addEventListener('click', () => {
+    const gi = b.dataset.gsel;
+    const mine = visible().filter(r => r.dataset.g === gi);
+    const turnOn = mine.some(r => !r.querySelector('input').checked);
+    mine.forEach(r => r.querySelector('input').checked = turnOn);
+    refreshSum();
+  }));
+  const find = overlay.querySelector('#scFind');
+  if (find) find.addEventListener('input', () => {
+    const q = find.value.trim().toLowerCase();
+    rows.forEach(r => { r.style.display = (!q || r.dataset.find.includes(q)) ? '' : 'none'; });
+    heads.forEach(h => {
+      const any = rows.some(r => r.dataset.g === h.dataset.g && r.style.display !== 'none');
+      h.style.display = any ? '' : 'none';
+    });
+    overlay.querySelector('#scNoHit').style.display = visible().length ? 'none' : '';
+  });
   const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
   overlay.querySelector('#dlgCancel').addEventListener('click', close);
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   overlay.querySelector('#dlgOk').addEventListener('click', () => {
-    const picked = boxes.filter(b => b.checked).map(b => inMy ? b.dataset.id : parseInt(b.dataset.id));
+    const picked = boxes.filter(b => b.checked).map(b => b.dataset.id);
     if (!picked.length) { refreshSum(); return; }
-    // 하나만 골랐고 그게 현재 것이면 '현재 단원' 상태로 되돌림
-    testUnits = (picked.length === 1 && String(picked[0]) === String(inMy ? (studyGroup || myList) : curUnit)) ? null : picked;
     close();
-    renderTest();
+    cfg.onOk(picked);
+  });
+}
+
+// 범위 다중 선택 팝업 (내단어: 단어장 목록 / 공통: 현재 레벨 단원 목록)
+function openScopePicker() {
+  const inMy = (mode === 'my' || !!studyGroup);
+  const groups = inMy
+    ? groupListNames(myListNames()).map(g => ({
+        label: g.label,
+        items: g.items.map(n => ({ id: n, label: '📒 ' + shortListName(n, g.label), cnt: groupCount(n), cntText: groupCount(n) + '단어' }))
+      }))
+    : [{ label: '', items: RAW[curLevel].map(([t], u) => ({ id: u, label: (u + 1) + '단원 · ' + t, cnt: RAW[curLevel][u][1].length, cntText: RAW[curLevel][u][1].length + '단어' })) }];
+  const curId = String(inMy ? (studyGroup || myList) : curUnit);
+  openMultiPicker({
+    title: '📚 테스트 범위 고르기',
+    groups,
+    selected: new Set((testUnits || [inMy ? (studyGroup || myList) : curUnit]).map(String)),
+    onOk: picked => {
+      const vals = inMy ? picked : picked.map(Number);
+      // 하나만 골랐고 그게 현재 것이면 '현재 단원' 상태로 되돌림
+      testUnits = (picked.length === 1 && picked[0] === curId) ? null : vals;
+      renderTest();
+    }
   });
 }
 // ===== 인쇄용 시험지 (테스트 탭의 범위·대상·문항 수 설정을 그대로 사용) =====
@@ -2375,45 +2453,32 @@ function reviewWords() {
 function openReviewScopePicker() {
   const items = reviewScopeOptions();
   if (!items.length) return;
-  const cur = new Set(reviewScope || items.map(x => x.id));
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-back';
-  overlay.innerHTML = `<div class="modal scope-modal">
-    <h3>📚 복습 범위 고르기</h3>
-    <div style="display:flex;gap:8px;margin-top:6px">
-      <button class="mini" id="scAll">전체 선택</button>
-      <button class="mini" id="scNone">전체 해제</button>
-    </div>
-    <div class="scope-list">${items.map(it =>
-      `<label class="scope-item"><input type="checkbox" data-id="${esc(it.id)}" ${cur.has(it.id) ? 'checked' : ''}> ${it.label}<span class="sc-cnt">😖 ${it.cnt}</span></label>`).join('')}
-    </div>
-    <div class="dlg-msg" id="scSum" style="text-align:center;font-weight:700"></div>
-    <div class="dlg-actions">
-      <button class="secondary" id="dlgCancel">취소</button>
-      <button id="dlgOk">이 범위로</button>
-    </div>
-  </div>`;
-  document.body.appendChild(overlay);
-  const boxes = [...overlay.querySelectorAll('input[type=checkbox]')];
-  const sum = overlay.querySelector('#scSum');
-  const refreshSum = () => {
-    const picked = boxes.filter(b => b.checked);
-    const total = picked.reduce((s, b) => s + items.find(x => x.id === b.dataset.id).cnt, 0);
-    sum.textContent = picked.length ? `${picked.length}개 범위 · 😖 ${total}개` : '최소 1개는 골라 줘';
+  // 레벨별 · 단어장 묶음별로 나눈다
+  const groups = [], idx = {};
+  const push = (label, it) => {
+    if (!(label in idx)) { idx[label] = groups.length; groups.push({ label, items: [] }); }
+    groups[idx[label]].items.push(it);
   };
-  refreshSum();
-  boxes.forEach(b => b.addEventListener('change', refreshSum));
-  overlay.querySelector('#scAll').addEventListener('click', () => { boxes.forEach(b => b.checked = true); refreshSum(); });
-  overlay.querySelector('#scNone').addEventListener('click', () => { boxes.forEach(b => b.checked = false); refreshSum(); });
-  const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
-  overlay.querySelector('#dlgCancel').addEventListener('click', close);
-  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-  overlay.querySelector('#dlgOk').addEventListener('click', () => {
-    const picked = boxes.filter(b => b.checked).map(b => b.dataset.id);
-    if (!picked.length) { refreshSum(); return; }
-    reviewScope = picked.length === items.length ? null : picked;
-    close();
-    renderReview();
+  const myNames = items.filter(x => x.id.startsWith('g|')).map(x => x.id.slice(2));
+  const prefixOf = {};
+  groupListNames(myNames).forEach(g => g.items.forEach(n => { prefixOf[n] = g.label; }));
+  items.forEach(it => {
+    if (it.id.startsWith('u|')) {
+      const lv = it.id.split('|')[1];
+      push(lv, { id: it.id, label: it.label.replace(lv + ' ', ''), cnt: it.cnt, cntText: '😖 ' + it.cnt });
+    } else {
+      const n = it.id.slice(2), p = prefixOf[n] || '';
+      push(p || '단어장', { id: it.id, label: '📒 ' + shortListName(n, p), cnt: it.cnt, cntText: '😖 ' + it.cnt });
+    }
+  });
+  openMultiPicker({
+    title: '📚 복습 범위 고르기',
+    groups,
+    selected: new Set(reviewScope || items.map(x => x.id)),
+    onOk: picked => {
+      reviewScope = picked.length === items.length ? null : picked;
+      renderReview();
+    }
   });
 }
 function renderReview() {
