@@ -509,6 +509,10 @@
     .grp-actions button { padding: 8px 10px; font-size: 12px; }
     .sub-seg { font-size: 11.5px; padding: 9px 2px; }
     #myListSel { font-size: 14px; padding: 11px 8px; }
+    /* 좁은 화면: 단어장 이름이 눌리지 않게 관리 버튼을 아랫줄로 */
+    .ml-bar { flex-wrap: wrap; }
+    #myListSel { flex: 1 0 100%; }
+    .ml-bar .icon-btn { flex: 1; padding: 9px 0; }
   }
 
   /* ===== 외움 표시 (미분류 회색 / 외움 초록 / 못외움 빨강) ===== */
@@ -885,6 +889,40 @@ function exportBackup() {
   const msg = document.getElementById('bkMsg');
   if (msg) { msg.textContent = '내보내기 완료! 파일을 안전한 곳에 보관해 줘.'; msg.className = 'add-msg ok'; }
 }
+// 백업 창 — 단어장 바의 💾 버튼에서 언제든 열 수 있다 (단어추가 탭 맨 아래까지 안 내려가도 되게)
+function openBackupDialog() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-back';
+  overlay.innerHTML = `<div class="modal scope-modal">
+    <h3>💾 백업 · 다른 기기로 옮기기</h3>
+    <div class="scope-list" style="overflow-y:auto">
+      <div class="grp-actions" style="margin-top:4px"><button class="mini" id="expBtn2">⬇ 백업 내보내기</button><button class="mini" id="impBtn2">⬆ 백업 가져오기</button></div>
+      <div class="add-msg" id="bkMsg"></div>
+      <div class="help-box">💡 내 단어장·단어·😊😖 표시가 <b>파일 하나(.json)</b>로 저장돼요. 기기를 바꾸거나 폰·PC에서 같이 볼 때 쓰세요.
+        <button class="linklike" id="iphoneHelpBtn2" style="display:block;margin-top:8px">📱 아이폰에 넣는 방법 보기 ▾</button>
+        <ol class="steps" id="iphoneHelp2" style="display:none">
+          <li><b>파일을 아이폰으로 보내기</b><br>PC 카카오톡 <b>「나와의 채팅」</b>에 .json 파일을 첨부해서 전송</li>
+          <li><b>아이폰에서 파일로 저장하기</b> — 이 단계를 꼭 거쳐야 해요<br>카톡에서 받은 파일을 누르고 → <b>공유 아이콘 ↑</b> → <b>「파일에 저장」</b> → 위치는 아무 데나 (예: 내 iPhone)</li>
+          <li><b>여기서 불러오기</b><br>위의 <b>⬆ 백업 가져오기</b> → 파일 앱에서 저장한 .json 선택 → 완료 메시지가 뜨면 끝!</li>
+        </ol>
+      </div>
+    </div>
+    <div class="dlg-actions"><button class="secondary" id="dlgClose">닫기</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
+  overlay.querySelector('#dlgClose').addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('#expBtn2').addEventListener('click', exportBackup);
+  overlay.querySelector('#impBtn2').addEventListener('click', importBackup);
+  const hb = overlay.querySelector('#iphoneHelpBtn2');
+  hb.addEventListener('click', () => {
+    const box = overlay.querySelector('#iphoneHelp2');
+    const open = box.style.display === 'none';
+    box.style.display = open ? 'block' : 'none';
+    hb.textContent = open ? '📱 아이폰에 넣는 방법 닫기 ▴' : '📱 아이폰에 넣는 방법 보기 ▾';
+  });
+}
 function importBackup() {
   const inp = document.createElement('input');
   inp.type = 'file';
@@ -1007,6 +1045,7 @@ function renderMy() {
       <button class="icon-btn" id="mlNew" title="새 단어장">➕</button>
       <button class="icon-btn" id="mlRen" title="이름 변경">✏️</button>
       <button class="icon-btn" id="mlDel" title="삭제">🗑</button>
+      <button class="icon-btn" id="mlBak" title="백업 · 가져오기">💾</button>
     </div>
     <div class="ml-info">${cnt}단어 · 😊 외움 ${gc.known} · 😖 못외움 ${gc.hard} · ⚪ 미분류 ${gc.none}</div>
     <div class="sub-nav">
@@ -1056,6 +1095,7 @@ function renderMy() {
       onOk: () => { delete store.groups[myList]; if (store.lastGroup === myList) store.lastGroup = null; myList = null; saveStore(); renderMy(); }
     });
   });
+  el.querySelector('#mlBak').addEventListener('click', openBackupDialog);
   el.querySelectorAll('.sub-seg').forEach(b => b.addEventListener('click', () => { mySub = b.dataset.s; renderMy(); }));
 }
 
@@ -1092,17 +1132,7 @@ function renderAddView() {
   }
   html += `</div>
   <div class="my-section">
-    <div class="my-h">💾 백업 · 다른 기기로 옮기기</div>
-    <div class="grp-actions"><button class="mini" id="expBtn">⬇ 백업 내보내기</button><button class="mini" id="impBtn">⬆ 백업 가져오기</button></div>
-    <div class="add-msg" id="bkMsg"></div>
-    <div class="help-box">💡 내 단어장·단어·😊😖 표시가 <b>파일 하나(.json)</b>로 저장돼요. 기기를 바꾸거나 폰·PC에서 같이 볼 때 쓰세요.
-      <button class="linklike" id="iphoneHelpBtn" style="display:block;margin-top:8px">📱 아이폰에 넣는 방법 보기 ▾</button>
-      <ol class="steps" id="iphoneHelp" style="display:none">
-        <li><b>파일을 아이폰으로 보내기</b><br>PC 카카오톡 <b>「나와의 채팅」</b>에 .json 파일을 첨부해서 전송</li>
-        <li><b>아이폰에서 파일로 저장하기</b> — 이 단계를 꼭 거쳐야 해요<br>카톡에서 받은 파일을 누르고 → <b>공유 아이콘 ↑</b> → <b>「파일에 저장」</b> → 위치는 아무 데나 (예: 내 iPhone)</li>
-        <li><b>여기서 불러오기</b><br>위의 <b>⬆ 백업 가져오기</b> → 파일 앱에서 저장한 .json 선택 → 완료 메시지가 뜨면 끝!</li>
-      </ol>
-    </div>
+    <div class="center"><button class="mini" id="bakOpen">💾 백업 · 다른 기기로 옮기기</button></div>
   </div>`;
   body.innerHTML = html;
 
@@ -1146,15 +1176,7 @@ function renderAddView() {
     saveStore();
     renderMy();
   }));
-  body.querySelector('#expBtn').addEventListener('click', exportBackup);
-  body.querySelector('#impBtn').addEventListener('click', importBackup);
-  const ihBtn = body.querySelector('#iphoneHelpBtn');
-  ihBtn.addEventListener('click', () => {
-    const box = body.querySelector('#iphoneHelp');
-    const open = box.style.display === 'none';
-    box.style.display = open ? 'block' : 'none';
-    ihBtn.textContent = open ? '📱 아이폰에 넣는 방법 닫기 ▴' : '📱 아이폰에 넣는 방법 보기 ▾';
-  });
+  body.querySelector('#bakOpen').addEventListener('click', openBackupDialog);
 }
 
 // 커스텀 단어 수정 / 삭제 모달
