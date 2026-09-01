@@ -394,6 +394,10 @@
   .add-msg.ok { color: #0d9466; } .add-msg.warn { color: #d97706; } .add-msg.err { color: #dc2626; }
   .help-box { background: #f1f5ff; border: 1px solid #dbe4ff; border-radius: 11px; padding: 11px 13px; margin-top: 11px; font-size: 12.5px; line-height: 1.75; color: #475569; }
   .help-box b { color: #4338ca; }
+  .steps { margin: 10px 0 2px; padding-left: 20px; }
+  .steps li { margin-bottom: 9px; line-height: 1.7; }
+  .steps li:last-child { margin-bottom: 0; }
+  .steps li::marker { color: #4338ca; font-weight: 800; }
   /* 내단어 — 단어장 선택바 + 서브탭 */
   .ml-bar { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
   #myListSel { flex: 1; min-width: 0; padding: 12px 12px; border: 2px solid #c7d2fe; border-radius: 12px; font-family: inherit; font-size: 15px; font-weight: 800; color: #3730a3; background: linear-gradient(180deg, #fff, #eef2ff); outline: none; cursor: pointer; }
@@ -1088,8 +1092,17 @@ function renderAddView() {
   }
   html += `</div>
   <div class="my-section">
+    <div class="my-h">💾 백업 · 다른 기기로 옮기기</div>
     <div class="grp-actions"><button class="mini" id="expBtn">⬇ 백업 내보내기</button><button class="mini" id="impBtn">⬆ 백업 가져오기</button></div>
     <div class="add-msg" id="bkMsg"></div>
+    <div class="help-box">💡 내 단어장·단어·😊😖 표시가 <b>파일 하나(.json)</b>로 저장돼요. 기기를 바꾸거나 폰·PC에서 같이 볼 때 쓰세요.
+      <button class="linklike" id="iphoneHelpBtn" style="display:block;margin-top:8px">📱 아이폰에 넣는 방법 보기 ▾</button>
+      <ol class="steps" id="iphoneHelp" style="display:none">
+        <li><b>파일을 아이폰으로 보내기</b><br>PC 카카오톡 <b>「나와의 채팅」</b>에 .json 파일을 첨부해서 전송</li>
+        <li><b>아이폰에서 파일로 저장하기</b> — 이 단계를 꼭 거쳐야 해요<br>카톡에서 받은 파일을 누르고 → <b>공유 아이콘 ↑</b> → <b>「파일에 저장」</b> → 위치는 아무 데나 (예: 내 iPhone)</li>
+        <li><b>여기서 불러오기</b><br>위의 <b>⬆ 백업 가져오기</b> → 파일 앱에서 저장한 .json 선택 → 완료 메시지가 뜨면 끝!</li>
+      </ol>
+    </div>
   </div>`;
   body.innerHTML = html;
 
@@ -1135,6 +1148,13 @@ function renderAddView() {
   }));
   body.querySelector('#expBtn').addEventListener('click', exportBackup);
   body.querySelector('#impBtn').addEventListener('click', importBackup);
+  const ihBtn = body.querySelector('#iphoneHelpBtn');
+  ihBtn.addEventListener('click', () => {
+    const box = body.querySelector('#iphoneHelp');
+    const open = box.style.display === 'none';
+    box.style.display = open ? 'block' : 'none';
+    ihBtn.textContent = open ? '📱 아이폰에 넣는 방법 닫기 ▴' : '📱 아이폰에 넣는 방법 보기 ▾';
+  });
 }
 
 // 커스텀 단어 수정 / 삭제 모달
