@@ -890,6 +890,11 @@ function exportBackup() {
   if (msg) { msg.textContent = '내보내기 완료! 파일을 안전한 곳에 보관해 줘.'; msg.className = 'add-msg ok'; }
 }
 // 백업 창 — 단어장 바의 💾 버튼에서 언제든 열 수 있다 (단어추가 탭 맨 아래까지 안 내려가도 되게)
+let backupOverlay = null;
+function closeBackupDialog() {
+  if (backupOverlay && backupOverlay.parentNode) document.body.removeChild(backupOverlay);
+  backupOverlay = null;
+}
 function openBackupDialog() {
   const overlay = document.createElement('div');
   overlay.className = 'modal-back';
@@ -910,7 +915,8 @@ function openBackupDialog() {
     <div class="dlg-actions"><button class="secondary" id="dlgClose">닫기</button></div>
   </div>`;
   document.body.appendChild(overlay);
-  const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
+  backupOverlay = overlay;
+  const close = closeBackupDialog;
   overlay.querySelector('#dlgClose').addEventListener('click', close);
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   overlay.querySelector('#expBtn2').addEventListener('click', exportBackup);
@@ -960,6 +966,8 @@ function importBackup() {
         renderMy();
         const m2 = document.getElementById('bkMsg');
         if (m2) { m2.textContent = '가져오기 완료! 단어 ' + added + '개 추가, 단어장은 합쳐졌어.'; m2.className = 'add-msg ok'; }
+        // 성공했으면 결과를 잠깐 보여주고 백업 창을 닫는다 (열린 채 남으면 끝난 건지 헷갈림)
+        if (backupOverlay) setTimeout(() => { closeBackupDialog(); renderMy(); }, 1600);
       } catch (e) {
         if (msg) { msg.textContent = '파일을 읽을 수 없어. 올바른 백업 파일인지 확인해 줘.'; msg.className = 'add-msg err'; }
       }
