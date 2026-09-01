@@ -572,8 +572,14 @@
   /* 묶음 헤더 + 이름 찾기 */
   .pick-search { width: 100%; padding: 10px 12px; margin-top: 8px; border: 1.5px solid #dbe4ff; border-radius: 10px; font-family: inherit; font-size: 14px; outline: none; }
   .pick-search:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.10); }
-  .sc-group { display: flex; align-items: center; gap: 8px; margin: 13px 2px 3px; }
+  .sc-group {
+    display: flex; align-items: center; gap: 8px; margin: 10px 0 3px; padding: 8px 10px;
+    background: #f1f5ff; border: 1px solid #e0e7ff; border-radius: 10px; cursor: pointer;
+  }
+  .sc-group:hover { background: #e8eeff; }
+  .sc-arrow { font-size: 11px; color: #6366f1; width: 12px; flex-shrink: 0; }
   .sc-gname { font-size: 12.5px; font-weight: 800; color: #4338ca; }
+  .sc-gsel { font-size: 11.5px; color: #6b7fd7; font-weight: 700; }
   .sc-gbtn { margin-left: auto; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: #eef2ff; color: #4338ca; box-shadow: none; }
   .sc-gbtn:hover { background: #e0e7ff; transform: none; box-shadow: none; }
   .sc-none { padding: 18px; text-align: center; color: #94a3b8; font-size: 13px; }
@@ -1925,17 +1931,21 @@ function groupListNames(names) {
 // cfg: { title, groups:[{label, items:[{id,label,cnt,cntText}]}], selected:Set<string>, onOk(ids) }
 function openMultiPicker(cfg) {
   const all = cfg.groups.flatMap(g => g.items);
+  const hasGroups = cfg.groups.some(g => g.label);
+  // 단어장이 많으면 폴더처럼 접힌 채로 열린다 (적으면 그냥 펼쳐둠)
+  let folded = new Set(hasGroups && all.length > 10 ? cfg.groups.map((g, gi) => g.label ? gi : -1).filter(x => x >= 0) : []);
   const overlay = document.createElement('div');
   overlay.className = 'modal-back';
   overlay.innerHTML = `<div class="modal scope-modal">
     <h3>${esc(cfg.title)}</h3>
-    <div style="display:flex;gap:8px;margin-top:6px">
+    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
       <button class="mini" id="scAll">전체 선택</button>
       <button class="mini" id="scNone">전체 해제</button>
+      ${hasGroups ? `<button class="mini" id="scFold">모두 펼치기</button>` : ''}
     </div>
     ${all.length > 8 ? `<input class="pick-search" id="scFind" placeholder="이름으로 찾기 (예: Day1, 리딩)" autocomplete="off" spellcheck="false">` : ''}
     <div class="scope-list" id="scList">${cfg.groups.map((g, gi) =>
-      (g.label ? `<div class="sc-group" data-g="${gi}"><span class="sc-gname">${esc(g.label)} · ${g.items.length}개</span><button class="sc-gbtn" data-gsel="${gi}">이 묶음 전체</button></div>` : '') +
+      (g.label ? `<div class="sc-group" data-g="${gi}"><span class="sc-arrow">▶</span><span class="sc-gname">${esc(g.label)} · ${g.items.length}개</span><span class="sc-gsel" data-gcnt="${gi}"></span><button class="sc-gbtn" data-gsel="${gi}">이 묶음 전체</button></div>` : '') +
       g.items.map(it =>
         `<label class="scope-item" data-g="${gi}" data-find="${esc((g.label + ' ' + it.label).toLowerCase())}">` +
         `<input type="checkbox" data-id="${esc(String(it.id))}" ${cfg.selected.has(String(it.id)) ? 'checked' : ''}> ${esc(it.label)}` +
@@ -1952,40 +1962,63 @@ function openMultiPicker(cfg) {
   const rows = [...overlay.querySelectorAll('.scope-item')];
   const heads = [...overlay.querySelectorAll('.sc-group')];
   const sum = overlay.querySelector('#scSum');
+  const find = overlay.querySelector('#scFind');
+  const foldBtn = overlay.querySelector('#scFold');
   const cntOf = id => (all.find(x => String(x.id) === id) || { cnt: 0 }).cnt;
-  const refreshSum = () => {
+  // 검색에 걸린 항목 (접혀 있어도 '이 묶음 전체'·'전체 선택'의 대상이 된다)
+  const hits = () => {
+    const q = find ? find.value.trim().toLowerCase() : '';
+    return rows.filter(r => !q || r.dataset.find.includes(q));
+  };
+  const applyView = () => {
+    const hit = new Set(hits());
+    rows.forEach(r => { r.style.display = (hit.has(r) && !folded.has(+r.dataset.g)) ? '' : 'none'; });
+    heads.forEach(h => {
+      const gi = +h.dataset.g;
+      const any = rows.some(r => +r.dataset.g === gi && hit.has(r));
+      h.style.display = any ? '' : 'none';
+      h.querySelector('.sc-arrow').textContent = folded.has(gi) ? '▶' : '▼';
+      const sel = rows.filter(r => +r.dataset.g === gi && r.querySelector('input').checked).length;
+      h.querySelector('.sc-gsel').textContent = sel ? sel + ' 선택' : '';
+    });
+    overlay.querySelector('#scNoHit').style.display = hit.size ? 'none' : '';
+    if (foldBtn) foldBtn.textContent = folded.size ? '모두 펼치기' : '모두 접기';
     const picked = boxes.filter(b => b.checked);
     const t = picked.reduce((s, b) => s + cntOf(b.dataset.id), 0);
     sum.textContent = picked.length ? `${picked.length}개 선택 · 약 ${t}단어` : '최소 1개는 골라 줘';
   };
-  const visible = () => rows.filter(r => r.style.display !== 'none');
-  refreshSum();
-  boxes.forEach(b => b.addEventListener('change', refreshSum));
-  overlay.querySelector('#scAll').addEventListener('click', () => { visible().forEach(r => r.querySelector('input').checked = true); refreshSum(); });
-  overlay.querySelector('#scNone').addEventListener('click', () => { visible().forEach(r => r.querySelector('input').checked = false); refreshSum(); });
+  applyView();
+  boxes.forEach(b => b.addEventListener('change', applyView));
+  overlay.querySelector('#scAll').addEventListener('click', () => { hits().forEach(r => r.querySelector('input').checked = true); applyView(); });
+  overlay.querySelector('#scNone').addEventListener('click', () => { hits().forEach(r => r.querySelector('input').checked = false); applyView(); });
+  if (foldBtn) foldBtn.addEventListener('click', () => {
+    if (folded.size) folded.clear();
+    else cfg.groups.forEach((g, gi) => { if (g.label) folded.add(gi); });
+    applyView();
+  });
+  heads.forEach(h => h.addEventListener('click', e => {
+    if (e.target.closest('.sc-gbtn')) return;          // 묶음 전체선택 버튼은 접기와 별개
+    const gi = +h.dataset.g;
+    if (folded.has(gi)) folded.delete(gi); else folded.add(gi);
+    applyView();
+  }));
   overlay.querySelectorAll('.sc-gbtn').forEach(b => b.addEventListener('click', () => {
-    const gi = b.dataset.gsel;
-    const mine = visible().filter(r => r.dataset.g === gi);
+    const gi = +b.dataset.gsel;
+    const mine = hits().filter(r => +r.dataset.g === gi);
     const turnOn = mine.some(r => !r.querySelector('input').checked);
     mine.forEach(r => r.querySelector('input').checked = turnOn);
-    refreshSum();
+    applyView();
   }));
-  const find = overlay.querySelector('#scFind');
   if (find) find.addEventListener('input', () => {
-    const q = find.value.trim().toLowerCase();
-    rows.forEach(r => { r.style.display = (!q || r.dataset.find.includes(q)) ? '' : 'none'; });
-    heads.forEach(h => {
-      const any = rows.some(r => r.dataset.g === h.dataset.g && r.style.display !== 'none');
-      h.style.display = any ? '' : 'none';
-    });
-    overlay.querySelector('#scNoHit').style.display = visible().length ? 'none' : '';
+    if (find.value.trim()) folded.clear();             // 찾을 땐 결과가 바로 보이게 펼친다
+    applyView();
   });
   const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
   overlay.querySelector('#dlgCancel').addEventListener('click', close);
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
   overlay.querySelector('#dlgOk').addEventListener('click', () => {
     const picked = boxes.filter(b => b.checked).map(b => b.dataset.id);
-    if (!picked.length) { refreshSum(); return; }
+    if (!picked.length) { applyView(); return; }
     close();
     cfg.onOk(picked);
   });
