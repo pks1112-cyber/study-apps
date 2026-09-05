@@ -846,7 +846,18 @@ function findExisting(w) {                             // 기존 2000개에 같�
 }
 function groupWords(name) { return (store.groups[name] || []).map(findByKey).filter(Boolean); }
 function groupCount(name) { return (store.groups[name] || []).filter(findByKey).length; }
-function currentWords() { return studyGroup ? groupWords(studyGroup) : unitWords(curLevel, curUnit); }
+// 내 단어장은 여러 개를 한꺼번에 볼 수 있다 (myMulti 가 비어 있으면 myList 하나만)
+let myMulti = [];
+function myViewLists() { return myMulti.length ? myMulti.filter(n => store.groups[n]) : (myList ? [myList] : []); }
+function myViewWords() {
+  const seen = {}, out = [];
+  myViewLists().forEach(n => groupWords(n).forEach(w => { if (!seen[w.key]) { seen[w.key] = 1; out.push(w); } }));
+  return out;
+}
+function currentWords() {
+  if (mode === 'my' && myMulti.length) return myViewWords();
+  return studyGroup ? groupWords(studyGroup) : unitWords(curLevel, curUnit);
+}
 function exitGroup() { studyGroup = null; resetModeStates(); renderAll(); }
 // 내단어 탭에선 공용 렌더러(단어표·카드·테스트)가 헤더 아래 #myBody로 출력되게 한다
 function renderTarget() {
@@ -1172,16 +1183,21 @@ function renderMy() {
   }
 
   // 헤더: 단어장 선택 + 관리 + 서브탭
-  const cnt = groupCount(myList);
-  const gc = markCounts(groupWords(myList));
+  const multi = myMulti.length > 1;
+  const viewWords = myViewWords();
+  const cnt = viewWords.length;
+  const gc = markCounts(viewWords);
+  const btnLabel = multi
+    ? '📚 ' + esc(shortListName(myMulti[0], listPrefix(myMulti[0]))) + ' 외 ' + (myMulti.length - 1) + '개'
+    : '📒 ' + esc(myList);
   el.innerHTML = `<div class="ml-bar">
-      <button id="myListBtn" title="단어장 고르기">📒 ${esc(myList)} <span class="ml-cnt">(${groupCount(myList)}개)</span><span class="ml-caret">▾</span></button>
+      <button id="myListBtn" title="단어장 고르기">${btnLabel} <span class="ml-cnt">(${cnt}개)</span><span class="ml-caret">▾</span></button>
       <button class="icon-btn" id="mlNew" title="새 단어장">➕</button>
-      <button class="icon-btn" id="mlRen" title="이름 변경">✏️</button>
-      <button class="icon-btn" id="mlDel" title="삭제">🗑</button>
+      <button class="icon-btn" id="mlRen" title="${multi ? '단어장 하나만 골랐을 때 쓸 수 있어요' : '이름 변경'}" ${multi ? 'disabled' : ''}>✏️</button>
+      <button class="icon-btn" id="mlDel" title="${multi ? '단어장 하나만 골랐을 때 쓸 수 있어요' : '삭제'}" ${multi ? 'disabled' : ''}>🗑</button>
       <button class="icon-btn" id="mlBak" title="백업 · 가져오기">💾</button>
     </div>
-    <div class="ml-info">${cnt}단어 · 😊 외움 ${gc.known} · 😖 못외움 ${gc.hard} · ⚪ 미분류 ${gc.none}</div>
+    <div class="ml-info">${multi ? '📚 ' + myMulti.length + '개 단어장 합쳐서 · ' : ''}${cnt}단어 · 😊 외움 ${gc.known} · 😖 못외움 ${gc.hard} · ⚪ 미분류 ${gc.none}</div>
     <div class="sub-nav">
       <button class="sub-seg ${mySub === 'table' ? 'on' : ''}" data-s="table">📖 단어표</button>
       <button class="sub-seg ${mySub === 'cards' ? 'on' : ''}" data-s="cards">🃏 카드</button>
@@ -1198,7 +1214,7 @@ function renderMy() {
   else renderTable();
 
   // 헤더 이벤트
-  el.querySelector('#myListBtn').addEventListener('click', openListPicker);
+  el.querySelector('#myListBtn').addEventListener('click', () => openListPicker(false));   // 이벤트 객체가 인자로 들어가지 않게
   el.querySelector('#mlNew').addEventListener('click', () => {
     uiPrompt({
       title: '새 단어장', placeholder: '단어장 이름 (예: 중간고사 3과)', okText: '만들기',
@@ -1232,6 +1248,15 @@ function renderMy() {
 
 function renderAddView() {
   const body = document.getElementById('myBody');
+  if (myMulti.length > 1) {   // 여러 단어장을 함께 보는 중 — 어디에 넣을지 정해야 한다
+    body.innerHTML = `<div class="center" style="padding:30px 0">
+      <div style="font-size:52px">📚</div>
+      <div style="font-size:18px;font-weight:bold;margin:12px 0">지금은 ${myMulti.length}개 단어장을 함께 보는 중이에요</div>
+      <div style="color:#64748b;line-height:1.8;font-size:14px">단어를 추가하려면 넣을 단어장 하나를 골라 주세요.</div>
+      <div style="margin-top:16px"><button id="pickOne">📒 단어장 하나 고르기</button></div></div>`;
+    body.querySelector('#pickOne').addEventListener('click', () => { myMulti = []; openListPicker(false); });
+    return;
+  }
   const words = groupWords(myList);
   let html = `<div class="my-section">
     <div class="my-h">➕ 단어 추가 <span class="my-sub">학원 프린트·교재 단어 붙여넣기</span></div>
@@ -1305,7 +1330,9 @@ function renderAddView() {
   body.querySelectorAll('.edit-w').forEach(b => b.addEventListener('click', () => openEditWord(b.dataset.w)));
   body.querySelectorAll('.rm-from').forEach(b => b.addEventListener('click', () => {
     const rmw = normW(b.dataset.key.split('|').slice(1).join('|'));   // 키 대소문자가 달라도 빼지도록
-    store.groups[myList] = store.groups[myList].filter(k => normW(k.split('|').slice(1).join('|')) !== rmw);
+    myViewLists().forEach(n => {
+      store.groups[n] = (store.groups[n] || []).filter(k => normW(k.split('|').slice(1).join('|')) !== rmw);
+    });
     saveStore();
     renderMy();
   }));
@@ -2022,6 +2049,7 @@ function testPoolWords() {
 }
 function testScopeLabel() {
   if (testUnits && testUnits.length) return `${testUnits.length}개 합침`;
+  if (mode === 'my' && myMulti.length > 1) return `${myMulti.length}개 합침`;
   return (mode === 'my' || studyGroup) ? `${esc(studyGroup || '')}` : `${curUnit + 1}단원`;
 }
 // ===== 단어장 묶음 =====
@@ -2061,6 +2089,7 @@ function openMultiPicker(cfg) {
     <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
       ${cfg.single ? '' : `<button class="mini" id="scAll">전체 선택</button><button class="mini" id="scNone">전체 해제</button>`}
       ${hasGroups ? `<button class="mini" id="scFold">모두 펼치기</button>` : ''}
+      ${cfg.extraBtn ? `<button class="mini" id="${cfg.extraBtn.id}">${esc(cfg.extraBtn.label)}</button>` : ''}
     </div>
     ${all.length > 8 ? `<input class="pick-search" id="scFind" placeholder="이름으로 찾기 (예: Day1, 리딩)" autocomplete="off" spellcheck="false">` : ''}
     <div class="scope-list" id="scList">${cfg.groups.map((g, gi) =>
@@ -2083,6 +2112,10 @@ function openMultiPicker(cfg) {
   const sum = overlay.querySelector('#scSum');
   const find = overlay.querySelector('#scFind');
   const foldBtn = overlay.querySelector('#scFold');
+  if (cfg.extraBtn) {
+    const eb = overlay.querySelector('#' + cfg.extraBtn.id);
+    if (eb) eb.addEventListener('click', () => { if (overlay.parentNode) document.body.removeChild(overlay); cfg.extraBtn.onClick(); });
+  }
   if (cfg.single) {   // 하나만 고르는 모드 — 줄을 누르면 바로 정해지고 닫힌다
     overlay.querySelectorAll('.scope-item input').forEach(i => i.style.display = 'none');
     overlay.querySelectorAll('.scope-item').forEach(row => row.addEventListener('click', ev => {
@@ -2156,7 +2189,7 @@ function openMultiPicker(cfg) {
 
 // 단어장 고르기 팝업 — 폰의 기본 선택창은 65개짜리 목록에 불편하고
 // 안드로이드에서 다시 눌러도 닫히지 않아 우리 팝업으로 대신한다
-function openListPicker() {
+function openListPicker(multiMode) {
   const names = myListNames();
   if (!names.length) return;
   const groups = groupListNames(names).map(g => ({
@@ -2167,11 +2200,19 @@ function openListPicker() {
                cntText: groupCount(n) + '개' + (c.known ? ' · 😊' + c.known : '') };
     })
   }));
+  const many = !!multiMode || myMulti.length > 1;
   openMultiPicker({
-    title: '📚 단어장 고르기', single: true, groups,
-    selected: new Set([myList]),
+    title: many ? '📚 여러 단어장 고르기' : '📚 단어장 고르기',
+    single: !many, groups,
+    okText: '이 단어장들로',
+    // 하나만 고르는 모드에선 위쪽에 여러 개 고르기로 넘어가는 버튼을 둔다
+    extraBtn: many ? null : { id: 'toMulti', label: '☑ 여러 개 고르기', onClick: () => openListPicker(true) },
+    selected: new Set(myViewLists()),
     onOk: picked => {
-      myList = picked[0]; store.lastGroup = myList; saveStore();
+      if (picked.length > 1) { myMulti = picked; myList = picked[0]; }
+      else { myMulti = []; myList = picked[0]; }
+      store.lastGroup = myList; saveStore();
+      if (mySub === 'add' && myMulti.length > 1) mySub = 'table';   // 추가할 곳이 모호해지므로
       renderMy();
     }
   });
@@ -2189,7 +2230,7 @@ function openScopePicker() {
   openMultiPicker({
     title: '📚 테스트 범위 고르기',
     groups,
-    selected: new Set((testUnits || [inMy ? (studyGroup || myList) : curUnit]).map(String)),
+    selected: new Set((testUnits || (inMy ? myViewLists() : [curUnit])).map(String)),
     onOk: picked => {
       const vals = inMy ? picked : picked.map(Number);
       // 하나만 골랐고 그게 현재 것이면 '현재 단원' 상태로 되돌림
@@ -2220,6 +2261,10 @@ function printScopeLabel() {
                        : testUnits.map(u => (u + 1) + '단원 「' + RAW[curLevel][u][0] + '」');
     // 범위가 많으면 제목이 여러 줄이 되어 첫 장 문항 수가 밀린다 — 3개까지만 적는다
     return names.length > 3 ? names.slice(0, 3).join(' + ') + ' 외 ' + (names.length - 3) + '개' : names.join(' + ');
+  }
+  if (inMy && myMulti.length > 1 && !testUnits) {
+    const ns = myMulti.map(n => '📒 ' + n);
+    return ns.length > 3 ? ns.slice(0, 3).join(' + ') + ' 외 ' + (ns.length - 3) + '개' : ns.join(' + ');
   }
   return inMy ? '📒 ' + (studyGroup || myList)
               : curLevel + ' ' + (curUnit + 1) + '단원 「' + RAW[curLevel][curUnit][0] + '」';
