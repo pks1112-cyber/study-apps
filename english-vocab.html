@@ -554,6 +554,7 @@
   .cfg-row:last-child { margin-bottom: 0; }
   .cfg-label { font-size: 12.5px; font-weight: 800; color: #64748b; min-width: 52px; }
   .cfg-scope { font-size: 13.5px; font-weight: 700; color: #1e293b; }
+  .cfg-hint { font-size: 11.5px; color: #94a3b8; }
   .cnt-row { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
   .cnt-btn {
     width: 34px; height: 34px; padding: 0; border-radius: 10px; font-size: 18px; line-height: 1;
@@ -1208,6 +1209,7 @@ function renderMy() {
 
   // 서브뷰 — studyGroup을 현재 단어장으로 두면 공용 렌더러가 #myBody로 출력
   studyGroup = myList;
+  testUnits = null;   // 내단어 탭의 테스트는 위에서 고른 단어장을 그대로 쓴다
   if (mySub === 'cards') { startCards(); renderCards(); }
   else if (mySub === 'test') { testType = null; testOver = false; renderTest(); }
   else if (mySub === 'add') renderAddView();
@@ -2200,6 +2202,7 @@ function openListPicker() {
     onOk: picked => {
       if (picked.length > 1) { myMulti = picked; myList = picked[0]; }
       else { myMulti = []; myList = picked[0]; }
+      testUnits = null;   // 테스트도 이 선택을 따르게
       store.lastGroup = myList; saveStore();
       if (mySub === 'add' && myMulti.length > 1) mySub = 'table';   // 추가할 곳이 모호해지므로
       renderMy();
@@ -2208,6 +2211,7 @@ function openListPicker() {
 }
 // 범위 다중 선택 팝업 (내단어: 단어장 목록 / 공통: 현재 레벨 단원 목록)
 function openScopePicker() {
+  if (mode === 'my') { openListPicker(); return; }   // 내단어 탭은 위쪽 단어장 선택을 그대로 쓴다
   const inMy = (mode === 'my' || !!studyGroup);
   const groups = inMy
     ? groupListNames(myListNames()).map(g => ({
@@ -2396,8 +2400,9 @@ function renderTest() {
         <div class="cfg-row">
           <span class="cfg-label">범위</span>
           <span class="cfg-scope">${testScopeLabel()}</span>
-          <button class="mini" id="scopeBtn">📚 여러 개 골라서</button>
-          ${testUnits ? '<button class="mini" id="scopeClear">✕ 현재 것만</button>' : ''}
+          ${inMy
+            ? `<button class="mini" id="scopeBtn">📚 단어장 바꾸기</button><span class="cfg-hint">위에서 고른 단어장 그대로</span>`
+            : `<button class="mini" id="scopeBtn">📚 여러 개 골라서</button>${testUnits ? '<button class="mini" id="scopeClear">✕ 현재 것만</button>' : ''}`}
         </div>
         <div class="cfg-row">
           <span class="cfg-label">대상</span>
