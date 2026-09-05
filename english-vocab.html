@@ -573,6 +573,8 @@
   .scope-item:hover { background: #f8faff; }
   .scope-item input { width: 18px; height: 18px; accent-color: #4f46e5; flex-shrink: 0; }
   /* 묶음 헤더 + 이름 찾기 */
+  .pick-wide { width: 100%; margin-top: 10px; padding: 11px 12px; border-radius: 11px; font-size: 13.5px; font-weight: 800; background: #eef2ff; color: #4338ca; border: 1.5px dashed #a5b4fc; box-shadow: none; }
+  .pick-wide:hover { background: #e0e7ff; transform: none; box-shadow: none; }
   .pick-search { width: 100%; padding: 10px 12px; margin-top: 8px; border: 1.5px solid #dbe4ff; border-radius: 10px; font-family: inherit; font-size: 14px; outline: none; }
   .pick-search:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.10); }
   .sc-group {
@@ -2089,8 +2091,9 @@ function openMultiPicker(cfg) {
     <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
       ${cfg.single ? '' : `<button class="mini" id="scAll">전체 선택</button><button class="mini" id="scNone">전체 해제</button>`}
       ${hasGroups ? `<button class="mini" id="scFold">모두 펼치기</button>` : ''}
-      ${cfg.extraBtn ? `<button class="mini" id="${cfg.extraBtn.id}">${esc(cfg.extraBtn.label)}</button>` : ''}
+
     </div>
+    ${cfg.extraBtn ? `<button class="pick-wide" id="${cfg.extraBtn.id}">${esc(cfg.extraBtn.label)}</button>` : ''}
     ${all.length > 8 ? `<input class="pick-search" id="scFind" placeholder="이름으로 찾기 (예: Day1, 리딩)" autocomplete="off" spellcheck="false">` : ''}
     <div class="scope-list" id="scList">${cfg.groups.map((g, gi) =>
       (g.label ? `<div class="sc-group" data-g="${gi}"><span class="sc-arrow">▶</span><span class="sc-gname">${esc(g.label)} · ${g.items.length}개</span><span class="sc-gsel" data-gcnt="${gi}"></span>${cfg.single ? '' : `<button class="sc-gbtn" data-gsel="${gi}">이 묶음 전체</button>`}</div>` : '') +
@@ -2206,7 +2209,7 @@ function openListPicker(multiMode) {
     single: !many, groups,
     okText: '이 단어장들로',
     // 하나만 고르는 모드에선 위쪽에 여러 개 고르기로 넘어가는 버튼을 둔다
-    extraBtn: many ? null : { id: 'toMulti', label: '☑ 여러 개 고르기', onClick: () => openListPicker(true) },
+    extraBtn: many ? null : { id: 'toMulti', label: '☑ 여러 개 골라서 한꺼번에 보기', onClick: () => openListPicker(true) },
     selected: new Set(myViewLists()),
     onOk: picked => {
       if (picked.length > 1) { myMulti = picked; myList = picked[0]; }
