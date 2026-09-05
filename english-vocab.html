@@ -584,6 +584,29 @@
   .sc-gbtn:hover { background: #e0e7ff; transform: none; box-shadow: none; }
   .sc-none { padding: 18px; text-align: center; color: #94a3b8; font-size: 13px; }
 
+  /* ===== 어원(뿌리) ===== */
+  .etym-btn {
+    padding: 2px 5px; font-size: 13px; line-height: 1; border-radius: 7px;
+    background: #fff7e6; border: 1.5px solid #fde68a; box-shadow: none; cursor: pointer; vertical-align: middle;
+  }
+  .etym-btn:hover { background: #fef3c7; transform: none; box-shadow: none; }
+  .ety-w { color: #4338ca; }
+  .ety-root {
+    display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 12px; padding: 11px 14px; margin: 10px 0 10px;
+  }
+  .ety-root b { font-size: 16px; color: #5b21b6; letter-spacing: .3px; }
+  .ety-root span { font-size: 13.5px; color: #6d28d9; font-weight: 700; }
+  .ety-why { font-size: 14.5px; color: #1e293b; line-height: 1.75; font-weight: 600; }
+  .ety-tip { font-size: 13px; color: #64748b; line-height: 1.8; margin-top: 8px; background: #f8fafc; border-radius: 10px; padding: 9px 12px; }
+  .ety-sibs-h { font-size: 12.5px; font-weight: 800; color: #4338ca; margin: 14px 2px 2px; }
+  .ety-sibs { margin-top: 4px; }
+  .ety-sib { padding: 9px 11px; border-radius: 10px; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+  .ety-sib:hover { background: #f8faff; }
+  .ety-sib.on { background: #eef2ff; }
+  .ety-sib-w { font-size: 14px; font-weight: 700; color: #1e293b; }
+  .ety-sib-m { font-size: 12.5px; font-weight: 500; color: #64748b; }
+  .ety-sib-why { font-size: 12.5px; color: #475569; line-height: 1.65; margin-top: 2px; }
   /* ===== 인쇄용 시험지 ===== */
   .print-ctrl { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
   .print-ctrl .hintx { font-size: 12px; color: #94a3b8; }
@@ -708,6 +731,7 @@
 </div>
 
 <script src="english-vocab-data.js?v=8"></script>
+<script src="english-etym.js?v=1"></script>
 <script>
 // ===== Word data: english-vocab-data.js 에서 로드 (const RAW) =====
 
@@ -1224,7 +1248,7 @@ function renderAddView() {
       const custom = it.level === MY;
       html += `<div class="mw-row">
         <div class="mw-main">
-          <div class="mw-w">${esc(it.w)} <span class="ipa">${esc(it.ipa || '')}</span> ${it.p ? posTag(it.p) : ''} ${custom ? '' : '<span class="src-tag">교과서</span>'}</div>
+          <div class="mw-w">${esc(it.w)} <span class="ipa">${esc(it.ipa || '')}</span> ${it.p ? posTag(it.p) : ''} ${etymMark(it.w)} ${custom ? '' : '<span class="src-tag">교과서</span>'}</div>
           <div class="mw-m">${it.m ? esc(it.m) : '<span class="no-mean">✏️ 뜻 없음 — 눌러서 입력</span>'}</div>
         </div>
         <div class="mw-btns">
@@ -1447,6 +1471,60 @@ function posClass(p) {
   if (c === '부') return 'pos-d';
   return 'pos-x';
 }
+// ===== 어원(뿌리) — english-etym.js 의 자료를 단어 철자로 찾는다 =====
+// 커리큘럼 2,000단어든 내가 추가한 단어장이든, 나중에 넣을 단어장이든 철자만 맞으면 자동으로 걸린다
+function etymOf(w) {
+  if (typeof ETYM_INDEX === 'undefined') return null;
+  const hit = ETYM_INDEX[normW(w)];
+  if (!hit) return null;
+  return { g: ETYM_ROOTS[hit.gi], why: hit.why };
+}
+function etymMark(w) {
+  return etymOf(w) ? `<button class="etym-btn" data-ew="${esc(w)}" title="어원 보기">💡</button>` : '';
+}
+// 이 단어의 뜻을 앱 어디서든 찾아본다 (형제 단어 설명용)
+function anyMeaning(w) {
+  const mine = findMyWord(w);
+  if (mine && mine.m) return mine.m;
+  const cur = findExisting(w);
+  if (cur) { const o = findByKey(cur.key); if (o) return o.m; }
+  return '';
+}
+function openEtym(w) {
+  const e = etymOf(w);
+  if (!e) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-back';
+  const sibs = Object.keys(e.g.w);
+  overlay.innerHTML = `<div class="modal scope-modal">
+    <h3>💡 <b class="ety-w">${esc(w)}</b> 의 뿌리</h3>
+    <div class="ety-root"><b>${esc(e.g.r)}</b><span>${esc(e.g.m)}</span></div>
+    <div class="ety-why">${esc(e.why)}</div>
+    ${e.g.tip ? `<div class="ety-tip">${esc(e.g.tip)}</div>` : ''}
+    <div class="ety-sibs-h">같은 뿌리 단어 ${sibs.length}개</div>
+    <div class="scope-list ety-sibs">${sibs.map(s => {
+      const m = anyMeaning(s);
+      const on = normW(s) === normW(w);
+      return `<div class="ety-sib ${on ? 'on' : ''}" data-ew="${esc(s)}">
+        <div class="ety-sib-w">${esc(s)}${m ? ` <span class="ety-sib-m">${esc(m)}</span>` : ''}</div>
+        <div class="ety-sib-why">${esc(e.g.w[s])}</div></div>`;
+    }).join('')}</div>
+    <div class="dlg-actions"><button class="secondary" id="etyClose">닫기</button></div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
+  overlay.querySelector('#etyClose').addEventListener('click', close);
+  overlay.addEventListener('click', ev => { if (ev.target === overlay) close(); });
+  overlay.querySelectorAll('.ety-sib').forEach(el => el.addEventListener('click', () => { close(); openEtym(el.dataset.ew); }));
+}
+// 어디서 눌러도 동작하게 위임 (줄 클릭으로 번지지 않도록 캡처 단계에서 처리)
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('.etym-btn');
+  if (!b) return;
+  e.stopPropagation(); e.preventDefault();
+  openEtym(b.dataset.ew);
+}, true);
+
 function posTag(p) { return `<span class="pos ${posClass(p)}">${p}</span>`; }
 function updateWrongCnt() {
   let n = 0;
@@ -1779,7 +1857,7 @@ function renderTable() {
     html += `<table class="words"><tr><th>영단어</th><th>품사</th><th>뜻</th><th></th></tr>`;
     for (const it of shown) {
       html += `<tr class="wrow ${it.ex ? 'has-ex' : ''}" data-w="${esc(it.w)}">
-        <td class="eng ${hideMode === 'eng' ? 'm-hidden' : ''}">${esc(it.w)} <span class="ipa">${esc(it.ipa)}</span></td>
+        <td class="eng ${hideMode === 'eng' ? 'm-hidden' : ''}">${esc(it.w)} <span class="ipa">${esc(it.ipa)}</span> ${etymMark(it.w)}</td>
         <td class="pos-td">${posTag(it.p)}</td>
         <td class="kor ${hideMode === 'kor' ? 'm-hidden' : ''}">${esc(it.m)}</td>
         <td class="star">${markWidget(it.key)}${inMy ? '' : ` <button class="tbl-add gp-open" data-key="${esc(it.key)}">＋담기</button>`}</td></tr>`;
@@ -1903,7 +1981,7 @@ function renderCards() {
     <div class="progress-line">남은 카드 ${cardQueue.length}장 · 완료 ${cardDone}장 · <button class="linklike" id="cardCfg">⚙ 조건 바꾸기</button></div>
     <div class="flash ${cardFlipped ? 'back' : ''}" id="flashCard">
       ${markWidget(cur.key)}
-      ${cardFlipped ? esc(cur.m) : esc(cur.w)}
+      ${cardFlipped ? esc(cur.m) : esc(cur.w) + ' ' + etymMark(cur.w)}
       <div class="sub">${cardFlipped ? posTag(cur.p) + ' ' + esc(cur.w) + ' ' + esc(cur.ipa) : esc(cur.ipa) + ' · 클릭하면 뜻이 보여요'}</div>
       ${cardFlipped && cur.ex ? `<div class="sub flash-ex">${esc(cur.ex)}<br>${esc(cur.exk)}</div>` : ''}
     </div>
@@ -2715,7 +2793,7 @@ function renderSearchResults() {
   for (const r of rs.list) {
     html += `<div class="result-item">
       <div class="result-main">
-        <div class="result-word"><b class="say-w" data-w="${esc(r.w)}">${esc(r.w)}</b> <span class="ipa">${esc(r.ipa)}</span> ${posTag(r.p)}</div>
+        <div class="result-word"><b class="say-w" data-w="${esc(r.w)}">${esc(r.w)}</b> <span class="ipa">${esc(r.ipa)}</span> ${posTag(r.p)} ${etymMark(r.w)}</div>
         <div class="result-meaning">${esc(r.m)}</div>
       </div>
       <div class="result-side">
