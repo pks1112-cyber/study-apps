@@ -215,6 +215,226 @@ const ETYM_ROOTS = [
       'comfortable': 'comfort(편안하게 하다) + able → 편안한',
       'valuable': 'value(가치) + able → 가치 있는, 값비싼'
     }
+  },
+  {
+    r: 'dict · dic', m: '말하다',
+    tip: '"말한다"가 뿌리. 미리 말하면 예언, 맞서 말하면 반박이 돼요.',
+    w: {
+      'dictionary': 'dict(말) + ionary(모음) → 말을 모아 놓은 것 → 사전',
+      'predict': 'pre(미리) + dict(말하다) → 미리 말하다 → 예측하다',
+      'contradict': 'contra(맞서) + dict(말하다) → 맞서 말하다 → 반박하다, 모순되다',
+      'dictate': 'dict(말하다) + ate → 말해서 받아쓰게 하다 → 받아쓰게 하다, 명령하다',
+      'verdict': 'ver(진실) + dict(말하다) → 진실을 말함 → (재판의) 평결'
+    }
+  },
+  {
+    r: 'vis · vid', m: '보다',
+    tip: '"본다"가 뿌리. 미리 내다보면 준비하는 게 되고, 밖으로 드러나 보이면 증거가 돼요.',
+    w: {
+      'visit': 'vis(보다) + it → 보러 가다 → 방문하다',
+      'visible': 'vis(보다) + ible(할 수 있는) → 볼 수 있는 → 눈에 보이는',
+      'invisible': 'in(아니다) + visible(보이는) → 보이지 않는',
+      'visual': 'vis(보다) + ual → 보는 것의 → 시각의',
+      'video': 'vid(보다) → 보는 것 → 영상',
+      'evidence': 'e(밖으로) + vid(보다) → 밖으로 드러나 보이는 것 → 증거',
+      'provide': 'pro(미리) + vide(보다) → 미리 내다보고 마련하다 → 제공하다',
+      'revise': 're(다시) + vise(보다) → 다시 살펴보다 → 수정하다',
+      'advise': 'ad(~쪽으로) + vise(보다) → 봐 주고 일러 주다 → 조언하다'
+    }
+  },
+  {
+    r: 'press', m: '누르다',
+    tip: '누른다는 뜻. 마음을 밖으로 눌러 내면 표현, 안으로 눌러 자국을 남기면 인상이 돼요.',
+    w: {
+      'express': 'ex(밖으로) + press(누르다) → 속마음을 밖으로 눌러 내다 → 표현하다',
+      'impress': 'im(안으로) + press(누르다) → 마음속에 자국을 눌러 남기다 → 감명을 주다',
+      'impression': 'impress(감명을 주다) + ion → 인상, 감명',
+      'pressure': 'press(누르다) + ure → 누르는 힘 → 압력, 압박',
+      'depression': 'de(아래로) + press(누르다) + ion → 아래로 눌린 상태 → 우울(증), 불경기',
+      'oppress': 'op(맞서) + press(누르다) → 짓눌러 억압하다 → 억압하다'
+    }
+  },
+  {
+    r: 'part', m: '나누다, 부분',
+    tip: '"부분"이 뿌리. 따로 나뉘면 apart, 부분을 나눠 맡으면 참여가 돼요.',
+    w: {
+      'apart': 'a(떨어져) + part(부분) → 부분으로 떨어져 → 따로, 떨어져',
+      'apartment': 'apart(따로) + ment → 따로 나눠 놓은 방 → 아파트',
+      'depart': 'de(떨어져) + part(나누다) → 갈라져 나가다 → 출발하다',
+      'department store': 'department(나뉜 부서) + store(가게) → 부서별로 나뉜 가게 → 백화점',
+      'participate': 'parti(부분) + cip(취하다) → 한 부분을 맡다 → 참여하다',
+      'particle': 'part(부분) + icle(작은) → 아주 작은 부분 → 입자',
+      'partner': 'part(부분) + ner → 몫을 나누는 사람 → 동반자'
+    }
+  },
+  {
+    r: 'gen', m: '태어나다, 낳다',
+    tip: '"태어남"이 뿌리. 태어날 때 지닌 것이면 재능, 타고난 그대로면 진짜예요.',
+    w: {
+      'gene': 'gen(낳다) → 낳아 물려주는 것 → 유전자',
+      'generate': 'gen(낳다) + ate → 낳아 만들어 내다 → 발생시키다',
+      'generation': 'generate(낳다) + ion → 낳아진 무리 → 세대',
+      'genius': 'gen(태어나다) → 태어날 때 지니고 나온 재능 → 천재',
+      'genuine': 'gen(태어나다) + uine → 타고난 그대로의 → 진짜의',
+      'indigenous': 'indi(안에서) + gen(태어난) → 그 땅에서 태어난 → 토착의'
+    }
+  },
+  {
+    r: 'val', m: '가치가 있다, 힘이 있다',
+    tip: '"값어치"가 뿌리. 값을 매기면 평가, 값이 살아 있으면 유효한 게 돼요.',
+    w: {
+      'value': 'val(가치) + ue → 가치, 가치를 매기다',
+      'evaluate': 'e(밖으로) + valu(가치) + ate → 가치를 매겨 내다 → 평가하다',
+      'valid': 'val(힘이 있다) + id → 힘이 살아 있는 → 유효한, 타당한',
+      'available': 'a(~로) + vail(가치·힘이 있다) + able → 쓸 수 있는 힘이 있는 → 이용할 수 있는'
+    }
+  },
+  {
+    r: 'fin', m: '끝, 경계',
+    tip: '"끝·경계"가 뿌리. 경계를 그어 주면 정의(define)가 되고, 끝내면 finish예요.',
+    w: {
+      'finish': 'fin(끝) + ish → 끝내다',
+      'finally': 'fin(끝) + ally → 끝에 가서 → 마침내',
+      'final': 'fin(끝) + al → 마지막의',
+      'define': 'de(딱) + fine(경계) → 경계를 딱 그어 주다 → 정의하다',
+      'confine': 'con(함께) + fine(경계) → 경계 안에 가두다 → 제한하다, 가두다'
+    }
+  },
+  {
+    r: 'pend · pens', m: '매달다, 달아서 재다',
+    tip: '옛날엔 저울에 매달아 돈을 쟀어요. 그래서 "매달다"에서 돈 쓰는 말이 여럿 나왔어요.',
+    w: {
+      'depend': 'de(아래에) + pend(매달다) → 아래에 매달려 있다 → 의존하다',
+      'depend on': 'de(아래에) + pend(매달다) → ~에 매달리다 → ~에 의존하다',
+      'spend': 'ex(밖으로) + pend(달아 주다) → 저울에 달아 내주다 → (돈·시간을) 쓰다',
+      'expensive': 'ex(밖으로) + pens(달아 재다) + ive → 많이 달아 내야 하는 → 비싼',
+      'expense': 'ex(밖으로) + pens(달아 재다) → 달아 내준 것 → 비용',
+      'compensate': 'com(함께) + pens(달아 재다) → 저울 양쪽을 맞추다 → 보상하다'
+    }
+  },
+  {
+    r: 'memor', m: '기억',
+    tip: '기억이 뿌리. re(다시)가 붙으면 다시 떠올리는 게 돼요.',
+    w: {
+      'memory': 'memor(기억) + y → 기억, 추억',
+      'memorize': 'memor(기억) + ize(~하게 하다) → 기억에 넣다 → 암기하다',
+      'remember': 're(다시) + member(기억하다) → 다시 마음에 담다 → 기억하다'
+    }
+  },
+  {
+    r: 'serv', m: '지키다, 섬기다',
+    tip: '지키고 섬긴다는 뜻. 함께 지키면 보존, 지켜보면 관찰이 돼요.',
+    w: {
+      'serve': 'serv(섬기다) → (음식을) 내주다, 봉사하다',
+      'conserve': 'con(함께) + serve(지키다) → 온전히 지켜 두다 → 보존하다',
+      'conservation': 'conserve(보존하다) + ation → 보존, 보호',
+      'deserve': 'de(충분히) + serve(섬기다) → 충분히 섬긴 만큼 → ~을 받을 만하다',
+      'observation': 'ob(~쪽을) + serv(지키다) + ation → 지켜봄 → 관찰'
+    }
+  },
+  {
+    r: 'sist · sta', m: '서다',
+    tip: '"서 있다"가 뿌리. 어디에 서느냐로 뜻이 갈려요 — 맞서 서면 저항, 굳게 서면 안정이에요.',
+    w: {
+      'resist': 're(맞서) + sist(서다) → 맞서 버티고 서다 → 저항하다',
+      'insist': 'in(위에) + sist(서다) → 그 자리에 딱 버티고 서다 → 주장하다',
+      'consist': 'con(함께) + sist(서다) → 함께 서서 이루다 → ~로 이루어지다',
+      'persist': 'per(끝까지) + sist(서다) → 끝까지 버티고 서다 → 계속되다, 고집하다',
+      'stable': 'sta(서다) + ble → 잘 서 있는 → 안정된',
+      'establish': 'e + sta(서다) + blish → 세워 놓다 → 설립하다',
+      'station': 'sta(서다) + tion → 서서 머무는 곳 → 역, 정거장',
+      'status': 'sta(서다) + tus → 서 있는 자리 → 지위, 상태'
+    }
+  },
+  {
+    r: 'tend · tens', m: '뻗다, 팽팽하게 당기다',
+    tip: '"쭉 뻗다"가 뿌리. 마음을 뻗으면 주의를 기울이는 것, 팽팽히 당기면 긴장이 돼요.',
+    w: {
+      'attend': 'at(~쪽으로) + tend(뻗다) → 마음을 그쪽으로 뻗다 → 참석하다, 주의를 기울이다',
+      'intend': 'in(~안으로) + tend(뻗다) → 마음을 그쪽으로 뻗다 → 의도하다',
+      'pretend': 'pre(앞에) + tend(뻗다) → 앞에 내밀어 보이다 → ~인 척하다',
+      'tendency': 'tend(뻗다) + ency → 뻗어 가는 방향 → 경향',
+      'tension': 'tens(팽팽히 당기다) + ion → 팽팽함 → 긴장',
+      'intense': 'in(안으로) + tense(팽팽한) → 바짝 당겨진 → 강렬한'
+    }
+  },
+  {
+    r: 'lect · leg', m: '고르다, 읽다',
+    tip: '골라 모은다는 뜻. 골라 모으면 수집, 골라 뽑으면 선거예요.',
+    w: {
+      'collect': 'col(함께) + lect(고르다) → 골라 모으다 → 모으다',
+      'election': 'e(밖으로) + lect(고르다) + ion → 골라 뽑음 → 선거',
+      'lecture': 'lect(읽다) + ure → 읽어 주는 것 → 강의',
+      'intellect': 'intel(사이에서) + lect(고르다) → 가려낼 줄 아는 힘 → 지성',
+      'neglect': 'neg(아니다) + lect(고르다) → 골라 챙기지 않다 → 소홀히 하다'
+    }
+  },
+  {
+    r: 'graph · photo · geo', m: 'graph 그리다·쓰다 · photo 빛 · geo 땅',
+    tip: '그리스어 조각들이에요. 빛으로 그리면 사진, 땅을 그리면 지리가 돼요.',
+    w: {
+      'photograph': 'photo(빛) + graph(그리다) → 빛으로 그린 것 → 사진',
+      'photo': 'photo(빛) → 사진 (photograph의 줄임말)',
+      'geography': 'geo(땅) + graph(그리다) → 땅을 그려 적은 학문 → 지리학',
+      'paragraph': 'para(옆에) + graph(쓰다) → 옆에 표시해 나눈 덩어리 → 문단',
+      'graphic': 'graph(그리다) + ic → 그림의, 생생한'
+    }
+  },
+  {
+    r: 'voc · vok', m: '부르다, 목소리',
+    tip: '"부른다"가 뿌리. 밖으로 불러내면 떠올리게 하는 것, 앞으로 불러내면 자극하는 거예요.',
+    w: {
+      'vocabulary': 'voc(부르다) + abulary → 불러 쓰는 말들 → 어휘',
+      'advocate': 'ad(~쪽으로) + voc(부르다) → 편들어 불러 주다 → 옹호하다',
+      'evoke': 'e(밖으로) + voke(부르다) → 밖으로 불러내다 → (기억·감정을) 불러일으키다',
+      'provoke': 'pro(앞으로) + voke(부르다) → 앞으로 불러내다 → 자극하다, 화나게 하다'
+    }
+  },
+  {
+    r: 'scrib · script', m: '쓰다',
+    tip: '"쓴다"가 뿌리. 손으로 쓴 것이 manuscript(manu는 손)예요.',
+    w: {
+      'describe': 'de(따라서) + scribe(쓰다) → 죽 따라 적어 내려가다 → 묘사하다',
+      'manuscript': 'manu(손) + script(쓴 것) → 손으로 쓴 것 → 원고',
+      'ascribe': 'a(~에게) + scribe(쓰다) → ~의 것으로 적어 두다 → ~의 탓으로 돌리다'
+    }
+  },
+  {
+    r: 'sum', m: '취하다, 가지다',
+    tip: '"집어 든다"가 뿌리. 미리 집어 들면 짐작, 다 써서 없애면 소비예요.',
+    w: {
+      'assume': 'as(~쪽으로) + sume(취하다) → 그렇다고 받아들이다 → 가정하다, 추측하다',
+      'assumption': 'assume(가정하다) + tion → 가정, 추측',
+      'consume': 'con(모두) + sume(취하다) → 다 써 버리다 → 소비하다',
+      'presume': 'pre(미리) + sume(취하다) → 미리 그렇다고 받아들이다 → 추정하다'
+    }
+  },
+  {
+    r: 'astro · aster', m: '별',
+    tip: '별을 뜻해요. 옛날엔 별자리가 나쁘면 재앙이 온다고 믿어서 disaster가 생겼어요.',
+    w: {
+      'astronaut': 'astro(별) + naut(항해자) → 별을 항해하는 사람 → 우주비행사',
+      'disaster': 'dis(나쁜) + aster(별) → 별자리가 나쁨 → 재앙, 재난'
+    }
+  },
+  {
+    r: 'auto', m: '스스로',
+    tip: '"스스로"라는 뜻. 스스로 움직이면 자동차, 스스로 다스리면 자율이에요.',
+    w: {
+      'automatic': 'auto(스스로) + matic(움직이는) → 스스로 움직이는 → 자동의',
+      'automation': 'auto(스스로) + mation → 스스로 하게 만듦 → 자동화',
+      'automobile': 'auto(스스로) + mobile(움직이는) → 스스로 움직이는 것 → 자동차',
+      'autonomy': 'auto(스스로) + nomy(다스림) → 스스로 다스림 → 자율, 자치'
+    }
+  },
+  {
+    r: '-logy · log', m: '말, 학문',
+    tip: '뒤에 붙어 "~에 대한 학문"을 만들어요. 앞의 조각이 무엇에 대한 학문인지 알려줘요.',
+    w: {
+      'technology': 'techno(기술) + logy(학문) → 기술에 대한 학문 → 과학기술',
+      'ideology': 'ideo(생각) + logy(학문) → 생각의 체계 → 이념',
+      'apology': 'apo(떨어져) + logy(말) → 자기 잘못에서 벗어나려는 말 → 사과'
+    }
   }
 ];
 

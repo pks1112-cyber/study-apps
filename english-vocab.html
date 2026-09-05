@@ -1195,7 +1195,10 @@ function renderMy() {
   // 헤더 이벤트
   el.querySelector('#myListSel').addEventListener('change', e => {
     myList = e.target.value; store.lastGroup = myList; saveStore();
-    renderMy();
+    // 고르는 즉시 다시 그리면 콤보박스가 새로 만들어지면서 폰에서 선택창이 다시 열린다.
+    // 포커스를 떼고 한 박자 뒤에 그린다.
+    e.target.blur();
+    setTimeout(renderMy, 0);
   });
   el.querySelector('#mlNew').addEventListener('click', () => {
     uiPrompt({
