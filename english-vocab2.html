@@ -87,18 +87,24 @@
   .tab .cnt { color: #ef4444; font-weight: 800; }
   .tab.active .cnt { color: #fecaca; }
 
+  /* 발음 설정 — 히어로 안 (반투명 알약) */
   .voice-bar {
-    display: flex; gap: 8px; align-items: center; margin-bottom: 16px;
-    font-size: 13px; color: var(--muted); flex-wrap: wrap; justify-content: center;
+    display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+    margin-top: 10px; font-size: 12.5px; color: rgba(255,255,255,.92);
   }
+  .vb-lb { font-weight: 700; }
   .voice-bar select {
-    padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px;
-    font-size: 13px; font-family: inherit; max-width: 300px; outline: none;
-    background: #fff; color: var(--ink);
-    box-shadow: 0 1px 2px rgba(30, 41, 90, 0.05);
+    padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.35);
+    background: rgba(255,255,255,.18); color: #fff; font-family: inherit; font-size: 12.5px;
+    font-weight: 700; outline: none; cursor: pointer; max-width: 190px;
   }
-  .voice-bar select:focus { border-color: #a5b4fc; }
-
+  .voice-bar select option { color: #1e293b; }
+  .voice-bar select:focus { border-color: rgba(255,255,255,.7); }
+  .voice-bar button {
+    padding: 6px 12px; font-size: 12px; font-weight: 700; border-radius: 999px;
+    background: rgba(255,255,255,.22); color: #fff; box-shadow: none;
+  }
+  .voice-bar button:hover { background: rgba(255,255,255,.34); transform: none; box-shadow: none; }
   .card {
     background: #fff; border-radius: 20px; padding: 28px;
     width: 700px; max-width: 100%;
@@ -683,6 +689,16 @@
       <span class="hstat">🔥 최고 연속 <b id="hStreak">0</b></span>
       <span class="hstat">📅 오늘 <b id="hToday">0/20</b></span>
     </div>
+    <div class="voice-bar">
+      <span class="vb-lb">🔊 발음</span>
+      <select id="srcSel">
+        <option value="dict">원어민 사전 발음 (추천)</option>
+        <option value="google">구글 번역 발음</option>
+        <option value="browser">내 컴퓨터 음성</option>
+      </select>
+      <span id="voiceWrap" style="display:none"><select id="voiceSel"></select></span>
+      <button id="voiceTest">들어보기</button>
+    </div>
     <a class="verb-link" href="irregular-verbs.html">🔁 불규칙동사 공부하러 가기 →</a>
   </div>
   <div class="hero-art">
@@ -730,16 +746,7 @@
   <div id="content"></div>
 </div>
 
-<div class="voice-bar">
-  🔊 발음:
-  <select id="srcSel">
-    <option value="dict">원어민 사전 발음 (추천)</option>
-    <option value="google">구글 번역 발음</option>
-    <option value="browser">내 컴퓨터 음성</option>
-  </select>
-  <span id="voiceWrap" style="display:none">음성: <select id="voiceSel"></select></span>
-  <button class="secondary" id="voiceTest" style="padding:6px 12px;font-size:12px">들어보기</button>
-</div>
+
 <div class="info">
   단어를 클릭하면 발음이 들려요 🔊 · 품사: <span class="pos pos-n">명</span> 명사 <span class="pos pos-v">동</span> 동사 <span class="pos pos-a">형</span> 형용사 <span class="pos pos-d">부</span> 부사 <span class="pos pos-x">전·접</span> 전치사/접속사<br>
   😊 외움 / 😖 못외움은 직접 눌러서 표시해요 · 모든 기록은 자동 저장<br>
