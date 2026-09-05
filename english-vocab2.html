@@ -940,7 +940,7 @@ function uiPrompt(opts) {
   const inp = overlay.querySelector('#dlgInput');
   const msg = overlay.querySelector('#dlgMsg');
   inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length);
-  const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
+  const close = (canceled) => { if (overlay.parentNode) document.body.removeChild(overlay); if (canceled && opts.onCancel) opts.onCancel(); };
   const submit = () => {
     const v = inp.value.trim();
     const err = opts.validate ? opts.validate(v) : (v ? null : '입력해 주세요.');
@@ -948,8 +948,8 @@ function uiPrompt(opts) {
     close();
     if (opts.onOk) opts.onOk(v);
   };
-  overlay.querySelector('#dlgCancel').addEventListener('click', close);
-  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  overlay.querySelector('#dlgCancel').addEventListener('click', () => close(true));
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(true); });
   overlay.querySelector('#dlgOk').addEventListener('click', submit);
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 }
@@ -1228,7 +1228,7 @@ function renderScopeBar() {
 }
 
 // ===== 단어장 관리 (이름 변경 · 삭제) =====
-function openListManager() {
+function openListManager(onBack) {
   const names = myListNames();
   const overlay = document.createElement('div');
   overlay.className = 'modal-back';
@@ -1240,10 +1240,10 @@ function openListManager() {
     <h3>⚙ 단어장 관리</h3>
     <div class="m-sub" style="margin-bottom:0">이름을 바꾸거나 지울 수 있어요. 단어 자체는 지워지지 않아요.</div>
     <div class="scope-list" id="lmList">${names.length ? rows() : '<div class="sc-none">아직 단어장이 없어요</div>'}</div>
-    <div class="dlg-actions"><button class="mini" id="lmNew">➕ 새 단어장</button><button class="secondary" id="lmClose">닫기</button></div>
+    <div class="dlg-actions"><button class="mini" id="lmNew">➕ 새 단어장</button><button class="secondary" id="lmClose">${onBack ? '← 범위 고르기로' : '닫기'}</button></div>
   </div>`;
   document.body.appendChild(overlay);
-  const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
+  const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); if (onBack) onBack(); };
   const redraw = () => { overlay.querySelector('#lmList').innerHTML = myListNames().length ? rows() : '<div class="sc-none">아직 단어장이 없어요</div>'; bind(); renderAll(); };
   function bind() {
     overlay.querySelectorAll('.lm-ren').forEach(b => b.addEventListener('click', () => {
@@ -2162,18 +2162,19 @@ function openScopePicker() {
     groups,
     okText: '이 범위로 공부',
     topBtns: [
-      { id: 'spNew', label: '➕ 새 단어장', onClick: () => promptNewList(n => { setScope(['g|' + n]); renderAll(); }) },
-      { id: 'spManage', label: '⚙ 단어장 관리', onClick: openListManager }
+      { id: 'spNew', label: '➕ 새 단어장', onClick: () => promptNewList(n => { setScope(['g|' + n]); renderAll(); openScopePicker(); }, openScopePicker) },
+      { id: 'spManage', label: '⚙ 단어장 관리', onClick: () => openListManager(openScopePicker) }
     ],
     selected: new Set(scopeIds()),
     onOk: picked => { setScope(picked); resetModeStates(); renderAll(); }
   });
 }
-function promptNewList(after) {
+function promptNewList(after, onCancel) {
   uiPrompt({
     title: '새 단어장', placeholder: '단어장 이름 (예: 중간고사 3과)', okText: '만들기',
     validate: v => !v ? '이름을 입력해 줘.' : (store.groups[v] ? '같은 이름의 단어장이 이미 있어.' : null),
-    onOk: v => { createList(v); if (after) after(v); }
+    onOk: v => { createList(v); if (after) after(v); },
+    onCancel: onCancel
   });
 }
 // ===== 인쇄용 시험지 (테스트 탭의 범위·대상·문항 수 설정을 그대로 사용) =====
