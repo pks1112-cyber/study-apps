@@ -697,6 +697,12 @@
 </div>
 
 <div class="card main-card">
+  <div class="ml-bar" id="scopeBar">
+    <button id="myListBtn" title="공부할 범위 고르기"></button>
+    <button class="icon-btn" id="editBtn" title="단어 넣기·빼기">✏️</button>
+    <button class="icon-btn" id="bakBtn" title="백업 · 가져오기">💾</button>
+  </div>
+  <div class="ml-info" id="scopeInfo"></div>
   <div class="tabs" id="modeTabs">
     <div class="tab active" data-mode="table"><span class="ti">📖</span><span class="tl">단어표</span></div>
     <div class="tab" data-mode="cards"><span class="ti">🃏</span><span class="tl">카드</span></div>
@@ -705,12 +711,6 @@
     <div class="tab" data-mode="search"><span class="ti">🔍</span><span class="tl">검색</span></div>
     <div class="tab" data-mode="stats"><span class="ti">📊</span><span class="tl">기록</span></div>
   </div>
-  <div class="ml-bar" id="scopeBar">
-    <button id="myListBtn" title="공부할 범위 고르기"></button>
-    <button class="icon-btn" id="editBtn" title="단어 넣기·빼기">✏️</button>
-    <button class="icon-btn" id="bakBtn" title="백업 · 가져오기">💾</button>
-  </div>
-  <div class="ml-info" id="scopeInfo"></div>
   <div id="content"></div>
 </div>
 
