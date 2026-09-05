@@ -244,21 +244,16 @@
   }
   .hstat b { font-weight: 800; }
   .hero-art { flex-shrink: 0; margin-left: 16px; position: relative; z-index: 1; }
-  .home-btn {
+  .hero-links {
     position: absolute; top: 12px; right: 14px; z-index: 2;
+    display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;
+  }
+  .hero-links a {
     background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30);
     color: #fff; text-decoration: none; font-size: 12px; font-weight: 700;
-    padding: 6px 12px; border-radius: 999px; transition: background 0.12s;
+    padding: 6px 12px; border-radius: 999px; transition: background 0.12s; white-space: nowrap;
   }
-  .home-btn:hover { background: rgba(255,255,255,0.32); }
-  .verb-link {
-    display: inline-flex; align-items: center; gap: 5px; margin-top: 11px;
-    background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.30);
-    color: #fff; text-decoration: none; font-size: 12.5px; font-weight: 700;
-    padding: 7px 14px; border-radius: 999px; transition: background 0.12s;
-  }
-  .verb-link:hover { background: rgba(255,255,255,0.32); }
-
+  .hero-links a:hover { background: rgba(255,255,255,0.32); }
   .main-card { width: 740px; }
   .main-card .tabs {
     justify-content: center; margin: 0 0 16px; padding-bottom: 16px;
@@ -485,7 +480,10 @@
     .result-item { flex-wrap: wrap; }
     .result-side { width: 100%; justify-content: flex-end; }
     body { padding: 14px 10px 30px; }
-    .hero { flex-direction: column; text-align: center; padding: 22px 16px; }
+    /* 좁은 화면: 링크 두 개가 제목을 덮지 않게 자리를 내준다 */
+    .hero { flex-direction: column; text-align: center; padding: 52px 14px 22px; }
+    .hero-links { left: 14px; right: 14px; justify-content: center; }
+    .hero-links a { font-size: 11.5px; padding: 5px 10px; }
     .hero-art { margin: 10px 0 0; }
     .hero-art svg { width: 120px; height: 96px; }
     .hero-stats { justify-content: center; }
@@ -493,6 +491,9 @@
     .tagline { font-size: 12px; }
     .card { padding: 18px 13px; }
     .tab { padding: 8px 10px; font-size: 12.5px; }
+    /* 좁은 화면: 담기 버튼이 표를 넓히지 않게 아래로 흘린다 */
+    td.star { white-space: normal; }
+    .tbl-add { margin-top: 4px; }
     .main-card .tabs .tab { padding: 6px 1px; }
     .main-card .tabs .tab .ti { font-size: 15px; }
     .main-card .tabs .tab .tl { font-size: 9.5px; }
@@ -679,7 +680,10 @@
 </head>
 <body>
 <div class="hero">
-  <a class="home-btn" href="index.html">🏠 홈</a>
+  <div class="hero-links">
+    <a href="irregular-verbs.html">🔁 불규칙동사</a>
+    <a href="index.html">🏠 홈</a>
+  </div>
   <div class="hero-text">
     <h1>영단어 마스터 <span style="font-size:14px;vertical-align:middle;background:rgba(255,255,255,.25);padding:3px 9px;border-radius:999px">v2</span></h1>
     <p class="tagline">초5 ~ 고3 필수 영단어 2,000 · 발음기호 · 원어민 발음 · 예문</p>
@@ -699,7 +703,6 @@
       <span id="voiceWrap" style="display:none"><select id="voiceSel"></select></span>
       <button id="voiceTest">들어보기</button>
     </div>
-    <a class="verb-link" href="irregular-verbs.html">🔁 불규칙동사 공부하러 가기 →</a>
   </div>
   <div class="hero-art">
     <svg width="150" height="120" viewBox="0 0 150 120" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1854,6 +1857,7 @@ function renderTable() {
     el0.innerHTML = banner + titleRow + `<div class="search-empty">단어가 없어요. 단어표·검색에서 ＋담기로 단어를 모아 보세요.</div>`;
     return;
   }
+  const showAdd = !scopeSingleGroup();   // 단어장 하나만 보는 중이면 담기 버튼은 군더더기
   const shown = tblFilter === 'all' ? words :
     words.filter(x => (tblFilter === 'known' ? markOf(x.key) === 1 : tblFilter === 'hard' ? markOf(x.key) === 2 : markOf(x.key) === 0));
   let html = banner + titleRow + `
@@ -1878,7 +1882,7 @@ function renderTable() {
         <td class="eng ${hideMode === 'eng' ? 'm-hidden' : ''}">${esc(it.w)} <span class="ipa">${esc(it.ipa)}</span> ${etymMark(it.w)}</td>
         <td class="pos-td">${posTag(it.p)}</td>
         <td class="kor ${hideMode === 'kor' ? 'm-hidden' : ''}">${esc(it.m)}</td>
-        <td class="star">${markWidget(it.key)} <button class="tbl-add gp-open" data-key="${esc(it.key)}">＋담기</button></td></tr>`;
+        <td class="star">${markWidget(it.key)}${showAdd ? ` <button class="tbl-add gp-open" data-key="${esc(it.key)}">＋담기</button>` : ''}</td></tr>`;
       if (it.ex) {
         html += `<tr class="ex-row"><td colspan="4">
           <span class="ex-en ${hideMode === 'eng' ? 'm-hidden' : ''}" data-s="${esc(it.ex)}">${esc(it.ex)}</span>
