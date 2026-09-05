@@ -573,8 +573,6 @@
   .scope-item:hover { background: #f8faff; }
   .scope-item input { width: 18px; height: 18px; accent-color: #4f46e5; flex-shrink: 0; }
   /* 묶음 헤더 + 이름 찾기 */
-  .pick-wide { width: 100%; margin-top: 10px; padding: 11px 12px; border-radius: 11px; font-size: 13.5px; font-weight: 800; background: #eef2ff; color: #4338ca; border: 1.5px dashed #a5b4fc; box-shadow: none; }
-  .pick-wide:hover { background: #e0e7ff; transform: none; box-shadow: none; }
   .pick-search { width: 100%; padding: 10px 12px; margin-top: 8px; border: 1.5px solid #dbe4ff; border-radius: 10px; font-family: inherit; font-size: 14px; outline: none; }
   .pick-search:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.10); }
   .sc-group {
@@ -2088,15 +2086,16 @@ function openMultiPicker(cfg) {
   overlay.className = 'modal-back';
   overlay.innerHTML = `<div class="modal scope-modal">
     <h3>${esc(cfg.title)}</h3>
+    ${cfg.subText ? `<div class="m-sub" style="margin-bottom:0">${esc(cfg.subText)}</div>` : ''}
     <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
-      ${cfg.single ? '' : `<button class="mini" id="scAll">전체 선택</button><button class="mini" id="scNone">전체 해제</button>`}
+      <button class="mini" id="scAll">전체 선택</button>
+      <button class="mini" id="scNone">전체 해제</button>
       ${hasGroups ? `<button class="mini" id="scFold">모두 펼치기</button>` : ''}
 
     </div>
-    ${cfg.extraBtn ? `<button class="pick-wide" id="${cfg.extraBtn.id}">${esc(cfg.extraBtn.label)}</button>` : ''}
     ${all.length > 8 ? `<input class="pick-search" id="scFind" placeholder="이름으로 찾기 (예: Day1, 리딩)" autocomplete="off" spellcheck="false">` : ''}
     <div class="scope-list" id="scList">${cfg.groups.map((g, gi) =>
-      (g.label ? `<div class="sc-group" data-g="${gi}"><span class="sc-arrow">▶</span><span class="sc-gname">${esc(g.label)} · ${g.items.length}개</span><span class="sc-gsel" data-gcnt="${gi}"></span>${cfg.single ? '' : `<button class="sc-gbtn" data-gsel="${gi}">이 묶음 전체</button>`}</div>` : '') +
+      (g.label ? `<div class="sc-group" data-g="${gi}"><span class="sc-arrow">▶</span><span class="sc-gname">${esc(g.label)} · ${g.items.length}개</span><span class="sc-gsel" data-gcnt="${gi}"></span><button class="sc-gbtn" data-gsel="${gi}">이 묶음 전체</button></div>` : '') +
       g.items.map(it =>
         `<label class="scope-item" data-g="${gi}" data-find="${esc((g.label + ' ' + it.label).toLowerCase())}">` +
         `<input type="checkbox" data-id="${esc(String(it.id))}" ${cfg.selected.has(String(it.id)) ? 'checked' : ''}> ${esc(it.label)}` +
@@ -2105,7 +2104,7 @@ function openMultiPicker(cfg) {
     <div class="dlg-msg" id="scSum" style="text-align:center;font-weight:700"></div>
     <div class="dlg-actions">
       <button class="secondary" id="dlgCancel">취소</button>
-      ${cfg.single ? '' : `<button id="dlgOk">${esc(cfg.okText || '이 범위로')}</button>`}
+      <button id="dlgOk">${esc(cfg.okText || '이 범위로')}</button>
     </div>
   </div>`;
   document.body.appendChild(overlay);
@@ -2115,19 +2114,8 @@ function openMultiPicker(cfg) {
   const sum = overlay.querySelector('#scSum');
   const find = overlay.querySelector('#scFind');
   const foldBtn = overlay.querySelector('#scFold');
-  if (cfg.extraBtn) {
-    const eb = overlay.querySelector('#' + cfg.extraBtn.id);
-    if (eb) eb.addEventListener('click', () => { if (overlay.parentNode) document.body.removeChild(overlay); cfg.extraBtn.onClick(); });
-  }
-  if (cfg.single) {   // 하나만 고르는 모드 — 줄을 누르면 바로 정해지고 닫힌다
-    overlay.querySelectorAll('.scope-item input').forEach(i => i.style.display = 'none');
-    overlay.querySelectorAll('.scope-item').forEach(row => row.addEventListener('click', ev => {
-      ev.preventDefault();
-      const id = row.querySelector('input').dataset.id;
-      if (overlay.parentNode) document.body.removeChild(overlay);
-      cfg.onOk([id]);
-    }));
-  }
+
+
   const cntOf = id => (all.find(x => String(x.id) === id) || { cnt: 0 }).cnt;
   // 검색에 걸린 항목 (접혀 있어도 '이 묶음 전체'·'전체 선택'의 대상이 된다)
   const hits = () => {
@@ -2192,7 +2180,7 @@ function openMultiPicker(cfg) {
 
 // 단어장 고르기 팝업 — 폰의 기본 선택창은 65개짜리 목록에 불편하고
 // 안드로이드에서 다시 눌러도 닫히지 않아 우리 팝업으로 대신한다
-function openListPicker(multiMode) {
+function openListPicker() {
   const names = myListNames();
   if (!names.length) return;
   const groups = groupListNames(names).map(g => ({
@@ -2203,13 +2191,11 @@ function openListPicker(multiMode) {
                cntText: groupCount(n) + '개' + (c.known ? ' · 😊' + c.known : '') };
     })
   }));
-  const many = !!multiMode || myMulti.length > 1;
   openMultiPicker({
-    title: many ? '📚 여러 단어장 고르기' : '📚 단어장 고르기',
-    single: !many, groups,
-    okText: '이 단어장들로',
-    // 하나만 고르는 모드에선 위쪽에 여러 개 고르기로 넘어가는 버튼을 둔다
-    extraBtn: many ? null : { id: 'toMulti', label: '☑ 여러 개 골라서 한꺼번에 보기', onClick: () => openListPicker(true) },
+    title: '📚 단어장 고르기',
+    subText: '여러 개를 골라 한꺼번에 볼 수 있어요',
+    groups,
+    okText: '이 단어장 보기',
     selected: new Set(myViewLists()),
     onOk: picked => {
       if (picked.length > 1) { myMulti = picked; myList = picked[0]; }
