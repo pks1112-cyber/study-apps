@@ -574,6 +574,22 @@
   .scope-item:hover { background: #f8faff; }
   .scope-item input { width: 18px; height: 18px; accent-color: #4f46e5; flex-shrink: 0; }
   /* 묶음 헤더 + 이름 찾기 */
+  .pick-seg { display: flex; gap: 6px; background: #f1f5f9; border-radius: 12px; padding: 4px; margin-top: 10px; }
+  .pick-seg button {
+    flex: 1; padding: 10px 6px; border-radius: 9px; font-size: 13.5px; font-weight: 800;
+    background: transparent; color: #64748b; box-shadow: none;
+  }
+  .pick-seg button:hover { background: #e2e8f0; transform: none; box-shadow: none; }
+  .pick-seg button.on { background: #fff; color: #4338ca; box-shadow: 0 1px 3px rgba(30,41,90,.12); }
+  .pick-seg button.on:hover { background: #fff; }
+  .seg-cnt { color: #6366f1; font-size: 12px; }
+  .pick-links { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 9px; justify-content: flex-end; }
+  .pick-links button {
+    background: none; border: none; box-shadow: none; padding: 2px 0;
+    font-size: 12px; font-weight: 700; color: #6366f1; cursor: pointer; font-family: inherit;
+  }
+  .pick-links button:hover { transform: none; box-shadow: none; text-decoration: underline; }
+  .pick-links span { color: #cbd5e1; font-size: 11px; }
   .pick-search { width: 100%; padding: 10px 12px; margin-top: 8px; border: 1.5px solid #dbe4ff; border-radius: 10px; font-family: inherit; font-size: 14px; outline: none; }
   .pick-search:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.10); }
   .sc-group {
@@ -2041,14 +2057,15 @@ function openMultiPicker(cfg) {
   overlay.innerHTML = `<div class="modal scope-modal">
     <h3>${esc(cfg.title)}</h3>
     ${cfg.subText ? `<div class="m-sub" style="margin-bottom:0">${esc(cfg.subText)}</div>` : ''}
-    ${cfg.topBtns ? `<div style="display:flex;gap:8px;margin-top:10px">${cfg.topBtns.map(x => `<button class="mini" id="${x.id}" style="flex:1">${esc(x.label)}</button>`).join('')}</div>` : ''}
-    <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
-      <button class="mini" id="scAll">전체 선택</button>
-      <button class="mini" id="scNone">전체 해제</button>
-      ${hasGroups ? `<button class="mini" id="scFold">모두 펼치기</button>` : ''}
-
+    ${cfg.sections ? `<div class="pick-seg" id="scSeg">${cfg.sections.map((s, si) =>
+        `<button data-sec="${si}">${esc(s.label)}<b class="seg-cnt" data-seccnt="${si}"></b></button>`).join('')}</div>` : ''}
+    ${all.length > 8 ? `<input class="pick-search" id="scFind" placeholder="이름으로 찾기" autocomplete="off" spellcheck="false">` : ''}
+    <div class="pick-links">
+      <button id="scAll">전체 선택</button><span>·</span>
+      <button id="scNone">전체 해제</button>
+      ${hasGroups ? `<span>·</span><button id="scFold">모두 펼치기</button>` : ''}
+      ${cfg.topBtns ? cfg.topBtns.map(x => `<span class="tb-sep" data-tb="${x.id}">·</span><button id="${x.id}" data-tb="${x.id}">${esc(x.label)}</button>`).join('') : ''}
     </div>
-    ${all.length > 8 ? `<input class="pick-search" id="scFind" placeholder="이름으로 찾기 (예: Day1, 리딩)" autocomplete="off" spellcheck="false">` : ''}
     <div class="scope-list" id="scList">${cfg.groups.map((g, gi) =>
       (g.label ? `<div class="sc-group" data-g="${gi}"><span class="sc-arrow">▶</span><span class="sc-gname">${esc(g.label)} · ${g.items.length}개</span><span class="sc-gsel" data-gcnt="${gi}"></span><button class="sc-gbtn" data-gsel="${gi}">이 묶음 전체</button></div>` : '') +
       g.items.map(it =>
@@ -2069,6 +2086,12 @@ function openMultiPicker(cfg) {
   const sum = overlay.querySelector('#scSum');
   const find = overlay.querySelector('#scFind');
   const foldBtn = overlay.querySelector('#scFold');
+  let curSec = 0;
+  if (cfg.sections) {   // 마지막에 보던 쪽부터 (없으면 고른 게 있는 쪽)
+    const savedSec = cfg.sections.findIndex(s => rows.some(r => s.has(+r.dataset.g) && r.querySelector('input').checked));
+    curSec = savedSec >= 0 ? savedSec : 0;
+  }
+  const inSec = gi => !cfg.sections || cfg.sections[curSec].has(gi);
   (cfg.topBtns || []).forEach(x => {
     const eb = overlay.querySelector('#' + x.id);
     if (eb) eb.addEventListener('click', () => { if (overlay.parentNode) document.body.removeChild(overlay); x.onClick(); });
@@ -2079,14 +2102,14 @@ function openMultiPicker(cfg) {
   // 검색에 걸린 항목 (접혀 있어도 '이 묶음 전체'·'전체 선택'의 대상이 된다)
   const hits = () => {
     const q = find ? find.value.trim().toLowerCase() : '';
-    return rows.filter(r => !q || r.dataset.find.includes(q));
+    return rows.filter(r => inSec(+r.dataset.g) && (!q || r.dataset.find.includes(q)));
   };
   const applyView = () => {
     const hit = new Set(hits());
     rows.forEach(r => { r.style.display = (hit.has(r) && !folded.has(+r.dataset.g)) ? '' : 'none'; });
     heads.forEach(h => {
       const gi = +h.dataset.g;
-      const any = rows.some(r => +r.dataset.g === gi && hit.has(r));
+      const any = inSec(gi) && rows.some(r => +r.dataset.g === gi && hit.has(r));
       h.style.display = any ? '' : 'none';
       h.querySelector('.sc-arrow').textContent = folded.has(gi) ? '▶' : '▼';
       const sel = rows.filter(r => +r.dataset.g === gi && r.querySelector('input').checked).length;
@@ -2094,6 +2117,18 @@ function openMultiPicker(cfg) {
     });
     overlay.querySelector('#scNoHit').style.display = hit.size ? 'none' : '';
     if (foldBtn) foldBtn.textContent = folded.size ? '모두 펼치기' : '모두 접기';
+    if (cfg.sections) {
+      overlay.querySelectorAll('#scSeg button').forEach((b, si) => {
+        b.classList.toggle('on', si === curSec);
+        const n = rows.filter(r => cfg.sections[si].has(+r.dataset.g) && r.querySelector('input').checked).length;
+        b.querySelector('.seg-cnt').textContent = n ? ' ' + n : '';
+      });
+      // 이 섹션에만 있는 링크(새 단어장·관리) 표시 여부
+      overlay.querySelectorAll('[data-tb]').forEach(el => {
+        const only = (cfg.topBtns.find(x => x.id === el.dataset.tb) || {}).onlySection;
+        el.style.display = (only === undefined || only === curSec) ? '' : 'none';
+      });
+    }
     const picked = boxes.filter(b => b.checked);
     const t = picked.reduce((s, b) => s + cntOf(b.dataset.id), 0);
     sum.textContent = picked.length ? `${picked.length}개 선택 · 약 ${t}단어` : '최소 1개는 골라 줘';
@@ -2119,6 +2154,11 @@ function openMultiPicker(cfg) {
     const mine = hits().filter(r => +r.dataset.g === gi);
     const turnOn = mine.some(r => !r.querySelector('input').checked);
     mine.forEach(r => r.querySelector('input').checked = turnOn);
+    applyView();
+  }));
+  overlay.querySelectorAll('#scSeg button').forEach((b, si) => b.addEventListener('click', () => {
+    curSec = si;
+    if (find) find.value = '';
     applyView();
   }));
   if (find) find.addEventListener('input', () => {
@@ -2156,14 +2196,19 @@ function openScopePicker() {
                cntText: groupCount(n) + '개' + (c.known ? ' · 😊' + c.known : '') };
     })
   }));
+  const nLevels = LEVEL_NAMES.length;
   openMultiPicker({
     title: '📚 공부할 범위 고르기',
-    subText: '교과서 단원과 내 단어장을 여러 개 골라 한꺼번에 볼 수 있어요',
+    subText: '양쪽에서 골라도 되고, 고른 건 합쳐서 공부해요',
     groups,
     okText: '이 범위로 공부',
+    sections: [
+      { label: '📖 교과서', has: gi => gi < nLevels },
+      { label: '📒 내 단어장', has: gi => gi >= nLevels }
+    ],
     topBtns: [
-      { id: 'spNew', label: '➕ 새 단어장', onClick: () => promptNewList(n => { setScope(['g|' + n]); renderAll(); openScopePicker(); }, openScopePicker) },
-      { id: 'spManage', label: '⚙ 단어장 관리', onClick: () => openListManager(openScopePicker) }
+      { id: 'spNew', label: '➕ 새 단어장', onlySection: 1, onClick: () => promptNewList(n => { setScope(['g|' + n]); renderAll(); openScopePicker(); }, openScopePicker) },
+      { id: 'spManage', label: '⚙ 관리', onlySection: 1, onClick: () => openListManager(openScopePicker) }
     ],
     selected: new Set(scopeIds()),
     onOk: picked => { setScope(picked); resetModeStates(); renderAll(); }
