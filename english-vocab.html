@@ -787,7 +787,7 @@ function allWords() {
 function findByKey(key) {
   const [lv, w] = key.split('|');
   if (lv === MY) {
-    const o = store.myWords.find(x => x.w === w);
+    const o = findMyWord(w);   // 대소문자·공백 차이가 있어도 찾는다 (다른 파일에서 'Earth'/'earth'로 들어온 경우)
     return o ? myWordObj(o) : null;
   }
   if (!RAW[lv]) return null;
@@ -1278,7 +1278,8 @@ function renderAddView() {
   body.querySelectorAll('.say-w').forEach(b => b.addEventListener('click', () => speak(b.dataset.w)));
   body.querySelectorAll('.edit-w').forEach(b => b.addEventListener('click', () => openEditWord(b.dataset.w)));
   body.querySelectorAll('.rm-from').forEach(b => b.addEventListener('click', () => {
-    store.groups[myList] = store.groups[myList].filter(k => k !== b.dataset.key);
+    const rmw = normW(b.dataset.key.split('|').slice(1).join('|'));   // 키 대소문자가 달라도 빼지도록
+    store.groups[myList] = store.groups[myList].filter(k => normW(k.split('|').slice(1).join('|')) !== rmw);
     saveStore();
     renderMy();
   }));
