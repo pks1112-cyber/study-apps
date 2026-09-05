@@ -400,8 +400,10 @@
   .steps li::marker { color: #4338ca; font-weight: 800; }
   /* 내단어 — 단어장 선택바 + 서브탭 */
   .ml-bar { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
-  #myListSel { flex: 1; min-width: 0; padding: 12px 12px; border: 2px solid #c7d2fe; border-radius: 12px; font-family: inherit; font-size: 15px; font-weight: 800; color: #3730a3; background: linear-gradient(180deg, #fff, #eef2ff); outline: none; cursor: pointer; }
-  #myListSel:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(99,102,241,.12); }
+  #myListBtn { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; padding: 12px 12px; border: 2px solid #c7d2fe; border-radius: 12px; font-family: inherit; font-size: 15px; font-weight: 800; color: #3730a3; background: linear-gradient(180deg, #fff, #eef2ff); box-shadow: none; cursor: pointer; text-align: left; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  #myListBtn:hover { background: linear-gradient(180deg, #fff, #e0e7ff); transform: none; box-shadow: none; }
+  #myListBtn .ml-cnt { font-weight: 600; color: #6366f1; font-size: 13px; flex-shrink: 0; }
+  #myListBtn .ml-caret { margin-left: auto; color: #6366f1; flex-shrink: 0; }
   .ml-bar .icon-btn { padding: 10px 11px; font-size: 15px; flex-shrink: 0; }
   .ml-info { font-size: 12px; color: #64748b; font-weight: 600; margin: 0 2px 12px; }
   .sub-nav { display: flex; gap: 6px; background: #f1f5f9; border-radius: 12px; padding: 4px; margin-bottom: 16px; }
@@ -460,6 +462,7 @@
   .chip-btn:hover { background: #fff; box-shadow: none; transform: none; }
   .tbl-add { background: #eef2ff; color: #4338ca; box-shadow: none; padding: 5px 9px; font-size: 11.5px; border-radius: 8px; white-space: nowrap; font-weight: 700; }
   .tbl-add:hover { background: #e0e7ff; box-shadow: none; transform: none; }
+  html.modal-open, body.modal-open { overflow: hidden; }
   .modal-back { position: fixed; inset: 0; background: rgba(15,23,42,.45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
   .modal { background: #fff; border-radius: 18px; padding: 20px; width: 380px; max-width: 100%; max-height: 82vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
   .modal h3 { margin: 0 0 4px; font-size: 17px; color: #1e293b; }
@@ -508,10 +511,10 @@
     .add-form { grid-template-columns: 1fr; }
     .grp-actions button { padding: 8px 10px; font-size: 12px; }
     .sub-seg { font-size: 11.5px; padding: 9px 2px; }
-    #myListSel { font-size: 14px; padding: 11px 8px; }
+    #myListBtn { font-size: 14px; padding: 11px 8px; }
     /* 좁은 화면: 단어장 이름이 눌리지 않게 관리 버튼을 아랫줄로 */
     .ml-bar { flex-wrap: wrap; }
-    #myListSel { flex: 1 0 100%; }
+    #myListBtn { flex: 1 0 100%; }
     .ml-bar .icon-btn { flex: 1; padding: 9px 0; }
   }
 
@@ -855,6 +858,13 @@ function renderTarget() {
 let myList = null;        // 현재 선택된 단어장
 let mySub = 'table';      // 내단어 안의 서브뷰: table | cards | test | add
 
+// 팝업이 떠 있는 동안 뒤 화면이 스크롤되지 않게 (팝업은 어디서 만들든 .modal-back 을 body 에 붙인다)
+new MutationObserver(() => {
+  const open = !!document.querySelector('.modal-back');
+  document.body.classList.toggle('modal-open', open);
+  document.documentElement.classList.toggle('modal-open', open);   // 실제 스크롤 주체는 html
+}).observe(document.body, { childList: true });
+
 // ===== 커스텀 다이얼로그 (브라우저 prompt/confirm/alert 대체) =====
 function uiConfirm(opts) {
   const overlay = document.createElement('div');
@@ -871,7 +881,8 @@ function uiConfirm(opts) {
   const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
   overlay.querySelector('#dlgCancel').addEventListener('click', close);
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-  overlay.querySelector('#dlgOk').addEventListener('click', () => { close(); if (opts.onOk) opts.onOk(); });
+  const okBtn = overlay.querySelector('#dlgOk');
+  if (okBtn) okBtn.addEventListener('click', () => { close(); if (opts.onOk) opts.onOk(); });
   overlay.querySelector('#dlgOk').focus();
 }
 function uiPrompt(opts) {
@@ -1164,13 +1175,7 @@ function renderMy() {
   const cnt = groupCount(myList);
   const gc = markCounts(groupWords(myList));
   el.innerHTML = `<div class="ml-bar">
-      <select id="myListSel">${groupListNames(names).map(g => {
-        const opts = g.items.map(n => {
-          const c = markCounts(groupWords(n));
-          return `<option value="${esc(n)}" ${n === myList ? 'selected' : ''}>📒 ${esc(shortListName(n, g.label))} (${groupCount(n)}개${c.known ? ' · 😊' + c.known : ''})</option>`;
-        }).join('');
-        return g.label ? `<optgroup label="${esc(g.label)} · ${g.items.length}개 단어장">${opts}</optgroup>` : opts;
-      }).join('')}</select>
+      <button id="myListBtn" title="단어장 고르기">📒 ${esc(myList)} <span class="ml-cnt">(${groupCount(myList)}개)</span><span class="ml-caret">▾</span></button>
       <button class="icon-btn" id="mlNew" title="새 단어장">➕</button>
       <button class="icon-btn" id="mlRen" title="이름 변경">✏️</button>
       <button class="icon-btn" id="mlDel" title="삭제">🗑</button>
@@ -1193,13 +1198,7 @@ function renderMy() {
   else renderTable();
 
   // 헤더 이벤트
-  el.querySelector('#myListSel').addEventListener('change', e => {
-    myList = e.target.value; store.lastGroup = myList; saveStore();
-    // 고르는 즉시 다시 그리면 콤보박스가 새로 만들어지면서 폰에서 선택창이 다시 열린다.
-    // 포커스를 떼고 한 박자 뒤에 그린다.
-    e.target.blur();
-    setTimeout(renderMy, 0);
-  });
+  el.querySelector('#myListBtn').addEventListener('click', openListPicker);
   el.querySelector('#mlNew').addEventListener('click', () => {
     uiPrompt({
       title: '새 단어장', placeholder: '단어장 이름 (예: 중간고사 3과)', okText: '만들기',
@@ -2060,13 +2059,12 @@ function openMultiPicker(cfg) {
   overlay.innerHTML = `<div class="modal scope-modal">
     <h3>${esc(cfg.title)}</h3>
     <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
-      <button class="mini" id="scAll">전체 선택</button>
-      <button class="mini" id="scNone">전체 해제</button>
+      ${cfg.single ? '' : `<button class="mini" id="scAll">전체 선택</button><button class="mini" id="scNone">전체 해제</button>`}
       ${hasGroups ? `<button class="mini" id="scFold">모두 펼치기</button>` : ''}
     </div>
     ${all.length > 8 ? `<input class="pick-search" id="scFind" placeholder="이름으로 찾기 (예: Day1, 리딩)" autocomplete="off" spellcheck="false">` : ''}
     <div class="scope-list" id="scList">${cfg.groups.map((g, gi) =>
-      (g.label ? `<div class="sc-group" data-g="${gi}"><span class="sc-arrow">▶</span><span class="sc-gname">${esc(g.label)} · ${g.items.length}개</span><span class="sc-gsel" data-gcnt="${gi}"></span><button class="sc-gbtn" data-gsel="${gi}">이 묶음 전체</button></div>` : '') +
+      (g.label ? `<div class="sc-group" data-g="${gi}"><span class="sc-arrow">▶</span><span class="sc-gname">${esc(g.label)} · ${g.items.length}개</span><span class="sc-gsel" data-gcnt="${gi}"></span>${cfg.single ? '' : `<button class="sc-gbtn" data-gsel="${gi}">이 묶음 전체</button>`}</div>` : '') +
       g.items.map(it =>
         `<label class="scope-item" data-g="${gi}" data-find="${esc((g.label + ' ' + it.label).toLowerCase())}">` +
         `<input type="checkbox" data-id="${esc(String(it.id))}" ${cfg.selected.has(String(it.id)) ? 'checked' : ''}> ${esc(it.label)}` +
@@ -2075,7 +2073,7 @@ function openMultiPicker(cfg) {
     <div class="dlg-msg" id="scSum" style="text-align:center;font-weight:700"></div>
     <div class="dlg-actions">
       <button class="secondary" id="dlgCancel">취소</button>
-      <button id="dlgOk">${esc(cfg.okText || '이 범위로')}</button>
+      ${cfg.single ? '' : `<button id="dlgOk">${esc(cfg.okText || '이 범위로')}</button>`}
     </div>
   </div>`;
   document.body.appendChild(overlay);
@@ -2085,6 +2083,15 @@ function openMultiPicker(cfg) {
   const sum = overlay.querySelector('#scSum');
   const find = overlay.querySelector('#scFind');
   const foldBtn = overlay.querySelector('#scFold');
+  if (cfg.single) {   // 하나만 고르는 모드 — 줄을 누르면 바로 정해지고 닫힌다
+    overlay.querySelectorAll('.scope-item input').forEach(i => i.style.display = 'none');
+    overlay.querySelectorAll('.scope-item').forEach(row => row.addEventListener('click', ev => {
+      ev.preventDefault();
+      const id = row.querySelector('input').dataset.id;
+      if (overlay.parentNode) document.body.removeChild(overlay);
+      cfg.onOk([id]);
+    }));
+  }
   const cntOf = id => (all.find(x => String(x.id) === id) || { cnt: 0 }).cnt;
   // 검색에 걸린 항목 (접혀 있어도 '이 묶음 전체'·'전체 선택'의 대상이 된다)
   const hits = () => {
@@ -2110,8 +2117,9 @@ function openMultiPicker(cfg) {
   };
   applyView();
   boxes.forEach(b => b.addEventListener('change', applyView));
-  overlay.querySelector('#scAll').addEventListener('click', () => { hits().forEach(r => r.querySelector('input').checked = true); applyView(); });
-  overlay.querySelector('#scNone').addEventListener('click', () => { hits().forEach(r => r.querySelector('input').checked = false); applyView(); });
+  const allBtn = overlay.querySelector('#scAll'), noneBtn = overlay.querySelector('#scNone');
+  if (allBtn) allBtn.addEventListener('click', () => { hits().forEach(r => r.querySelector('input').checked = true); applyView(); });
+  if (noneBtn) noneBtn.addEventListener('click', () => { hits().forEach(r => r.querySelector('input').checked = false); applyView(); });
   if (foldBtn) foldBtn.addEventListener('click', () => {
     if (folded.size) folded.clear();
     else cfg.groups.forEach((g, gi) => { if (g.label) folded.add(gi); });
@@ -2137,7 +2145,8 @@ function openMultiPicker(cfg) {
   const close = () => { if (overlay.parentNode) document.body.removeChild(overlay); };
   overlay.querySelector('#dlgCancel').addEventListener('click', close);
   overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
-  overlay.querySelector('#dlgOk').addEventListener('click', () => {
+  const okBtn = overlay.querySelector('#dlgOk');
+  if (okBtn) okBtn.addEventListener('click', () => {
     const picked = boxes.filter(b => b.checked).map(b => b.dataset.id);
     if (!picked.length) { applyView(); return; }
     close();
@@ -2145,6 +2154,28 @@ function openMultiPicker(cfg) {
   });
 }
 
+// 단어장 고르기 팝업 — 폰의 기본 선택창은 65개짜리 목록에 불편하고
+// 안드로이드에서 다시 눌러도 닫히지 않아 우리 팝업으로 대신한다
+function openListPicker() {
+  const names = myListNames();
+  if (!names.length) return;
+  const groups = groupListNames(names).map(g => ({
+    label: g.label,
+    items: g.items.map(n => {
+      const c = markCounts(groupWords(n));
+      return { id: n, label: '📒 ' + shortListName(n, g.label), cnt: groupCount(n),
+               cntText: groupCount(n) + '개' + (c.known ? ' · 😊' + c.known : '') };
+    })
+  }));
+  openMultiPicker({
+    title: '📚 단어장 고르기', single: true, groups,
+    selected: new Set([myList]),
+    onOk: picked => {
+      myList = picked[0]; store.lastGroup = myList; saveStore();
+      renderMy();
+    }
+  });
+}
 // 범위 다중 선택 팝업 (내단어: 단어장 목록 / 공통: 현재 레벨 단원 목록)
 function openScopePicker() {
   const inMy = (mode === 'my' || !!studyGroup);
