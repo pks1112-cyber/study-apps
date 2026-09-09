@@ -655,7 +655,7 @@
   .ppos { font-size: 10.5px; color: #999; margin-left: 3px; }
   .pc { color: #666; flex-shrink: 0; }
   .pb { flex: 1; border-bottom: 1px solid #bbb; min-width: 60px; height: 20px; }
-  .pans .pcols { gap: 20px; }
+  .pans .pcols { gap: 26px; }
   .pans .pq { font-size: 12px; padding: 2px 0; }
   .pa { color: #1d4ed8; font-weight: 700; }
   .ppage-no { text-align: right; font-size: 11px; color: #999; margin-top: 10px; }
@@ -672,7 +672,7 @@
     body.printing .main-card { box-shadow: none; border: 0; padding: 0; margin: 0; max-width: none; width: auto; border-radius: 0; }
     body.printing .psheet { border: 0; border-radius: 0; padding: 0; margin: 0; }
     body.printing .pcols { flex-direction: row !important; gap: 28px !important; }
-    body.printing .pans .pcols { gap: 20px !important; }
+    body.printing .pans .pcols { gap: 26px !important; }
     @page { size: A4; margin: 11mm 12mm; }
   }
   .scope-item .sc-cnt { margin-left: auto; color: #94a3b8; font-size: 12.5px; flex-shrink: 0; }
@@ -2271,7 +2271,7 @@ function startPrintFromReview() {
 }
 // A4 한 장에 담는 양을 고정한다 (자동 배치에 맡기면 장이 바뀔 때 번호가 튀어서)
 const PRINT_Q_PER_PAGE = 40;     // 문제지: 2단 × 20문항
-const PRINT_A_PER_PAGE = 108;    // 정답지: 3단 × 36개
+const PRINT_A_PER_PAGE = 80;     // 정답지: 2단 × 40개
 function printChunk(arr, size) {
   const out = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -2342,7 +2342,7 @@ function renderPrintSheet(el) {
     html += `<div class="psheet pans">
       <h2>정답${aPages.length > 1 ? ` (${pi + 1}/${aPages.length})` : ''}</h2>
       <p class="psub">${esc(scope)} · 문제지와 같은 번호 순서예요</p>
-      ${printColsHtml(page, pi * PRINT_A_PER_PAGE + 1, 3, aRow)}
+      ${printColsHtml(page, pi * PRINT_A_PER_PAGE + 1, 2, aRow)}
     </div>`;
   });
   el.innerHTML = html;
