@@ -1,0 +1,19 @@
+{
+  "name": "감자배구",
+  "short_name": "감자배구",
+  "lang": "ko",
+  "dir": "ltr",
+  "start_url": "./potato-volleyball.html",
+  "scope": "./",
+  "id": "./potato-volleyball.html",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#f59e0b",
+  "background_color": "#ffe8d6",
+  "categories": ["education"],
+  "icons": [
+    { "src": "icons/game-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/game-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/game-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

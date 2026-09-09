@@ -1,0 +1,19 @@
+{
+  "name": "수학 공식 마스터",
+  "short_name": "수학공식",
+  "lang": "ko",
+  "dir": "ltr",
+  "start_url": "./math-formula.html",
+  "scope": "./",
+  "id": "./math-formula.html",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0d9488",
+  "background_color": "#f7fdfc",
+  "categories": ["education"],
+  "icons": [
+    { "src": "icons/math-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/math-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/math-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

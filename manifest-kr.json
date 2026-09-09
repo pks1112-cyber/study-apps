@@ -1,0 +1,19 @@
+{
+  "name": "한국사 마스터",
+  "short_name": "한국사",
+  "lang": "ko",
+  "dir": "ltr",
+  "start_url": "./korean-history.html",
+  "scope": "./",
+  "id": "./korean-history.html",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#c2410c",
+  "background_color": "#fdf9f4",
+  "categories": ["education"],
+  "icons": [
+    { "src": "icons/kr-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/kr-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/kr-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
