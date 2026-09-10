@@ -464,6 +464,7 @@
   .imp-row.is-warn { background: #fffbeb; }
   .imp-main { flex: 1; min-width: 0; }
   .imp-w { font-weight: 700; color: #1e293b; overflow-wrap: anywhere; }
+  .imp-w .ipa { color: #94a3b8; font-weight: 500; font-size: 12.5px; }
   .imp-m { font-size: 13px; color: #475569; margin-top: 1px; overflow-wrap: anywhere; }
   .imp-flag { font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 6px; background: #f1f5f9; color: #64748b; white-space: nowrap; }
   .is-bad .imp-flag { background: #fee2e2; color: #b91c1c; }
@@ -1350,26 +1351,64 @@ function wbHeading(line) {
   return null;
 }
 function wbValidWord(w) { return /^[A-Za-z][A-Za-z0-9 '.\-~()\/,!?&]*$/.test(w) && w.length <= 60; }
+// 복사해 온 글의 겉모양 정리: 전각 기호·줄바꿈 없는 공백·마크다운 굵은 글씨
+function wbNorm(s) {
+  return String(s == null ? '' : s).replace(/[\u00a0\u3000]/g, ' ')
+    .replace(/[：；，｜（）［］／－]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/ㆍ/g, '·').replace(/\*\*|`/g, '');
+}
+// 단어가 아닌 줄: 쪽번호, "Word List" 같은 머리 제목, 카톡 사진·이모티콘 자리
+const WB_NOISE = /^(?:p\.?\s*\d{1,4}|\d{1,4}\s*(?:p|쪽|페이지)\.?|page\s*\d{1,4}|-\s*\d{1,4}\s*-|\d{1,4}\s*\/\s*\d{1,4}|word\s*list|vocabulary(?:\s*list)?|vocab(?:\s*list)?|voca|key\s*words?|new\s*words?|word\s*bank|단어\s*(?:목록|리스트|장|정리)|어휘(?:\s*목록)?|사진(?:\s*\d+장)?|동영상|이모티콘|음성\s*메시지)\s*:?$/i;
+// 안내·인사 문장 ("다음은 단어 목록입니다.", "범위 단어예요~") — 존댓말 끝맺음만 본다 (제목 "음력7월!" 은 문장이 아님)
+function wbProse(s) { return /(?:니다|예요|에요|해요|세요|게요|어요|아요|네요|군요|죠|거든요|래요)\s*[.!?~…]*\s*$/.test(String(s).trim()); }
+// 한 줄에 두 단어 (2단 표를 사진에서 복사): 뜻 안에 소문자 영어 낱말이 나오고 그 뒤에 또 한글이 오면 거기서 나눈다
+function wbSplitPairs(m) {
+  const toks = String(m).split(/\s+/).filter(Boolean), parts = [];
+  let cur = [], depth = 0, seenHan = false;
+  toks.forEach((tk, i) => {
+    const startsWord = /^[a-z][A-Za-z'\-]*[.,]?$/.test(tk) && tk.replace(/[^A-Za-z]/g, '').length >= 2;
+    if (depth === 0 && seenHan && startsWord && toks.slice(i + 1).some(x => WB_HANGUL.test(x))) { parts.push(cur.join(' ')); cur = []; seenHan = false; }
+    cur.push(tk);
+    depth = Math.max(0, depth + (tk.match(/[(\[]/g) || []).length - (tk.match(/[)\]]/g) || []).length);
+    if (WB_HANGUL.test(tk)) seenHan = true;
+  });
+  parts.push(cur.join(' '));
+  return parts;
+}
 // 영어 덩어리 E 와 뜻 덩어리 M 을 다듬어 한 줄로
 function wbFinish(E, M, lead) {
-  let w = String(E || '').replace(/[’‘`]/g, "'").replace(/[\s:=|→\-–—\/,·…]+$/, '').trim();
+  let w = String(E || '').replace(/[’‘`]/g, "'");
   let m = String(M || '').replace(/^[\s:=|→\-–—\/,·…]+/, '').trim();
-  const tail = w.match(/\s*([~∼]+|\.{2,}|…)$/);          // "look forward to ~" 의 ~ 는 뜻 쪽 기호
+  let ipa = '';
+  const isIpa = s => !wbPosList(s.replace(/[\s\[\]]/g, ''));
+  // 발음기호 [ǽpl] /ˈæpl/ 는 버리지 않고 따로 떼어 둔다 (끝 기호를 지우기 전에 해야 /ˈæpl/ 의 닫는 / 가 남아 있다)
+  w = w.replace(/\s*\[[^\]가-힣]{1,40}\]/g, s => (isIpa(s) ? ((ipa = ipa || s.trim()), ' ') : s))
+    .replace(/\s*\/[^\/]{1,40}\//g, s => (/[^\x00-\x7F]/.test(s) ? ((ipa = ipa || s.trim()), ' ') : s))
+    .replace(/[\s:=|→\-–—\/,·…]+$/, '').replace(/\s+/g, ' ').trim();
+  const tail = w.match(/\s*([~∼～]+|\.{2,}|…)$/);          // "look forward to ~" 의 ~ 는 뜻 쪽 기호
   if (tail) { w = w.slice(0, w.length - tail[0].length).trim(); if (m) m = tail[1] + m; }
+  const num = w.match(/\s((?:\d{1,2}[.)])|[①-⑳]|\(\d{1,2}\))$/);   // "apple 1. 사과 2. 애플사" 의 1. 은 뜻 쪽 번호
+  if (num && m) { w = w.slice(0, num.index).trim(); m = num[1] + ' ' + m; }
   let unsure = false;
   const q = w.match(/\s*\(\s*\?\s*\)$/);                  // AI 가 붙인 (?) = 확실하지 않음
   if (q) { unsure = true; w = w.slice(0, w.length - q[0].length).trim(); }
   const pe = wbPeelPosEnd(w), ps = wbPeelPosStart(m);
-  return { w: pe.w.replace(/\s+/g, ' '), p: wbMergePos(wbMergePos(lead, pe.p), ps.p), m: ps.m.replace(/\s+/g, ' '), unsure };
+  let mm = ps.m;
+  const mi = mm.match(/^\[[^\]가-힣]{1,40}\]\s*/);          // "명 [ǽpl] 사과" 처럼 뜻 앞에 온 발음기호
+  if (mi && isIpa(mi[0])) { ipa = ipa || mi[0].trim(); mm = mm.slice(mi[0].length); }
+  return { w: pe.w.replace(/\s+/g, ' '), p: wbMergePos(wbMergePos(lead, pe.p), ps.p), m: mm.replace(/\s+/g, ' '), unsure, ipa };
 }
 // 한 줄 → {w,p,m} | {heading} | {kor} | null
 function wbParseLine(raw) {
-  let t = String(raw || '').replace(/\u00a0/g, ' ').trim();
-  if (!t) return null;
+  let t = wbNorm(raw).trim();
+  // 카톡에서 복사할 때 붙는 이름·시간: "[민아엄마] [오후 3:12] ...", 대화 내보내기 "2026년 9월 11일 오후 3:12, 민아엄마 : ..."
+  t = t.replace(/^\[[^\]]{1,20}\]\s*\[(?:오전|오후|AM|PM)?\s*\d{1,2}:\d{2}(?:\s*(?:AM|PM))?\]\s*/i, '')
+    .replace(/^\d{4}\s*[.년]\s*\d{1,2}\s*[.월]\s*\d{1,2}\s*[.일]?\s*(?:오전|오후)\s*\d{1,2}:\d{2},\s*[^:]{1,20}?\s*:\s*/, '').trim();
+  if (!t || /^[-=]{3,}/.test(t) || WB_NOISE.test(t)) return null;
   const hd = wbHeading(t);
   if (hd) return { heading: hd };
   t = wbStripNum(t).trim();
-  if (!t || !/[A-Za-z가-힣]/.test(t)) return null;
+  if (!t || !/[A-Za-z가-힣]/.test(t) || WB_NOISE.test(t)) return null;
   let lead = '';
   const lp = wbPeelPosStart(t);                           // 줄 맨 앞 품사: "동 run 달리다"
   if (lp.p && /^[A-Za-z]/.test(lp.m)) { lead = lp.p; t = lp.m; }
@@ -1377,41 +1416,69 @@ function wbParseLine(raw) {
   if (eq > 0 && WB_LATIN.test(t.slice(0, eq)) && !WB_HANGUL.test(t.slice(0, eq))) return wbFinish(t.slice(0, eq), t.slice(eq + 1), lead);
   const h = t.search(WB_HANGUL);
   if (h < 0) return WB_LATIN.test(t) ? wbFinish(t, '', lead) : null;
-  if (!WB_LATIN.test(t.slice(0, h))) {                    // 한글이 먼저: "사과 apple" 또는 뜻만 있는 줄
-    let lh = t.length - 1;
+  if (!WB_LATIN.test(t.slice(0, h))) {                    // 한글이 먼저
+    const fl = t.search(/[A-Za-z]/);
+    if (fl > 0 && WB_HANGUL.test(t.slice(fl))) {          // "중간고사 1과 apple 명 사과" — 엑셀 칸이 띄어쓰기로 바뀐 경우
+      let s = fl;
+      while (s > 0 && !/\s/.test(t[s - 1])) s--;
+      const prefix = t.slice(0, s).trim(), r = prefix ? wbParseLine(t.slice(s)) : null;
+      if (r && r.w && r.m) return Object.assign(r, { bookPrefix: prefix });
+    }
+    let lh = t.length - 1;                                // "사과 apple" 또는 뜻만 있는 줄
     while (lh >= 0 && !WB_HANGUL.test(t[lh])) lh--;
-    const after = t.slice(lh + 1).replace(/^[\s)\]）:=|→\-–—,·]+/, '');
+    const after = t.slice(lh + 1).replace(/^[\s)\]:=|→\-–—,·]+/, '');
     if (/^[A-Za-z]/.test(after)) return wbFinish(after, t.slice(0, lh + 1), lead);
     return { kor: t };
   }
-  // 영어가 먼저: 한글이 시작되는 '낱말'부터 뜻 ("regard A as B A를 B로 여기다" → "A를"부터)
-  let j = h;
+  let j = h;                                              // 영어가 먼저: 한글이 시작되는 '낱말'부터 뜻 ("A를 B로" 는 "A를"부터)
   while (j > 0 && !WB_SEP.test(t[j - 1])) j--;
   if (!WB_LATIN.test(t.slice(0, j))) j = h;
   return wbFinish(t.slice(0, j), t.slice(j), lead);
 }
 // 여러 줄 글 → [{b,w,p,m,unsure}]  (b = 단어장 이름, 없으면 '')
 function wbParseText(text, sheetBook) {
-  const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n');
+  let lines = String(text || '').replace(/\r\n?/g, '\n').split('\n');
+  // 마크다운 표(AI 답): 구분선은 버리고 | 칸 | 은 탭으로
+  lines = lines.filter(l => !/^\s*\|?\s*:?-{3,}:?\s*(?:\|\s*:?-{3,}:?\s*)*\|?\s*$/.test(l))
+    .map(l => ((/^\s*\|.*\|\s*$/.test(l) && (l.match(/\|/g) || []).length >= 3) ? l.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim()).join('\t') : l));
   const filled = lines.filter(l => l.trim()).length;
   const tabbed = lines.filter(l => l.includes('\t')).length;
   if (tabbed >= 2 && tabbed >= filled * 0.5) return wbParseTable(lines.map(l => l.split('\t')), sheetBook);
+  const items = lines.map(l => wbParseLine(l.includes('\t') ? l.replace(/\t+/g, ' ') : l));
+  const prefixCount = {};
+  items.forEach(it => { if (it && it.bookPrefix) prefixCount[it.bookPrefix] = (prefixCount[it.bookPrefix] || 0) + 1; });
   const out = [];
-  let book = sheetBook || '', queue = [];                 // queue: 아직 뜻을 못 만난 영어 줄
-  for (const line of lines) {
-    const it = line.includes('\t') ? wbParseLine(line.replace(/\t+/g, ' ')) : wbParseLine(line);
+  let book = sheetBook || '', queue = [], since = 0;       // queue: 뜻을 아직 못 만난 영어 줄 · since: 제목 뒤로 넣은 줄 수
+  for (const it of items) {
     if (!it) continue;
-    if (it.heading) { book = it.heading; queue = []; continue; }
+    if (it.heading) { book = it.heading; queue = []; since = 0; continue; }
     if (it.kor !== undefined) {
-      const pend = queue.shift();                        // 사진에서 복사해 영어·뜻이 다른 줄로 나온 경우 차례대로 짝짓기
-      if (pend) { const ps = wbPeelPosStart(it.kor); pend.m = ps.m; pend.p = wbMergePos(pend.p, ps.p); }
-      else if (out.length && out[out.length - 1].m) out[out.length - 1].m += ' ' + it.kor;   // 뜻이 두 줄로 넘어간 경우
-      else out.push({ b: book, w: '', p: '', m: it.kor, unsure: false });
+      if (wbProse(it.kor)) continue;                     // 안내·인사 문장
+      const pend = queue.shift();                        // 영어 줄과 뜻 줄이 따로 온 경우 차례대로 짝짓기
+      if (pend) { const ps = wbPeelPosStart(it.kor); pend.m = ps.m; pend.p = wbMergePos(pend.p, ps.p); continue; }
+      if (!since) continue;                              // 단어가 나오기 전의 한글 줄 = 제목·설명
+      const last = out[out.length - 1];
+      if (last && last.m) { last.m += ' ' + it.kor; last.note = '다음 줄을 뜻에 이었어요'; continue; }
+      out.push({ b: book, w: '', p: '', m: it.kor, unsure: false, ipa: '', note: '' }); since++;
       continue;
     }
-    const row = { b: book, w: it.w, p: it.p, m: it.m, unsure: it.unsure };
-    out.push(row);
-    if (!row.m) queue.push(row); else queue = [];
+    let b = book, note = '';
+    if (it.bookPrefix) {                                 // 두 번 이상 나오거나 숫자가 있으면 단어장 이름
+      if (prefixCount[it.bookPrefix] >= 2 || /\d/.test(it.bookPrefix)) b = it.bookPrefix;
+      else note = '앞의 "' + it.bookPrefix + '" 는 뺐어요';
+    }
+    const parts = it.m ? wbSplitPairs(it.m) : [''];
+    const row = { b, w: it.w, p: it.p, m: parts[0], unsure: it.unsure, ipa: it.ipa || '', note };
+    const extra = [];
+    for (const part of parts.slice(1)) {
+      const e = wbParseLine(part);
+      if (e && e.w && e.m && wbValidWord(e.w)) extra.push({ b, w: e.w, p: e.p, m: e.m, unsure: e.unsure, ipa: e.ipa || '', note: '한 줄을 나눠서 넣었어요' });
+      else row.m += ' ' + part;
+    }
+    if (extra.length && !row.note) row.note = '한 줄을 나눠서 넣었어요';
+    [row, ...extra].forEach(x => { out.push(x); since++; });
+    const lastRow = extra.length ? extra[extra.length - 1] : row;
+    if (!lastRow.m) queue.push(lastRow); else queue = [];
   }
   return out;
 }
@@ -1449,14 +1516,16 @@ function wbGuessCols(data, ncol) {
 }
 // 표(엑셀 시트·탭 복사·CSV) → 줄들
 function wbParseTable(grid, sheetBook) {
-  const data = grid.map(r => (r || []).map(c => String(c == null ? '' : c).replace(/\u00a0/g, ' ').trim())).filter(r => r.some(Boolean));
+  const data = grid.map(r => (r || []).map(c => wbNorm(c).trim())).filter(r => r.some(Boolean));
   if (!data.length) return [];
   const ncol = Math.max(...data.map(r => r.length));
   let col = null, start = 0;
-  const hdr = data[0];
-  const find = key => hdr.findIndex(c => c && WB_HDR[key].test(c.replace(/\s+/g, ' ')));
-  const hw = find('w'), hm = find('m'), hp = find('p');
-  if (hw >= 0 && (hm >= 0 || hp >= 0)) { col = { w: hw, m: hm, p: hp, b: find('b') }; start = 1; }
+  for (let hi = 0; hi < Math.min(3, data.length) && !col; hi++) {   // 제목 줄은 맨 위 몇 줄 안에서 찾는다 (그 위는 표 제목·AI 머리말)
+    const hdr = data[hi];
+    const find = key => hdr.findIndex(c => c && WB_HDR[key].test(c.replace(/\s+/g, ' ')));
+    const hw = find('w'), hm = find('m'), hp = find('p');
+    if (hw >= 0 && (hm >= 0 || hp >= 0)) { col = { w: hw, m: hm, p: hp, b: find('b') }; start = hi + 1; }
+  }
   if (!col) col = wbGuessCols(data, ncol);
   if (col.w < 0) return wbParseText(data.map(r => r.filter(Boolean).join(' ')).join('\n'), sheetBook);
   const wordRows = data.slice(start).filter(r => r[col.w]);
@@ -1470,6 +1539,7 @@ function wbParseTable(grid, sheetBook) {
     // 한 칸만 차 있고 뜻이 없는 줄 = 제목 ("Day 3", "1. The Secret Life of Bees", "음식 단어")
     if (filled.length === 1 && !cell(col.m) && !cell(col.p)) {
       const only = r[filled[0]], hd = wbHeading(only);
+      if (WB_NOISE.test(only) || (!out.length && wbProse(only))) continue;   // 쪽번호·머리 제목, 단어 나오기 전 안내 문장
       if (hd || filled[0] !== col.w || WB_HANGUL.test(only) || only.split(/\s+/).length >= 4 || (meaningRich && i === start)) { heading = (hd || only).replace(/[:\s]+$/, ''); continue; }   // 뜻이 거의 다 있는 시트의 첫 한 칸 줄 = 단원 제목
     }
     let w = cell(col.w), m = cell(col.m), p = wbPosList(cell(col.p)) || '', unsure = false;
@@ -1633,7 +1703,7 @@ function bindImpResult(body) {
   });
 }
 function startImpReview(rows, src) {
-  impRows = rows.map(r => ({ b: r.b || '', w: r.w || '', p: r.p || '', m: r.m || '', unsure: !!r.unsure }));
+  impRows = rows.map(r => ({ b: r.b || '', w: r.w || '', p: r.p || '', m: r.m || '', unsure: !!r.unsure, ipa: r.ipa || '', note: r.note || '' }));
   impSrc = src || '';
   impDefault = impDefault || editList || scopeSingleGroup() || '';
   impOnlyIssue = false; impResult = null;
@@ -1703,11 +1773,12 @@ function wbSaveRows(rows) {
       if (o && !o.m && nm) o.m = nm;
       res.dup++; continue;
     }
-    if (!o) { o = { w, m: nm, p: r.p || '', ipa: '', ex: '', exk: '' }; store.myWords.unshift(o); res.fresh++; }
+    if (!o) { o = { w, m: nm, p: r.p || '', ipa: r.ipa || '', ex: '', exk: '' }; store.myWords.unshift(o); res.fresh++; }
     else {
       if (nm && !o.m) o.m = nm;
       else if (nm && !wbHasMeaning(o.m, nm)) { o.m = o.m + '; ' + nm; res.merged++; }
       if (r.p) o.p = wbMergePos(o.p, r.p);
+      if (r.ipa && !o.ipa) o.ipa = r.ipa;
     }
     arr.push(myKey(o.w)); res.words++;
   }
@@ -1811,6 +1882,7 @@ function wbRowIssue(r) {
   if (!r.w) return ['bad', '영어 없음'];
   if (!wbValidWord(r.w)) return ['bad', '영어 확인'];
   if (r.unsure) return ['warn', '철자 확인 (?)'];
+  if (r.note) return ['warn', r.note];
   if (!r.m) return ['warn', '뜻 없음'];
   const name = wbBookName(r.b);
   if (name && store.groups[name] && store.groups[name].some(k => wbKeyWord(k) === normW(r.w))) return ['info', '이미 있음'];
@@ -1846,7 +1918,7 @@ function renderImpReview() {
             <input class="ie-m" value="${wbAttr(r.m)}" placeholder="뜻" autocomplete="off">
             <div class="ie-btns"><button class="mini ie-ok">완료</button></div></div>`
         : `<div class="imp-row${iss ? ' is-' + iss[0] : ''}" data-i="${i}">
-            <div class="imp-main"><div class="imp-w">${r.w ? esc(r.w) : '<span class="no-mean">(영어 없음)</span>'} ${r.p ? posTag(r.p) : ''}${iss ? ` <span class="imp-flag">${iss[1]}</span>` : ''}</div>
+            <div class="imp-main"><div class="imp-w">${r.w ? esc(r.w) : '<span class="no-mean">(영어 없음)</span>'}${r.ipa ? ` <span class="ipa">${esc(r.ipa)}</span>` : ''} ${r.p ? posTag(r.p) : ''}${iss ? ` <span class="imp-flag">${iss[1]}</span>` : ''}</div>
             <div class="imp-m">${r.m ? esc(r.m) : '<span class="no-mean">뜻 없음</span>'}</div></div>
             <button class="icon-btn imp-del" data-i="${i}" title="이 줄 빼기">✕</button></div>`;
     }
@@ -1871,7 +1943,8 @@ function renderImpReview() {
     const r = rows[+ed.dataset.i];
     const f = wbFinish(ed.querySelector('.ie-w').value, ed.querySelector('.ie-m').value, '');
     const pv = ed.querySelector('.ie-p').value.trim();
-    r.w = f.w; r.m = f.m; r.p = wbMergePos(pv ? (wbPosList(pv) || '') : '', f.p); r.unsure = false; r.editing = false;
+    r.w = f.w; r.m = f.m; r.p = wbMergePos(pv ? (wbPosList(pv) || '') : '', f.p); r.unsure = false; r.note = ''; r.editing = false;
+    if (f.ipa) r.ipa = f.ipa;
   });
   const redraw = () => { commitEditing(); renderImpReview(); };
   // 이름 칸은 글자마다 다시 그리지 않는다 (다시 그리면 누르려던 버튼이 사라져서) — 값만 기억, 엔터에 반영
@@ -1912,7 +1985,7 @@ function renderImpReview() {
       if (d) { d.scrollIntoView({ block: 'center' }); d.focus(); }
       return;
     }
-    impResult = wbSaveRows(liveRows.map(r => ({ b: wbBookName(r.b), w: r.w, p: r.p, m: r.m })));
+    impResult = wbSaveRows(liveRows.map(r => ({ b: wbBookName(r.b), w: r.w, p: r.p, m: r.m, ipa: r.ipa })));
     if (!impSrc && impResult.words) addDraft = '';
     impRows = null;
     renderEdit();
@@ -1971,6 +2044,10 @@ function openAddHelp(focus) {
       ${ex('<code>run (v.) 달리다</code> <code>run 동 달리다</code>', '품사 표시는 품사 칸으로')}
       ${ex('<code>look forward to ~을 고대하다</code>', '숙어는 한 덩어리로')}
       ${ex('<code>사과 apple</code>', '뜻이 먼저여도 돼요')}
+      ${ex('<code>apple [ǽpl] 명 사과</code>', '발음기호는 따로 떼어 저장해요')}
+      ${ex('<code>apple 사과 banana 바나나</code>', '한 줄에 두 단어(2단 표)도 나눠요 — 확인 표에 표시돼요')}
+      ${ex('카톡 복사 <code>[민아엄마] [오후 3:12] apple 사과</code>', '이름·시간은 알아서 빼요')}
+      ${ex('AI 답의 머리말 · <code>**굵은 글씨**</code> · 표', '안내 문장과 꾸밈은 빼고 단어만')}
       ${ex('<code>apple</code> 다음 줄에 <code>사과</code>', '사진에서 복사해 영어·뜻이 다른 줄로 나와도 차례대로 짝지어요')}
       ${ex('<code>Day 3</code> <code>Unit 2</code> <code>3과</code>', '제목 줄은 단어장 이름이 돼요')}
       ${ex('엑셀·구글 시트에서 복사한 칸', '칸 그대로 알아봐요')}
