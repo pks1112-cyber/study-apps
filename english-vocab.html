@@ -694,7 +694,7 @@
   </div>
   <div class="hero-text">
     <h1>영단어 마스터</h1>
-    <p class="tagline">초5 ~ 고3 필수 영단어 2,000 · 발음기호 · 원어민 발음 · 예문</p>
+    <p class="tagline">초5 ~ 고3 필수 영단어 2,000 · 발음기호 · 발음 듣기 · 예문</p>
     <div class="hero-stats">
       <span class="hstat">😊 외운 단어 <b id="hMastered">0</b></span>
       <span class="hstat">🎯 정답률 <b id="hAcc">0%</b></span>
@@ -704,7 +704,6 @@
     <div class="voice-bar">
       <span class="vb-lb">🔊 발음</span>
       <select id="srcSel">
-        <option value="dict">원어민 사전 발음 (추천)</option>
         <option value="google">구글 번역 발음</option>
         <option value="browser">내 컴퓨터 음성</option>
       </select>
@@ -761,7 +760,7 @@
 <div class="info">
   단어를 클릭하면 발음이 들려요 🔊 · 품사: <span class="pos pos-n">명</span> 명사 <span class="pos pos-v">동</span> 동사 <span class="pos pos-a">형</span> 형용사 <span class="pos pos-d">부</span> 부사 <span class="pos pos-x">전·접</span> 전치사/접속사<br>
   😊 외움 / 😖 못외움은 직접 눌러서 표시해요 · 모든 기록은 자동 저장<br>
-  원어민 사전 발음·구글 발음은 인터넷 연결이 필요해요 (안 되면 자동으로 다음 발음 소스로 넘어갑니다)<br>
+  구글 발음은 인터넷 연결이 필요해요 (안 되면 자동으로 내 컴퓨터 음성으로 넘어갑니다)<br>
   © 2026 Mina &amp; Juho. All rights reserved. 무단 복제·배포 금지
 </div>
 
@@ -1631,14 +1630,14 @@ function updateHeroStats() {
 }
 
 // ===== Pronunciation system =====
-// Sources: 'dict' (real human recordings from Free Dictionary API / Wiktionary)
-//          'google' (Google Translate TTS), 'browser' (built-in speechSynthesis)
-// Fallback chain: dict -> google -> browser
+// Sources: 'google' (Google Translate TTS), 'browser' (built-in speechSynthesis)
+// Fallback chain: google -> browser
 const ttsOK = 'speechSynthesis' in window;
 const VOICE_KEY = 'en-vocab-voice';
 const SRC_KEY = 'en-vocab-audiosrc';
 let enVoice = null;
-let audioSrc = localStorage.getItem(SRC_KEY) || 'dict';
+// 원어민 사전 발음(dict)은 2026-09-10에 뺐다. 예전에 그걸 골라둔 기기는 구글 발음으로 넘긴다
+let audioSrc = localStorage.getItem(SRC_KEY) === 'browser' ? 'browser' : 'google';
 
 const player = new Audio();
 let speakSeq = 0;              // 발음 요청 세대 번호 (늦게 온 옛 요청 무시용)
@@ -1647,64 +1646,8 @@ function stopAudio() {
   if (ttsOK) { try { speechSynthesis.cancel(); } catch (e) {} }
 }
 
-// --- real human audio from dictionary (cached) ---
-const DICT_CACHE_KEY = 'en-vocab-dictcache';
-let dictCache = {};
-try { dictCache = JSON.parse(localStorage.getItem(DICT_CACHE_KEY)) || {}; } catch (e) {}
-function saveDictCache() {
-  try { localStorage.setItem(DICT_CACHE_KEY, JSON.stringify(dictCache)); } catch (e) {}
-}
-async function getDictAudio(word) {
-  if (word in dictCache) return dictCache[word];
-  let best = null;
-  try {
-    // 2.5초 안에 답이 없으면 포기하고 대체 발음으로 — 느린 조회에 발음이 붙잡히지 않게
-    const ac = ('AbortController' in window) ? new AbortController() : null;
-    const timer = ac ? setTimeout(() => ac.abort(), 2500) : null;
-    const r = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word), ac ? { signal: ac.signal } : undefined)
-      .finally(() => { if (timer) clearTimeout(timer); });
-    if (r.ok) {
-      const data = await r.json();
-      outer:
-      for (const entry of data) {
-        for (const ph of (entry.phonetics || [])) {
-          if (!ph.audio) continue;
-          if (/-us\.mp3/i.test(ph.audio)) { best = ph.audio; break outer; }
-          if (!best) best = ph.audio;
-        }
-      }
-    } else if (r.status !== 404) return null;   // 429/5xx 같은 일시 오류는 캐시하지 않고 다음에 재시도
-  } catch (e) { return null; }   // network error: don't cache, retry later
-  dictCache[word] = best;        // null = known to have no audio (404 확인된 경우만)
-  saveDictCache();
-  return best;
-}
-// 과거에 429 응답이 '음원 없음'으로 잘못 저장된 항목 청소 — 시작 시 1회, null 항목은 재시도 기회를 준다
-(function purgeNullDictCache() {
-  let n = 0;
-  for (const k in dictCache) if (dictCache[k] === null) { delete dictCache[k]; n++; }
-  if (n) saveDictCache();
-})();
-// 리스트 렌더 때 한꺼번에 수십 개를 조회하면 429가 나므로 3개씩만 동시 조회
-let pfQueue = [], pfActive = 0;
-function pumpPrefetch() {
-  while (pfActive < 3 && pfQueue.length) {
-    const w = pfQueue.shift();
-    if (w in dictCache) continue;
-    pfActive++;
-    getDictAudio(w).catch(() => {}).then(() => { pfActive--; pumpPrefetch(); });
-  }
-}
-function prefetchDictAudio(words) {
-  if (audioSrc !== 'dict') return;
-  words.forEach(w => {
-    if (/^[A-Za-z'-]+$/.test(w)) {
-      const lw = w.toLowerCase();
-      if (!(lw in dictCache) && !pfQueue.includes(lw)) pfQueue.push(lw);
-    }
-  });
-  pumpPrefetch();
-}
+// 옛 원어민 발음 캐시는 이제 안 쓰니 지워서 저장 공간을 돌려받는다
+try { localStorage.removeItem('en-vocab-dictcache'); } catch (e) {}
 
 function playUrl(url, seq) {
   return new Promise(res => {
@@ -1791,14 +1734,7 @@ let googleFails = 0;   // 구글 TTS가 막힌 환경(iOS 등)에서 매번 기�
 async function pronounce(text) {
   const my = ++speakSeq;
   stopAudio();
-  const single = /^[A-Za-z'-]+$/.test(text.trim());
-  if (audioSrc === 'dict' && single) {
-    const url = await getDictAudio(text.trim().toLowerCase());
-    if (my !== speakSeq) return;
-    if (url && await playUrl(url, my)) return;
-    if (my !== speakSeq) return;
-  }
-  if ((audioSrc === 'dict' || audioSrc === 'google') && googleFails < 2) {
+  if (audioSrc === 'google' && googleFails < 2) {
     if (await playUrl(googleTtsUrl(text), my)) { googleFails = 0; return; }
     if (my !== speakSeq) return;
     googleFails++;
@@ -1953,7 +1889,6 @@ function renderTable() {
     };
     step();
   });
-  prefetchDictAudio(shown.map(x => x.w));
 }
 
 // ===== Mode: flashcards =====

@@ -303,73 +303,28 @@ function addReview(key) { if (!store.wrong.includes(key)) store.wrong.push(key);
 function addReviewClear(key) { const i = store.wrong.indexOf(key); if (i >= 0) store.wrong.splice(i, 1); }
 function reviewItems() { return store.wrong.map(k => INDEX[k]).filter(Boolean); }
 
-// ===== 발음 (영단어 앱과 동일: 원어민 음원 → 구글 TTS → 기기 음성) =====
+// ===== 발음 (영단어 앱과 동일: 구글 TTS → 기기 음성) =====
 const ttsOK = 'speechSynthesis' in window;
 const player = new Audio();
 player.preload = 'auto';
 let enVoice = null;
-const audioCache = {};   // url -> 미리 받아둔 Audio (소리 파일까지 받아둬 즉시 재생)
 let curAudio = null;     // 현재 재생 중인 오디오 요소
-function preloadAudio(url) {
-  if (!url || audioCache[url]) return;
-  if (Object.keys(audioCache).length >= 220) return;   // 메모리 상한
-  const a = new Audio(); a.preload = 'auto'; a.src = url; audioCache[url] = a;
-}
 function stopAudio() { try { if (curAudio) { curAudio.onended = null; curAudio.onerror = null; curAudio.pause(); } } catch (e) {} if (ttsOK) { try { speechSynthesis.cancel(); } catch (e) {} } }
 
-// 사전(dictionaryapi.dev) 원어민 음원 — localStorage 캐시
-const DICT_CACHE_KEY = 'irreg-verbs-dictcache';
-let dictCache = {};
-try { dictCache = JSON.parse(localStorage.getItem(DICT_CACHE_KEY)) || {}; } catch (e) {}
-function saveDictCache() { try { localStorage.setItem(DICT_CACHE_KEY, JSON.stringify(dictCache)); } catch (e) {} }
-async function getDictAudio(word) {
-  if (word in dictCache) return dictCache[word];
-  let best = null, keep = false;
-  try {
-    const r = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(word));
-    if (r.ok) {
-      keep = true;
-      const data = await r.json();
-      outer:
-      for (const entry of data) for (const ph of (entry.phonetics || [])) {
-        if (!ph.audio) continue;
-        if (/-us\.mp3/i.test(ph.audio)) { best = ph.audio; break outer; }   // 미국식 우선
-        if (!best) best = ph.audio;
-      }
-    } else if (r.status === 404) { keep = true; }   // 사전에 없는 단어 → 음원 없음 확정
-    // 429(과다 요청)·5xx 등 일시 오류는 캐시하지 않고 다음에 재시도
-  } catch (e) { return null; }                       // 네트워크 오류도 캐시 안 함
-  if (keep) { dictCache[word] = best; saveDictCache(); }
-  return best;
-}
-// 음원 미리 받기 — 동시 4개로 제한(과다 요청 방지), 이미 받은 건 건너뜀
-let _pfQueue = [], _pfActive = 0;
-function prefetchDictAudio(words) {
-  for (let w of words) {
-    w = String(w).split('/')[0].trim().toLowerCase();
-    if (/^[a-z'-]+$/.test(w) && _pfQueue.indexOf(w) < 0) _pfQueue.push(w);   // URL 캐시 여부와 무관하게 통과 → 소리 파일까지 확보
-  }
-  _pumpPrefetch();
-}
-function _pumpPrefetch() {
-  while (_pfActive < 4 && _pfQueue.length) {
-    const w = _pfQueue.shift();
-    _pfActive++;
-    getDictAudio(w).then(u => { if (u) preloadAudio(u); }, () => {}).then(() => { _pfActive--; _pumpPrefetch(); });
-  }
-}
+// 옛 원어민 발음 캐시는 이제 안 쓰니 지워서 저장 공간을 돌려받는다
+try { localStorage.removeItem('irreg-verbs-dictcache'); } catch (e) {}
 
 let speakSeq = 0;   // 최신 발음 요청만 소리내기 위한 세대 토큰
 function playUrl(url) {
   return new Promise(res => {
     let done = false, timer = null;
     const fin = ok => { if (!done) { done = true; if (timer) clearTimeout(timer); res(ok); } };
-    const a = audioCache[url] || player;   // 미리 받아둔 음원이 있으면 그걸로 즉시 재생
+    const a = player;
     curAudio = a;
     a.onended = () => fin(true);
     a.onerror = () => fin(false);
     try {
-      if (a === player) a.src = url;
+      a.src = url;
       try { a.currentTime = 0; } catch (e) {}
       a.play().then(() => { timer = setTimeout(() => fin(true), 7000); }).catch(() => fin(false));
     } catch (e) { fin(false); }
@@ -393,14 +348,6 @@ function speakTTS(t) {
 async function pronounce(text) {
   const my = ++speakSeq;   // 이 호출이 최신인 동안에만 진행
   stopAudio();
-  const t = text.trim();
-  const single = /^[A-Za-z'-]+$/.test(t);
-  if (single) {
-    const url = await getDictAudio(t.toLowerCase());
-    if (my !== speakSeq) return;                 // 더 새 요청이 들어옴 → 폐기
-    if (url && await playUrl(url)) return;
-    if (my !== speakSeq) return;
-  }
   if (await playUrl(googleTtsUrl(text))) return;
   if (my !== speakSeq) return;
   await speakTTS(text);
@@ -449,11 +396,10 @@ function renderTable() {
   el.querySelector('#tgMean').addEventListener('click', () => { hideMean = !hideMean; renderTable(); });
   el.querySelectorAll('td.cell-hidden').forEach(td => td.addEventListener('click', () => td.classList.remove('cell-hidden'), { once: true }));
   el.querySelectorAll('.say').forEach(td => td.addEventListener('click', () => { if (!td.classList.contains('cell-hidden')) speakForm(td.dataset.s); }));
-  prefetchDictAudio(items.flatMap(v => [v.b, v.pa, v.pp]));   // 원형·과거·과거분사 음원 미리 받아두기
 }
 
 // ===== 카드 =====
-function startCards() { cardDeck = shuffle(levelItems()); cardIdx = 0; cardFlipped = false; prefetchDictAudio(cardDeck.flatMap(v => [v.b, v.pa, v.pp])); }
+function startCards() { cardDeck = shuffle(levelItems()); cardIdx = 0; cardFlipped = false; }
 function renderCards() {
   if (!cardDeck.length) startCards();
   const v = cardDeck[cardIdx];
@@ -490,7 +436,6 @@ function startTest(type) {
   testType = type;
   testQs = shuffle(testPool().slice()).slice(0, Math.min(10, testPool().length));
   testIdx = 0; testScore = 0; testLocked = false; testOver = false;
-  prefetchDictAudio(testQs.flatMap(v => [v.b, v.pa, v.pp]));
   renderTest();
 }
 function renderTestMenu() {
