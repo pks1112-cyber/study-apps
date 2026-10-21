@@ -2733,6 +2733,7 @@ function renderTable() {
 function cardPoolWords() {
   const all = currentWords();
   if (cardFilter === 'notknown') return all.filter(x => markOf(x.key) !== 1);
+  if (cardFilter === 'known') return all.filter(x => markOf(x.key) === 1);
   if (cardFilter === 'hard') return all.filter(x => markOf(x.key) === 2);
   return all;
 }
@@ -2752,6 +2753,7 @@ function renderCards() {
       <div class="fchips">
         <button class="fchip ${cardFilter === 'all' ? 'on' : ''}" data-f="all">전체</button>
         <button class="fchip ${cardFilter === 'notknown' ? 'on' : ''}" data-f="notknown">외움 빼고</button>
+        <button class="fchip k ${cardFilter === 'known' ? 'on' : ''}" data-f="known">😊 외움만</button>
         <button class="fchip h ${cardFilter === 'hard' ? 'on' : ''}" data-f="hard">😖 못외움만</button>
       </div>
       <div class="mk-sum">${markSumHtml(currentWords())}</div>
