@@ -2810,6 +2810,7 @@ function testPoolWords() {
   let pool = currentWords().slice();
   if (testFilter === 'notknown') pool = pool.filter(x => markOf(x.key) !== 1);
   else if (testFilter === 'hard') pool = pool.filter(x => markOf(x.key) === 2);
+  else if (testFilter === 'known') pool = pool.filter(x => markOf(x.key) === 1);
   return pool;
 }
 function testScopeLabel() { return scopeLabel(); }
@@ -3073,7 +3074,7 @@ function printColsHtml(items, startNo, nCols, rowFn) {
 function renderPrintSheet(el) {
   document.body.classList.add('printing');
   const filterLabel = printScopeText ? '' :
-    (testFilter === 'notknown' ? ' · 외움 뺀 단어' : testFilter === 'hard' ? ' · 😖 못외운 단어' : '');
+    (testFilter === 'notknown' ? ' · 외움 뺀 단어' : testFilter === 'known' ? ' · 😊 외운 단어' : testFilter === 'hard' ? ' · 😖 못외운 단어' : '');
   const dirLabel = printKorToEng ? '뜻 보고 영어 쓰기' : '영어 보고 뜻 쓰기';
   const scope = printScopeLabel();
   const shownOf = it => printKorToEng ? esc(printQuestionMeaning(it.m)) : esc(it.w);
@@ -3179,6 +3180,7 @@ function renderTest() {
           <div class="fchips" style="margin:0">
             <button class="fchip ${testFilter === 'all' ? 'on' : ''}" data-f="all">전체</button>
             <button class="fchip ${testFilter === 'notknown' ? 'on' : ''}" data-f="notknown">외움 빼고</button>
+            <button class="fchip k ${testFilter === 'known' ? 'on' : ''}" data-f="known">😊 외움만</button>
             <button class="fchip h ${testFilter === 'hard' ? 'on' : ''}" data-f="hard">😖 못외움만</button>
           </div>
         </div>
